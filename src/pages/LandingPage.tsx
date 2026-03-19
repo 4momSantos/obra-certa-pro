@@ -45,7 +45,7 @@ function Navbar() {
           <a href="#beneficios" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefícios</a>
         </div>
         <Button asChild size="sm">
-          <Link to="/dashboard">Acessar Sistema <ArrowRight className="h-4 w-4" /></Link>
+          <Link to="/auth">Acessar Sistema <ArrowRight className="h-4 w-4" /></Link>
         </Button>
       </div>
     </nav>
