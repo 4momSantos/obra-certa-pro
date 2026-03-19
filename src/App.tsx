@@ -18,6 +18,30 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppRoutes = () => {
+  const location = useLocation();
+  const isLanding = location.pathname === "/";
+
+  if (isLanding) {
+    return <LandingPage />;
+  }
+
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/cronograma" element={<Cronograma />} />
+        <Route path="/etf" element={<ETF />} />
+        <Route path="/medicao" element={<Medicao />} />
+        <Route path="/tubulacao" element={<Tubulacao />} />
+        <Route path="/ajuste" element={<Ajuste />} />
+        <Route path="/config" element={<Config />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Layout>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -26,28 +50,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route element={<Layout><Routes><Route path="*" element={null} /></Routes></Layout>}>
-            </Route>
-          </Routes>
-          <Routes>
-            <Route path="/" element={null} />
-            <Route path="*" element={
-              <Layout>
-                <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/cronograma" element={<Cronograma />} />
-                  <Route path="/etf" element={<ETF />} />
-                  <Route path="/medicao" element={<Medicao />} />
-                  <Route path="/tubulacao" element={<Tubulacao />} />
-                  <Route path="/ajuste" element={<Ajuste />} />
-                  <Route path="/config" element={<Config />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            } />
-          </Routes>
+          <AppRoutes />
         </BrowserRouter>
       </ETFProvider>
       </CronogramaProvider>
