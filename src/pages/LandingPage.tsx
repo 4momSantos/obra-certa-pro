@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 
 // ── Easing & Base Variants ────────────────────────────────────────────────────
 
-const easeCustom = [0.22, 1, 0.36, 1];
+const easeCustom: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
