@@ -1,42 +1,46 @@
 
 
-# Landing Page SPLAN — Página Inicial Pré-Login
+# Criar Usuários com Roles — dentro da página Admin
 
-## O que será construído
+## Resumo
 
-Uma landing page pública e moderna na rota `/`, sem sidebar, apresentando o SPLAN como sistema de planejamento para obras industriais. O Dashboard atual move para `/dashboard`.
+Adicionar um formulário de criação de usuários na página `AdminUsers.tsx`, permitindo que o admin crie novos usuários diretamente, escolhendo nome, e-mail, senha e role.
 
-## Estrutura da página
+## Abordagem
 
-1. **Navbar fixa** — Logo SPLAN + links âncora (Módulos, Benefícios, Sobre) + botão "Acessar Sistema" que leva a `/dashboard`
-2. **Hero** — Título grande "SPLAN", subtítulo "Sistema de Planejamento — RNEST UDA U-12", gradiente de fundo premium, botão CTA "Entrar no Sistema"
-3. **Módulos** — Grid de 6 cards (Dashboard, Cronograma, ETF Semanal, Medição, Tubulação, Ajuste Automático) com ícones e descrições curtas
-4. **Benefícios** — 3 colunas com ícones (Controle Financeiro, Gestão de Efetivo, Relatórios Automatizados)
-5. **Footer** — Contrato R$ 915M, versão, créditos
+A criação de usuários via `supabase.auth.signUp()` no client-side tem uma limitação: ela faz login automático com o novo usuário. Para contornar isso, usaremos uma **Edge Function** com o `supabase-admin` (service role) que permite criar usuários sem afetar a sessão do admin logado, e já atribuir a role correta.
 
-## Arquivos a criar/modificar
+## Arquivos
 
-### Criar: `src/pages/LandingPage.tsx`
-- Componente full-page sem Layout wrapper
-- Navbar, Hero, Módulos, Benefícios, Footer como seções
-- Animações com framer-motion (fade-in on scroll)
-- Estilo consistente com o design system (cores primary, accent, gradientes existentes)
+### Criar: `supabase/functions/create-user/index.ts`
+- Edge function que recebe `{ email, password, full_name, role }`
+- Usa `supabase.auth.admin.createUser()` com service role key
+- Após criar o usuário, atualiza o `user_roles` para o role escolhido (substituindo o default `tecnico`)
+- Retorna sucesso ou erro
+- CORS headers inclusos
 
-### Modificar: `src/App.tsx`
-- Rota `/` → `<LandingPage />` (sem Layout wrapper)
-- Rota `/dashboard` → `<Dashboard />` (dentro de Layout)
-- Demais rotas permanecem dentro de Layout
+### Modificar: `supabase/config.toml`
+- Adicionar `[functions.create-user]` com `verify_jwt = false` (validação feita manualmente no código)
 
-### Modificar: `src/components/AppSidebar.tsx`
-- Atualizar link do Dashboard de `/` para `/dashboard`
+### Modificar: `src/pages/AdminUsers.tsx`
+- Adicionar botão "Novo Usuário" no header
+- Dialog/modal com formulário: nome, e-mail, senha, select de role
+- Ao submeter, chama `supabase.functions.invoke("create-user", { body: {...} })`
+- Recarrega lista de usuários após sucesso
 
-### Modificar: `src/components/NavLink.tsx` (se necessário)
-- Ajustar `end` prop para `/dashboard`
+## Fluxo
 
-## Detalhes técnicos
+```text
+Admin clica "Novo Usuário"
+  → Modal abre com formulário (nome, email, senha, role)
+  → Submit → Edge Function create-user
+    → auth.admin.createUser()
+    → Trigger cria profile + role tecnico automaticamente
+    → Edge function atualiza role se != tecnico
+  → Lista atualiza
+```
 
-- A rota `/` renderiza `LandingPage` **fora** do `<Layout>`, sem sidebar
-- Todas as demais rotas continuam dentro de `<Layout>` com sidebar
-- O botão CTA usa `react-router-dom` `Link` para `/dashboard`
-- Responsivo: hero com texto centralizado em mobile, grid de módulos 1→2→3 colunas
+## Segurança
+- Edge function valida que o chamador é admin checando o JWT token antes de criar o usuário
+- Service role key é usada apenas server-side na edge function
 
