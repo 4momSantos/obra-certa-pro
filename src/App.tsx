@@ -38,6 +38,7 @@ const App = () => (
             </Routes>
           </Layout>
         </BrowserRouter>
+      </ETFProvider>
       </CronogramaProvider>
     </TooltipProvider>
   </QueryClientProvider>
