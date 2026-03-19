@@ -77,7 +77,7 @@ function Hero() {
 
           <motion.div custom={3} variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button asChild size="lg" className="text-base px-8">
-              <Link to="/dashboard">Entrar no Sistema <ArrowRight className="h-5 w-5" /></Link>
+              <Link to="/auth">Entrar no Sistema <ArrowRight className="h-5 w-5" /></Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-base px-8">
               <a href="#modulos">Ver Módulos <ChevronDown className="h-5 w-5" /></a>
