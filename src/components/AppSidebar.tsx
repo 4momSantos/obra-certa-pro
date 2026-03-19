@@ -38,7 +38,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-bold text-sidebar-primary-foreground">
-                CONSAG
+                SPLAN
               </span>
               <span className="text-xs text-sidebar-foreground/60">
                 RNEST UDA U-12
