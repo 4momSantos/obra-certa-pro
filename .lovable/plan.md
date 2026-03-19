@@ -1,34 +1,19 @@
 
 
-# Plano: Recriar o ERP "Cronograma Financeiro CONSAG/RNEST" em React/TypeScript
+# Fix: Duplicate React Error (blank screen)
 
-## Visão Geral
+## Problem
 
-Recriar o sistema desktop Python (tkinter + PyWebView) como aplicação web moderna com visual premium, usando React, TypeScript, Tailwind CSS e Shadcn UI. O sistema será organizado em módulos com navegação por sidebar.
+The app crashes with `Cannot read properties of null (reading 'useEffect')` at `QueryClientProvider`. This is the classic **duplicate React copies** issue — two separate instances of React are loaded, causing hooks to fail.
 
-## Arquitetura
+This typically happens when dependencies (like `framer-motion` v12 or `@tanstack/react-query`) resolve their own copy of React instead of sharing the project's single copy.
 
-```text
-┌─────────────────────────────────────────────────┐
-│  SidebarProvider (Layout Principal)             │
-│  ┌──────────┬──────────────────────────────────┐│
-│  │ Sidebar  │  Área de Conteúdo               ││
-│  │          │                                  ││
-│  │ Dashboard│  <Routes>                        ││
-│  │ Cronogr. │    /  → Dashboard                ││
-│  │ ETF      │    /cronograma → Cronograma      ││
-│  │ Medição  │    /etf → ETF Semanal            ││
-│  │ Tubulação│    /medicao → Medição            ││
-│  │ Ajuste   │    /tubulacao → Tubulação        ││
-│  │ Config   │    /ajuste → Ajuste Automático   ││
-│  │          │    /config → Configurações       ││
-│  └──────────┴──────────────────────────────────┘│
-└─────────────────────────────────────────────────┘
-```
+## Solution
 
-## Design Visual Premium
+Add `resolve.dedupe` to `vite.config.ts` to force Vite to use a single copy of React:
 
-- Paleta escura/corporativa com acentos em azul (#1e40af) e dourado (#d4a843)
-- Cards com glassmorphism sutil e sombras suaves
-- Tipografia Inter para corpo, JetBrains Mono para números financeiros
-- Animações com framer-motion em transições de página e
+**File: `vite.config.ts`**
+- Add `dedupe: ["react", "react-dom"]` inside the existing `resolve` config
+
+This is a one-line fix that tells Vite's dependency optimizer to always resolve `react` and `react-dom` to the same instance, eliminating the duplicate copies.
+
