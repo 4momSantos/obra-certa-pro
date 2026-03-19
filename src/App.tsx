@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CronogramaProvider } from "@/contexts/CronogramaContext";
+import { ETFProvider } from "@/contexts/ETFContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Cronograma from "@/pages/Cronograma";
