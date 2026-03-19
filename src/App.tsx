@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import { CronogramaProvider } from "@/contexts/CronogramaContext";
 import { ETFProvider } from "@/contexts/ETFContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
+import LandingPage from "@/pages/LandingPage";
 import Cronograma from "@/pages/Cronograma";
 import ETF from "@/pages/ETF";
 import Medicao from "@/pages/Medicao";
@@ -17,6 +18,30 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppRoutes = () => {
+  const location = useLocation();
+  const isLanding = location.pathname === "/";
+
+  if (isLanding) {
+    return <LandingPage />;
+  }
+
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/cronograma" element={<Cronograma />} />
+        <Route path="/etf" element={<ETF />} />
+        <Route path="/medicao" element={<Medicao />} />
+        <Route path="/tubulacao" element={<Tubulacao />} />
+        <Route path="/ajuste" element={<Ajuste />} />
+        <Route path="/config" element={<Config />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Layout>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -25,18 +50,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/cronograma" element={<Cronograma />} />
-              <Route path="/etf" element={<ETF />} />
-              <Route path="/medicao" element={<Medicao />} />
-              <Route path="/tubulacao" element={<Tubulacao />} />
-              <Route path="/ajuste" element={<Ajuste />} />
-              <Route path="/config" element={<Config />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
+          <AppRoutes />
         </BrowserRouter>
       </ETFProvider>
       </CronogramaProvider>
