@@ -7,6 +7,7 @@ import { CronogramaProvider } from "@/contexts/CronogramaContext";
 import { ETFProvider } from "@/contexts/ETFContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
+import LandingPage from "@/pages/LandingPage";
 import Cronograma from "@/pages/Cronograma";
 import ETF from "@/pages/ETF";
 import Medicao from "@/pages/Medicao";
@@ -25,18 +26,28 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/cronograma" element={<Cronograma />} />
-              <Route path="/etf" element={<ETF />} />
-              <Route path="/medicao" element={<Medicao />} />
-              <Route path="/tubulacao" element={<Tubulacao />} />
-              <Route path="/ajuste" element={<Ajuste />} />
-              <Route path="/config" element={<Config />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route element={<Layout><Routes><Route path="*" element={null} /></Routes></Layout>}>
+            </Route>
+          </Routes>
+          <Routes>
+            <Route path="/" element={null} />
+            <Route path="*" element={
+              <Layout>
+                <Routes>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/cronograma" element={<Cronograma />} />
+                  <Route path="/etf" element={<ETF />} />
+                  <Route path="/medicao" element={<Medicao />} />
+                  <Route path="/tubulacao" element={<Tubulacao />} />
+                  <Route path="/ajuste" element={<Ajuste />} />
+                  <Route path="/config" element={<Config />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+            } />
+          </Routes>
         </BrowserRouter>
       </ETFProvider>
       </CronogramaProvider>

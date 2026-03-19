@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Cronograma", url: "/cronograma", icon: CalendarRange },
   { title: "ETF Semanal", url: "/etf", icon: Users },
   { title: "Medição", url: "/medicao", icon: FileCheck },
