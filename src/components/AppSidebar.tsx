@@ -27,6 +27,7 @@ const configItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { role } = useAuth();
   const location = useLocation();
 
   return (
