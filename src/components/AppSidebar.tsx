@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CalendarRange, Users, FileCheck,
-  Pipette, SlidersHorizontal, Settings, Building2,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -9,6 +9,7 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },

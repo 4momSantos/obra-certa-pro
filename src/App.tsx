@@ -5,9 +5,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CronogramaProvider } from "@/contexts/CronogramaContext";
 import { ETFProvider } from "@/contexts/ETFContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "@/pages/Dashboard";
 import LandingPage from "@/pages/LandingPage";
+import Auth from "@/pages/Auth";
+import AdminUsers from "@/pages/AdminUsers";
 import Cronograma from "@/pages/Cronograma";
 import ETF from "@/pages/ETF";
 import Medicao from "@/pages/Medicao";
@@ -21,39 +25,51 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const location = useLocation();
   const isLanding = location.pathname === "/";
+  const isAuth = location.pathname === "/auth";
 
-  if (isLanding) {
-    return <LandingPage />;
-  }
+  if (isLanding) return <LandingPage />;
+  if (isAuth) return <Auth />;
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/cronograma" element={<Cronograma />} />
-        <Route path="/etf" element={<ETF />} />
-        <Route path="/medicao" element={<Medicao />} />
-        <Route path="/tubulacao" element={<Tubulacao />} />
-        <Route path="/ajuste" element={<Ajuste />} />
-        <Route path="/config" element={<Config />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Layout>
+    <ProtectedRoute>
+      <Layout>
+        <Routes>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/cronograma" element={<Cronograma />} />
+          <Route path="/etf" element={<ETF />} />
+          <Route path="/medicao" element={<Medicao />} />
+          <Route path="/tubulacao" element={<Tubulacao />} />
+          <Route path="/ajuste" element={<Ajuste />} />
+          <Route path="/config" element={<Config />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Layout>
+    </ProtectedRoute>
   );
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <CronogramaProvider>
-      <ETFProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </ETFProvider>
-      </CronogramaProvider>
+      <AuthProvider>
+        <CronogramaProvider>
+          <ETFProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </ETFProvider>
+        </CronogramaProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
