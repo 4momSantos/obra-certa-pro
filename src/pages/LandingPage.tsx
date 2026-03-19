@@ -138,7 +138,7 @@ function Navbar() {
           <a href="#beneficios" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefícios</a>
         </div>
         <Button asChild size="sm">
-          <Link to="/dashboard">Acessar Sistema <ArrowRight className="h-4 w-4" /></Link>
+          <Link to="/auth">Acessar Sistema <ArrowRight className="h-4 w-4" /></Link>
         </Button>
       </div>
     </motion.nav>
@@ -266,7 +266,7 @@ function Hero() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Button asChild size="lg" className="text-base px-8">
-              <Link to="/dashboard">Entrar no Sistema <ArrowRight className="h-5 w-5" /></Link>
+              <Link to="/auth">Entrar no Sistema <ArrowRight className="h-5 w-5" /></Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-base px-8">
               <a href="#modulos">Ver Módulos <ChevronDown className="h-5 w-5" /></a>
