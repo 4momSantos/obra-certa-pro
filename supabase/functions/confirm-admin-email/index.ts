@@ -17,10 +17,10 @@ Deno.serve(async (req) => {
     );
 
     // Find admin user by email
-    const { data: users, error: listError } = await serviceClient.auth.admin.listUsers();
+    const { data: { users }, error: listError } = await serviceClient.auth.admin.listUsers();
     if (listError) throw listError;
 
-    const adminUser = users.users.find((u) => u.email === "admin@splan.com.br");
+    const adminUser = users.find((u: any) => u.email === "admin@splan.com.br");
     if (!adminUser) {
       return new Response(JSON.stringify({ error: "Admin user not found" }), {
         status: 404,
