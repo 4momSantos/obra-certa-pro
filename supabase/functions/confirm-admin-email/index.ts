@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -11,30 +9,40 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Find admin user by email
-    const { data: { users }, error: listError } = await serviceClient.auth.admin.listUsers();
-    if (listError) throw listError;
+    // List users to find admin
+    const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+      },
+    });
+    const listData = await listRes.json();
+    const adminUser = listData.users?.find((u: any) => u.email === "admin@splan.com.br");
 
-    const adminUser = users.find((u: any) => u.email === "admin@splan.com.br");
     if (!adminUser) {
-      return new Response(JSON.stringify({ error: "Admin user not found" }), {
+      return new Response(JSON.stringify({ error: "Admin not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { error } = await serviceClient.auth.admin.updateUser(adminUser.id, {
-      email_confirm: true,
+    // Confirm email
+    const updateRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${adminUser.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email_confirm: true }),
     });
 
-    if (error) throw error;
+    const updateData = await updateRes.json();
 
-    return new Response(JSON.stringify({ success: true, user_id: adminUser.id }), {
+    return new Response(JSON.stringify({ success: true, data: updateData }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
