@@ -11,9 +11,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { toast } from "sonner";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { WidgetRenderer } from "@/components/editor/WidgetRenderer";
