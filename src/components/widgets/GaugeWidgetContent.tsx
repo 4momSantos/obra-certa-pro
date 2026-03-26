@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { useEditorFilters } from "@/contexts/EditorFilterContext";
 
 const GAUGE_CX = 100;
@@ -86,3 +86,5 @@ export function GaugeWidgetContent() {
     </div>
   );
 }
+
+export default memo(GaugeWidgetContent);

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -104,3 +104,5 @@ export function TableWidgetContent() {
     </div>
   );
 }
+
+export default memo(TableWidgetContent);
