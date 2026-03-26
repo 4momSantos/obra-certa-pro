@@ -109,15 +109,17 @@ export function useCreateWidget() {
       config?: Record<string, unknown>;
       position?: { x: number; y: number; w: number; h: number };
     }) => {
+      const payload = {
+        dashboard_id: widget.dashboard_id,
+        type: widget.type,
+        title: widget.title,
+        config: (widget.config ?? {}) as import("@/integrations/supabase/types").Json,
+        position: (widget.position ?? { x: 0, y: 0, w: 4, h: 3 }) as import("@/integrations/supabase/types").Json,
+      };
+
       const { data, error } = await supabase
         .from("dashboard_widgets")
-        .insert({
-          dashboard_id: widget.dashboard_id,
-          type: widget.type,
-          title: widget.title,
-          config: widget.config ?? {},
-          position: widget.position ?? { x: 0, y: 0, w: 4, h: 3 },
-        })
+        .insert(payload)
         .select()
         .single();
 
