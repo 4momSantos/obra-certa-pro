@@ -1,6 +1,8 @@
-import { useState, useCallback, useMemo, useRef } from "react";
-import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
-import type { Layout, Layouts } from "react-grid-layout";
+import { useState, useCallback, useMemo } from "react";
+import { Responsive, WidthProvider, Layout } from "react-grid-layout";
+
+const ResponsiveGrid = WidthProvider(Responsive);
+type Layouts = Record<string, Layout[]>;
 import { motion } from "framer-motion";
 import {
   LayoutGrid, RotateCcw, Save, Lock, Unlock,
