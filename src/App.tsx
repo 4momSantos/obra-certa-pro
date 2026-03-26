@@ -10,6 +10,8 @@ import { Layout } from "@/components/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "@/pages/Dashboard";
 import DashboardList from "@/pages/DashboardList";
+import DashboardEditor from "@/pages/DashboardEditor";
+import DashboardView from "@/pages/DashboardView";
 import LandingPage from "@/pages/LandingPage";
 import Auth from "@/pages/Auth";
 import AdminUsers from "@/pages/AdminUsers";
@@ -36,6 +38,8 @@ const AppRoutes = () => {
       <Layout>
         <Routes>
           <Route path="/dashboards" element={<DashboardList />} />
+          <Route path="/dashboards/:id" element={<DashboardEditor />} />
+          <Route path="/dashboards/:id/view" element={<DashboardView />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/etf" element={<ETF />} />
