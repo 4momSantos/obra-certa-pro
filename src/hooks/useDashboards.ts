@@ -170,7 +170,7 @@ export function useUpdateDashboard() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<{ name: string; description: string; layout: unknown; filters: unknown; settings: unknown }> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
       const { error } = await supabase
         .from("dashboards")
         .update(updates)
