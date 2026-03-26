@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutGrid, Inbox, Users } from "lucide-react";
+import { LayoutGrid, Inbox, Users, Monitor } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -100,7 +100,12 @@ export default function DashboardList() {
             Gerencie e organize seus painéis de controle
           </p>
         </div>
-        <CreateDashboardDialog isPending={createMut.isPending} onCreate={handleCreate} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-1.5" onClick={() => navigate("/tv")}>
+            <Monitor className="h-4 w-4" /> TV Mode
+          </Button>
+          <CreateDashboardDialog isPending={createMut.isPending} onCreate={handleCreate} />
+        </div>
       </div>
 
       {isError && (
