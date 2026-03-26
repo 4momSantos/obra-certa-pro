@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import DashboardList from "@/pages/DashboardList";
 import DashboardEditor from "@/pages/DashboardEditor";
 import DashboardView from "@/pages/DashboardView";
+import TVMode from "@/pages/TVMode";
 import LandingPage from "@/pages/LandingPage";
 import Auth from "@/pages/Auth";
 import AdminUsers from "@/pages/AdminUsers";
@@ -40,6 +41,7 @@ const AppRoutes = () => {
           <Route path="/dashboards" element={<DashboardList />} />
           <Route path="/dashboards/:id" element={<DashboardEditor />} />
           <Route path="/dashboards/:id/view" element={<DashboardView />} />
+          <Route path="/tv" element={<TVMode />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/etf" element={<ETF />} />
