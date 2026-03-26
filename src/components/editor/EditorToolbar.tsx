@@ -84,9 +84,7 @@ export function EditorToolbar({
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Adicionar Widget" onClick={onAddWidget}>
             <PlusCircle className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Filtros" onClick={() => setShowPlaceholder("Filtros")}>
-            <Filter className="h-4 w-4" />
-          </Button>
+          <FilterPanel />
           <Button
             variant="ghost" size="sm" className="h-8 w-8 p-0" title="Tela Cheia"
             onClick={() => navigate(`/dashboards/${dashboardId}/view`)}
