@@ -20,6 +20,9 @@ import { DataTableWidget } from "@/components/dashboard/DataTableWidget";
 import { SeriesToggle } from "@/components/dashboard/SeriesToggle";
 import { FieldPicker } from "@/components/dashboard/FieldPicker";
 import { FormulaBar } from "@/components/dashboard/FormulaBar";
+import { VisualBuilder } from "@/components/dashboard/VisualBuilder";
+import { CustomWidget } from "@/components/dashboard/CustomWidget";
+import { loadCustomWidgets, saveCustomWidgets, type CustomWidgetConfig } from "@/lib/custom-widgets";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -29,7 +32,9 @@ const mkLayout = (i: string, x: number, y: number, w: number, h: number, minW?: 
   i, x, y, w, h, ...(minW != null ? { minW } : {}), ...(minH != null ? { minH } : {}),
 });
 
-const defaultLayouts: ResponsiveLayouts = {
+const NATIVE_KEYS = ["curvaS", "periodBar", "donut", "gauge", "waterfall", "table"];
+
+const defaultNativeLayouts = {
   lg: [
     mkLayout("curvaS", 0, 0, 6, 8, 4, 6),
     mkLayout("periodBar", 6, 0, 6, 8, 4, 6),
@@ -61,10 +66,10 @@ function loadLayouts(): ResponsiveLayouts {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved);
   } catch {}
-  return defaultLayouts;
+  return defaultNativeLayouts;
 }
 
-const widgetComponents: Record<string, React.FC> = {
+const nativeWidgets: Record<string, React.FC> = {
   curvaS: CurvaSWidget,
   periodBar: PeriodBarWidget,
   donut: DonutWidget,
@@ -78,6 +83,7 @@ function DashboardContent() {
   const { width, mounted, containerRef } = useContainerWidth();
   const [layouts, setLayouts] = useState<ResponsiveLayouts>(loadLayouts);
   const [isLocked, setIsLocked] = useState(true);
+  const [customWidgets, setCustomWidgets] = useState<CustomWidgetConfig[]>(loadCustomWidgets);
 
   const handleLayoutChange = useCallback((_: Layout, allLayouts: ResponsiveLayouts) => {
     setLayouts(allLayouts);
@@ -85,16 +91,59 @@ function DashboardContent() {
 
   const handleSaveLayout = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
+    saveCustomWidgets(customWidgets);
     toast.success("Layout salvo com sucesso");
-  }, [layouts]);
+  }, [layouts, customWidgets]);
 
   const handleResetLayout = useCallback(() => {
-    setLayouts(defaultLayouts);
+    setLayouts(defaultNativeLayouts);
     localStorage.removeItem(STORAGE_KEY);
     toast.info("Layout restaurado ao padrão");
   }, []);
 
-  const widgetKeys = useMemo(() => Object.keys(widgetComponents), []);
+  const handleAddCustomWidget = useCallback((config: CustomWidgetConfig) => {
+    setCustomWidgets((prev) => {
+      const next = [...prev, config];
+      saveCustomWidgets(next);
+      return next;
+    });
+    // Add layout entry for new widget — place at bottom
+    setLayouts((prev) => {
+      const newItem = mkLayout(config.id, 0, 100, 6, 8, 3, 6);
+      const updated: ResponsiveLayouts = {};
+      for (const bp of Object.keys(prev)) {
+        updated[bp] = [...(prev[bp] ?? []), newItem];
+      }
+      return updated;
+    });
+    toast.success(`Widget "${config.title}" adicionado`);
+  }, []);
+
+  const handleRemoveCustomWidget = useCallback((id: string) => {
+    setCustomWidgets((prev) => {
+      const next = prev.filter((w) => w.id !== id);
+      saveCustomWidgets(next);
+      return next;
+    });
+    setLayouts((prev) => {
+      const updated: ResponsiveLayouts = {};
+      for (const bp of Object.keys(prev)) {
+        updated[bp] = (prev[bp] ?? []).filter((item) => item.i !== id);
+      }
+      return updated;
+    });
+    toast.info("Widget removido");
+  }, []);
+
+  const allWidgetKeys = useMemo(
+    () => [...NATIVE_KEYS, ...customWidgets.map((w) => w.id)],
+    [customWidgets]
+  );
+
+  const customWidgetMap = useMemo(
+    () => new Map(customWidgets.map((w) => [w.id, w])),
+    [customWidgets]
+  );
 
   const dragConfig = useMemo(() => ({
     enabled: !isLocked,
@@ -123,8 +172,9 @@ function DashboardContent() {
             Cronograma Financeiro — {state.projectName}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <FieldPicker />
+          <VisualBuilder customCount={customWidgets.length} onAdd={handleAddCustomWidget} />
           <Button
             variant={isLocked ? "outline" : "default"}
             size="sm"
@@ -173,11 +223,16 @@ function DashboardContent() {
             compactor={verticalCompactor}
             margin={[16, 16]}
           >
-            {widgetKeys.map((key) => {
-              const Widget = widgetComponents[key];
+            {allWidgetKeys.map((key) => {
+              const NativeWidget = nativeWidgets[key];
+              const customConfig = customWidgetMap.get(key);
               return (
                 <div key={key} className={!isLocked ? "ring-1 ring-dashed ring-border/50 rounded-xl" : ""}>
-                  <Widget />
+                  {NativeWidget ? (
+                    <NativeWidget />
+                  ) : customConfig ? (
+                    <CustomWidget config={customConfig} isEditing={!isLocked} onRemove={handleRemoveCustomWidget} />
+                  ) : null}
                 </div>
               );
             })}
