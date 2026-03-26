@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, PlusCircle, Maximize, Share2,
-  MoreHorizontal, Copy, Download, Trash2, Check, Loader2,
+  ArrowLeft, PlusCircle, Maximize, Share2, Move,
+  MoreHorizontal, Copy, Download, Trash2, Check, Loader2, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
