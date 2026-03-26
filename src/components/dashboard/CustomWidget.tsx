@@ -106,33 +106,53 @@ function ChartContent({ config, data }: { config: CustomWidgetConfig; data: Reco
   }
 
   // Bar, Line, Area
-  const ChartComponent = type === "bar" ? BarChart : type === "line" ? LineChart : AreaChart;
-  const SeriesComponent = type === "bar" ? Bar : type === "line" ? Line : Area;
+  if (type === "bar") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+          <XAxis dataKey="x" tick={{ fontSize: 9 }} />
+          <YAxis tickFormatter={(v) => formatCompact(v)} tick={{ fontSize: 9 }} />
+          <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
+          <Legend wrapperStyle={{ fontSize: "10px" }} />
+          {valueColumns.map((col, i) => (
+            <Bar key={col} dataKey={col} name={col} fill={CHART_COLORS[i % CHART_COLORS.length]} radius={[3, 3, 0, 0]} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
 
+  if (type === "line") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+          <XAxis dataKey="x" tick={{ fontSize: 9 }} />
+          <YAxis tickFormatter={(v) => formatCompact(v)} tick={{ fontSize: 9 }} />
+          <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
+          <Legend wrapperStyle={{ fontSize: "10px" }} />
+          {valueColumns.map((col, i) => (
+            <Line key={col} dataKey={col} name={col} stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} dot={{ r: 2 }} />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // Area
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ChartComponent data={data}>
+      <AreaChart data={data}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
         <XAxis dataKey="x" tick={{ fontSize: 9 }} />
         <YAxis tickFormatter={(v) => formatCompact(v)} tick={{ fontSize: 9 }} />
         <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: "10px" }} />
-        {valueColumns.map((col, i) => {
-          const color = CHART_COLORS[i % CHART_COLORS.length];
-          const props: any = {
-            key: col,
-            dataKey: col,
-            name: col,
-            stroke: color,
-            fill: type === "bar" ? color : type === "area" ? color : undefined,
-            fillOpacity: type === "area" ? 0.15 : undefined,
-            strokeWidth: type === "bar" ? undefined : 2,
-            radius: type === "bar" ? [3, 3, 0, 0] : undefined,
-            dot: type === "line" ? { r: 2 } : false,
-          };
-          return <SeriesComponent {...props} />;
-        })}
-      </ChartComponent>
+        {valueColumns.map((col, i) => (
+          <Area key={col} dataKey={col} name={col} stroke={CHART_COLORS[i % CHART_COLORS.length]} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.15} strokeWidth={2} />
+        ))}
+      </AreaChart>
     </ResponsiveContainer>
   );
 }
