@@ -19,7 +19,7 @@ export default function Auth() {
     );
   }
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to="/dashboards" replace />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
