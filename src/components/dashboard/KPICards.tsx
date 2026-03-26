@@ -1,11 +1,13 @@
+import { useMemo } from "react";
 import { useDashboardFilters } from "@/contexts/DashboardFilterContext";
 import { useCronograma } from "@/contexts/CronogramaContext";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   DollarSign, TrendingUp, Wallet, CalendarCheck,
-  ArrowUpRight, ArrowDownRight, Lock, Unlock,
+  ArrowUpRight, ArrowDownRight, Minus, Lock, Unlock,
 } from "lucide-react";
-import { formatCompact, formatPercent } from "@/lib/format";
+import { formatCompact, formatPercent, formatCurrency } from "@/lib/format";
 
 interface KPICardProps {
   title: string;
@@ -13,32 +15,32 @@ interface KPICardProps {
   subtitle?: string;
   icon: React.ElementType;
   gradient: string;
-  trend?: { value: string; positive: boolean };
-  onClick?: () => void;
-  active?: boolean;
+  trend?: { value: string; direction: "up" | "down" | "neutral" };
+  progress?: number; // 0-100
 }
 
-function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, onClick, active }: KPICardProps) {
+function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, progress }: KPICardProps) {
   return (
-    <Card
-      className={`glass-card overflow-hidden relative group hover:shadow-xl transition-all duration-300 cursor-pointer ${
-        active ? "ring-2 ring-primary" : ""
-      }`}
-      onClick={onClick}
-    >
+    <Card className="glass-card overflow-hidden relative group hover:shadow-xl transition-all duration-300">
       <div className={`absolute inset-0 opacity-[0.06] ${gradient}`} />
       <CardContent className="p-5 relative">
         <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 flex-1 min-w-0">
             <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{title}</p>
-            <p className="text-xl font-bold font-mono tracking-tight text-foreground">{value}</p>
-            {subtitle && <p className="text-[10px] text-muted-foreground">{subtitle}</p>}
+            <p className="text-xl font-bold font-mono tracking-tight text-foreground truncate">{value}</p>
+            {subtitle && <p className="text-[10px] text-muted-foreground truncate">{subtitle}</p>}
+            {progress !== undefined && (
+              <Progress value={Math.min(progress, 100)} className="h-1.5 mt-1" />
+            )}
             {trend && (
-              <div className="flex items-center gap-1">
-                {trend.positive
-                  ? <ArrowUpRight className="h-3 w-3 text-chart-3" />
-                  : <ArrowDownRight className="h-3 w-3 text-destructive" />}
-                <span className={`text-[10px] font-medium ${trend.positive ? "text-chart-3" : "text-destructive"}`}>
+              <div className="flex items-center gap-1 mt-0.5">
+                {trend.direction === "up" && <ArrowUpRight className="h-3 w-3 text-green-500" />}
+                {trend.direction === "down" && <ArrowDownRight className="h-3 w-3 text-red-500" />}
+                {trend.direction === "neutral" && <Minus className="h-3 w-3 text-muted-foreground" />}
+                <span className={`text-[10px] font-medium ${
+                  trend.direction === "up" ? "text-green-500" :
+                  trend.direction === "down" ? "text-red-500" : "text-muted-foreground"
+                }`}>
                   {trend.value}
                 </span>
               </div>
@@ -54,15 +56,36 @@ function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, onClick,
 }
 
 export function KPICards() {
-  const { filteredMetrics } = useDashboardFilters();
+  const { filteredMetrics, filteredPeriods } = useDashboardFilters();
   const { state } = useCronograma();
-  const lastFechado = state.periods.filter(p => p.fechado).pop();
+
+  const lastFechado = useMemo(
+    () => state.periods.filter(p => p.fechado).pop(),
+    [state.periods]
+  );
+
+  // Variation vs previous closed period
+  const variation = useMemo(() => {
+    const closedPeriods = filteredPeriods.filter(p => p.fechado);
+    if (closedPeriods.length < 2) return null;
+    const last = closedPeriods[closedPeriods.length - 1];
+    const prev = closedPeriods[closedPeriods.length - 2];
+    if (prev.realizado === 0) return null;
+    const pct = ((last.realizado - prev.realizado) / prev.realizado) * 100;
+    return {
+      value: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
+      direction: pct > 0 ? "up" as const : pct < 0 ? "down" as const : "neutral" as const,
+    };
+  }, [filteredPeriods]);
+
+  const progressPct = filteredMetrics.avancoFinanceiro * 100;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
       <KPICard
         title="Valor Contratual"
         value={formatCompact(filteredMetrics.valorContratual)}
+        subtitle={formatCurrency(filteredMetrics.valorContratual)}
         icon={DollarSign}
         gradient="gradient-accent"
       />
@@ -72,22 +95,23 @@ export function KPICards() {
         subtitle={`Realizado: ${formatCompact(filteredMetrics.totalRealizado)}`}
         icon={TrendingUp}
         gradient="gradient-primary"
-        trend={{
-          value: formatPercent(filteredMetrics.avancoFisico),
-          positive: filteredMetrics.avancoFisico > 0.3,
-        }}
+        progress={progressPct}
+        trend={variation ?? undefined}
       />
       <KPICard
-        title="Saldo"
+        title="Saldo Restante"
         value={formatCompact(filteredMetrics.saldo)}
+        subtitle={`${formatPercent(filteredMetrics.saldo / (filteredMetrics.valorContratual || 1))} restante`}
         icon={Wallet}
         gradient="gradient-success"
       />
       <KPICard
         title="Último Fechamento"
-        value={lastFechado?.label || "—"}
+        value={lastFechado ? formatCompact(lastFechado.realizado) : "—"}
+        subtitle={lastFechado?.label ?? "Nenhum período fechado"}
         icon={CalendarCheck}
         gradient="gradient-danger"
+        trend={variation ?? undefined}
       />
       <KPICard
         title="Períodos Fechados"
@@ -95,6 +119,7 @@ export function KPICards() {
         subtitle={`de ${filteredMetrics.periodCount} filtrados`}
         icon={Lock}
         gradient="gradient-primary"
+        progress={(filteredMetrics.closedCount / (filteredMetrics.periodCount || 1)) * 100}
       />
       <KPICard
         title="Períodos Abertos"
