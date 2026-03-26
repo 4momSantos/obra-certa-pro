@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, PlusCircle, Filter, Maximize, Share2,
+  ArrowLeft, PlusCircle, Maximize, Share2,
   MoreHorizontal, Copy, Download, Trash2, Check, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { FilterPanel } from "@/components/editor/FilterPanel";
 
 interface Props {
   dashboardId: string;
