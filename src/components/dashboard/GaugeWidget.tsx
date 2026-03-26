@@ -9,17 +9,18 @@ function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg
   const y1 = cy + r * Math.sin(rad(startDeg));
   const x2 = cx + r * Math.cos(rad(endDeg));
   const y2 = cy + r * Math.sin(rad(endDeg));
-  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+  const sweep = endDeg - startDeg;
+  const largeArc = Math.abs(sweep) > 180 ? 1 : 0;
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
 }
 
-const GAUGE_START = 180; // left
-const GAUGE_END = 0;     // right (semicircle)
+// Gauge angles: 0% = 180° (left), 100% = 360° (right), arcing through 270° (top)
 const CX = 150;
 const CY = 140;
 const R_OUTER = 100;
 const R_INNER = 75;
 const STROKE_W = 22;
+const R_MID = (R_OUTER + R_INNER) / 2;
 
 const BANDS = [
   { from: 0, to: 0.5, color: "hsl(0 72% 51%)" },       // red
@@ -27,14 +28,17 @@ const BANDS = [
   { from: 0.8, to: 1.0, color: "hsl(142 71% 45%)" },    // green
 ];
 
+/** Map a 0-1 percentage to an angle on the top semicircle (180° → 360°) */
+function pctToAngle(p: number): number {
+  return 180 + p * 180;
+}
+
 export function GaugeWidget() {
   const { filteredMetrics } = useDashboardFilters();
   const pct = filteredMetrics.avancoFinanceiro;
   const displayPct = Math.min(Math.max(pct, 0), 1);
   const totalBaseline = filteredMetrics.totalBaseline;
   const totalRealizado = filteredMetrics.totalRealizado;
-
-  const needleAngle = GAUGE_START - displayPct * (GAUGE_START - GAUGE_END);
 
   const getColor = (p: number) => {
     if (p >= 0.8) return BANDS[2].color;
@@ -44,23 +48,19 @@ export function GaugeWidget() {
 
   const bandPaths = useMemo(
     () =>
-      BANDS.map((b) => {
-        const startAngle = GAUGE_START - b.from * (GAUGE_START - GAUGE_END);
-        const endAngle = GAUGE_START - b.to * (GAUGE_START - GAUGE_END);
-        return {
-          d: describeArc(CX, CY, (R_OUTER + R_INNER) / 2, endAngle, startAngle),
-          color: b.color,
-        };
-      }),
+      BANDS.map((b) => ({
+        d: describeArc(CX, CY, R_MID, pctToAngle(b.from), pctToAngle(b.to)),
+        color: b.color,
+      })),
     []
   );
 
   const valuePath = useMemo(() => {
     if (displayPct <= 0) return "";
-    const endAngle = GAUGE_START - displayPct * (GAUGE_START - GAUGE_END);
-    return describeArc(CX, CY, (R_OUTER + R_INNER) / 2, endAngle, GAUGE_START);
+    return describeArc(CX, CY, R_MID, pctToAngle(0), pctToAngle(displayPct));
   }, [displayPct]);
 
+  const needleAngle = pctToAngle(displayPct);
   const needleRad = (needleAngle * Math.PI) / 180;
   const needleTipX = CX + (R_INNER - 8) * Math.cos(needleRad);
   const needleTipY = CY + (R_INNER - 8) * Math.sin(needleRad);
