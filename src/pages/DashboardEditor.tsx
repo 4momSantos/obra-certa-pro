@@ -36,10 +36,13 @@ function DashboardEditorInner() {
   const duplicateMut = useDuplicateDashboard();
   const deleteWidgetMut = useDeleteWidget();
   const batchPositionsMut = useBatchUpdateWidgetPositions();
+  const createWidgetMut = useCreateWidget();
+  const updateWidgetMut = useUpdateWidget();
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showDeleteDash, setShowDeleteDash] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<{ id: string; type: string; title: string; config: Record<string, unknown> } | null>(null);
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
