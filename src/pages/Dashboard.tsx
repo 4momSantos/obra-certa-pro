@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
 import type { Layout, Layouts } from "react-grid-layout";
 import { motion } from "framer-motion";
@@ -105,8 +105,7 @@ type BuilderPanel = "none" | "fields" | "newWidget" | "formula" | "html";
 
 function DashboardContent() {
   const { state } = useCronograma();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const width = useContainerWidth(containerRef);
+  const { width, containerRef } = useContainerWidth();
   const [layouts, setLayouts] = useState<Layouts>(loadLayouts);
   const [isLocked, setIsLocked] = useState(true);
   const [builderPanel, setBuilderPanel] = useState<BuilderPanel>("none");

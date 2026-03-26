@@ -10,7 +10,12 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, connectionError } = useAuth();
+
+  // If Supabase is unreachable, allow access (offline mode)
+  if (connectionError) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
