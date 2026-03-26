@@ -35,6 +35,7 @@ export function useDashboard(id: string | undefined) {
   return useQuery({
     queryKey: [DASHBOARD_KEY, id],
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<DashboardDetail | null> => {
       if (!id) return null;
 
