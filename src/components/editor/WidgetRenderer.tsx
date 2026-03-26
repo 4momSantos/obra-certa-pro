@@ -185,7 +185,7 @@ export function WidgetRenderer({ widget, onDelete, onEdit, readOnly }: Props) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-36">
-                <DropdownMenuItem disabled>
+                <DropdownMenuItem onClick={() => onEdit?.(widget)}>
                   <Settings className="h-3.5 w-3.5 mr-2" /> Editar
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
