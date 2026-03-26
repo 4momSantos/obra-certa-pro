@@ -290,7 +290,7 @@ function DashboardEditorInner() {
                           <div className="w-8 h-1 rounded-full bg-muted-foreground/30" />
                         </div>
                       )}
-                      <WidgetRenderer widget={widget} onDelete={handleDeleteWidget} />
+                      <WidgetRenderer widget={widget} onDelete={handleDeleteWidget} onEdit={(w) => setEditingWidget({ id: w.id, type: w.type, title: w.title, config: w.config })} />
                     </div>
                   ))}
                 </ResponsiveGridLayout>
