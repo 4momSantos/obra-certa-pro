@@ -94,6 +94,22 @@ function DashboardEditorInner() {
     };
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (id && dashboard) autoSave({ name: dashboard.name });
+      }
+      if (e.key === "F11") {
+        e.preventDefault();
+        if (id) navigate(`/dashboards/${id}/view`);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [id, dashboard, autoSave, navigate]);
+
   const handleNameChange = useCallback(
     (name: string) => autoSave({ name }),
     [autoSave]
