@@ -83,11 +83,13 @@ function DashboardContent() {
 
   const handleSaveLayout = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
+    toast.success("Layout salvo com sucesso");
   }, [layouts]);
 
   const handleResetLayout = useCallback(() => {
     setLayouts(defaultLayouts);
     localStorage.removeItem(STORAGE_KEY);
+    toast.info("Layout restaurado ao padrão");
   }, []);
 
   const widgetKeys = useMemo(() => Object.keys(widgetComponents), []);
