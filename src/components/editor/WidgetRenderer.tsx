@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MoreVertical, Trash2, Settings } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,10 @@ import {
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, ReferenceLine,
 } from "recharts";
 import type { DashboardWidget } from "@/hooks/useDashboard";
+import { useEditorFilters } from "@/contexts/EditorFilterContext";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -27,17 +28,46 @@ const CHART_COLORS = [
   "hsl(45, 80%, 55%)",
 ];
 
+const SERIES_COLORS: Record<string, string> = {
+  baseline: "hsl(var(--muted-foreground))",
+  previsto: "hsl(var(--primary))",
+  projetado: "hsl(var(--accent))",
+  realizado: "hsl(160, 60%, 45%)",
+};
+
 const sampleData = [
-  { name: "Jan", value: 400 },
-  { name: "Fev", value: 300 },
-  { name: "Mar", value: 500 },
-  { name: "Abr", value: 280 },
-  { name: "Mai", value: 590 },
-  { name: "Jun", value: 430 },
+  { name: "BM-01", baseline: 100, previsto: 110, projetado: 105, realizado: 95 },
+  { name: "BM-02", baseline: 200, previsto: 190, projetado: 210, realizado: 180 },
+  { name: "BM-03", baseline: 350, previsto: 340, projetado: 360, realizado: 320 },
+  { name: "BM-04", baseline: 500, previsto: 480, projetado: 510, realizado: 470 },
+  { name: "BM-05", baseline: 650, previsto: 630, projetado: 660, realizado: 610 },
+  { name: "BM-06", baseline: 800, previsto: 790, projetado: 820, realizado: 760 },
 ];
 
-function ChartPlaceholder({ type }: { type: string }) {
-  const commonProps = { data: sampleData, margin: { top: 5, right: 20, bottom: 5, left: 0 } };
+function ChartContent({ type }: { type: string }) {
+  const { selectedPeriod, periodRange, seriesVisibility, setSelectedPeriod } = useEditorFilters();
+
+  const filteredData = useMemo(() => {
+    let data = sampleData;
+    if (periodRange) {
+      data = data.slice(periodRange[0], periodRange[1] + 1);
+    }
+    return data;
+  }, [periodRange]);
+
+  const visibleSeries = useMemo(
+    () => Object.entries(seriesVisibility).filter(([, v]) => v).map(([k]) => k),
+    [seriesVisibility]
+  );
+
+  const handleBarClick = (data: { name?: string }) => {
+    if (data?.name) {
+      setSelectedPeriod(selectedPeriod === data.name ? null : data.name);
+    }
+  };
+
+  const commonProps = { data: filteredData, margin: { top: 5, right: 20, bottom: 5, left: 0 } };
+  const tickStyle = { fontSize: 11, fill: "hsl(var(--muted-foreground))" };
 
   switch (type) {
     case "bar":
@@ -45,10 +75,23 @@ function ChartPlaceholder({ type }: { type: string }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+            <XAxis dataKey="name" tick={tickStyle} />
+            <YAxis tick={tickStyle} />
             <Tooltip />
-            <Bar dataKey="value" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
+            {selectedPeriod && (
+              <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />
+            )}
+            {visibleSeries.map((key, i) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                fill={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
+                radius={[3, 3, 0, 0]}
+                opacity={selectedPeriod ? 0.6 : 1}
+                onClick={(d) => handleBarClick(d)}
+                cursor="pointer"
+              />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       );
@@ -57,10 +100,23 @@ function ChartPlaceholder({ type }: { type: string }) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+            <XAxis dataKey="name" tick={tickStyle} />
+            <YAxis tick={tickStyle} />
             <Tooltip />
-            <Line type="monotone" dataKey="value" stroke={CHART_COLORS[0]} strokeWidth={2} dot={false} />
+            {selectedPeriod && (
+              <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />
+            )}
+            {visibleSeries.map((key, i) => (
+              <Line
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       );
@@ -69,10 +125,23 @@ function ChartPlaceholder({ type }: { type: string }) {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+            <XAxis dataKey="name" tick={tickStyle} />
+            <YAxis tick={tickStyle} />
             <Tooltip />
-            <Area type="monotone" dataKey="value" fill={CHART_COLORS[0]} fillOpacity={0.2} stroke={CHART_COLORS[0]} strokeWidth={2} />
+            {selectedPeriod && (
+              <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />
+            )}
+            {visibleSeries.map((key, i) => (
+              <Area
+                key={key}
+                type="monotone"
+                dataKey={key}
+                fill={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
+                fillOpacity={0.15}
+                stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
+                strokeWidth={2}
+              />
+            ))}
           </AreaChart>
         </ResponsiveContainer>
       );
@@ -82,29 +151,38 @@ function ChartPlaceholder({ type }: { type: string }) {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={sampleData}
+              data={filteredData}
               cx="50%"
               cy="50%"
               innerRadius={type === "donut" ? "55%" : 0}
               outerRadius="80%"
-              dataKey="value"
+              dataKey={visibleSeries[0] || "baseline"}
+              nameKey="name"
               paddingAngle={2}
             >
-              {sampleData.map((_, i) => (
-                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+              {filteredData.map((entry, i) => (
+                <Cell
+                  key={i}
+                  fill={CHART_COLORS[i % CHART_COLORS.length]}
+                  opacity={selectedPeriod && entry.name !== selectedPeriod ? 0.3 : 1}
+                  cursor="pointer"
+                  onClick={() => handleBarClick(entry)}
+                />
               ))}
             </Pie>
             <Tooltip />
           </PieChart>
         </ResponsiveContainer>
       );
-    case "kpi":
+    case "kpi": {
+      const total = filteredData.reduce((s, d) => s + (d[visibleSeries[0] as keyof typeof d] as number ?? 0), 0);
       return (
         <div className="flex flex-col items-center justify-center h-full gap-1">
-          <span className="text-3xl font-bold text-foreground">0</span>
-          <span className="text-xs text-muted-foreground">Valor KPI</span>
+          <span className="text-3xl font-bold text-foreground">{total.toLocaleString("pt-BR")}</span>
+          <span className="text-xs text-muted-foreground capitalize">{visibleSeries[0] || "baseline"}</span>
         </div>
       );
+    }
     default:
       return (
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
@@ -151,7 +229,7 @@ export function WidgetRenderer({ widget, onDelete, readOnly }: Props) {
           )}
         </CardHeader>
         <CardContent className="flex-1 p-3 pt-0 min-h-[160px]">
-          <ChartPlaceholder type={widget.type} />
+          <ChartContent type={widget.type} />
         </CardContent>
       </Card>
 
