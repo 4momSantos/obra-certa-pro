@@ -157,6 +157,32 @@ export function useUpdateWidget() {
   });
 }
 
+export function useBatchUpdateWidgetPositions() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ dashboardId, positions }: {
+      dashboardId: string;
+      positions: Array<{ id: string; position: { x: number; y: number; w: number; h: number } }>;
+    }) => {
+      const promises = positions.map(({ id, position }) =>
+        supabase
+          .from("dashboard_widgets")
+          .update({ position: position as unknown as import("@/integrations/supabase/types").Json })
+          .eq("id", id)
+      );
+      const results = await Promise.all(promises);
+      const err = results.find((r) => r.error);
+      if (err?.error) throw err.error;
+      return { dashboardId };
+    },
+    onSuccess: (ctx) => {
+      qc.invalidateQueries({ queryKey: [DASHBOARD_KEY, ctx.dashboardId] });
+      qc.invalidateQueries({ queryKey: [WIDGETS_KEY, ctx.dashboardId] });
+    },
+  });
+}
+
 export function useDeleteWidget() {
   const qc = useQueryClient();
 
