@@ -165,10 +165,11 @@ function ChartContent({ type }: { type: string }) {
 interface Props {
   widget: DashboardWidget;
   onDelete: (id: string) => void;
+  onEdit?: (widget: DashboardWidget) => void;
   readOnly?: boolean;
 }
 
-export function WidgetRenderer({ widget, onDelete, readOnly }: Props) {
+export function WidgetRenderer({ widget, onDelete, onEdit, readOnly }: Props) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   return (
