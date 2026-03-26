@@ -46,11 +46,10 @@ function DashboardEditorInner() {
   const [isEditingLayout, setIsEditingLayout] = useState(false);
 
   // Determine permission
-  const permission: "owner" | "view" | "edit" = useMemo(() => {
+  const permission = useMemo((): "owner" | "view" | "edit" => {
     if (!dashboard || !user) return "view";
     if (dashboard.owner_id === user.id) return "owner";
-    // Will be determined by the shares query in useDashboards
-    return "view"; // TODO: could be enhanced with a share lookup
+    return "view";
   }, [dashboard, user]);
   const isOwner = permission === "owner";
   const canEdit = isOwner || permission === "edit";
