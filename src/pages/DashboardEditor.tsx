@@ -102,6 +102,28 @@ function DashboardEditorInner() {
     [id, deleteWidgetMut]
   );
 
+  const handleAddWidget = useCallback((result: VisualBuilderResult) => {
+    if (!id) return;
+    createWidgetMut.mutate(
+      {
+        dashboard_id: id,
+        type: result.type,
+        title: result.title,
+        config: result.config,
+        position: { x: 0, y: 100, w: result.type === "kpi" ? 3 : result.type === "table" ? 12 : 4, h: result.type === "table" ? 5 : 3 },
+      },
+      { onSuccess: () => setShowAddWidget(false) }
+    );
+  }, [id, createWidgetMut]);
+
+  const handleEditWidget = useCallback((result: VisualBuilderResult) => {
+    if (!id || !editingWidget) return;
+    updateWidgetMut.mutate(
+      { id: editingWidget.id, dashboardId: id, updates: { type: result.type, title: result.title, config: result.config } },
+      { onSuccess: () => setEditingWidget(null) }
+    );
+  }, [id, editingWidget, updateWidgetMut]);
+
   const handleDeleteDashboard = useCallback(() => {
     if (!id) return;
     deleteDashMut.mutate(id, {
