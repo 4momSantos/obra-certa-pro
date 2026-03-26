@@ -19,6 +19,7 @@ import { WaterfallWidget } from "@/components/dashboard/WaterfallWidget";
 import { DataTableWidget } from "@/components/dashboard/DataTableWidget";
 import { SeriesToggle } from "@/components/dashboard/SeriesToggle";
 import { FieldPicker } from "@/components/dashboard/FieldPicker";
+import { FormulaBar } from "@/components/dashboard/FormulaBar";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -145,6 +146,9 @@ function DashboardContent() {
           )}
         </div>
       </div>
+
+      {/* Formula Bar */}
+      <FormulaBar />
 
       {/* Slicers + Series Toggle */}
       <DashboardSlicers />
