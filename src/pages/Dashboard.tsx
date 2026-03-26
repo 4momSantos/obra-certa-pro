@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
+import { ResponsiveGridLayout, useContainerWidth, verticalCompactor } from "react-grid-layout";
 import type { Layout, LayoutItem, ResponsiveLayouts } from "react-grid-layout";
 import { motion } from "framer-motion";
 import {
@@ -91,6 +91,15 @@ function DashboardContent() {
 
   const widgetKeys = useMemo(() => Object.keys(widgetComponents), []);
 
+  const dragConfig = useMemo(() => ({
+    enabled: !isLocked,
+    handle: ".drag-handle",
+  }), [isLocked]);
+
+  const resizeConfig = useMemo(() => ({
+    enabled: !isLocked,
+  }), [isLocked]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -149,11 +158,10 @@ function DashboardContent() {
             breakpoints={{ lg: 1200, md: 996, sm: 0 }}
             cols={{ lg: 12, md: 12, sm: 6 }}
             rowHeight={40}
-            isDraggable={!isLocked}
-            isResizable={!isLocked}
-            draggableHandle=".drag-handle"
+            dragConfig={dragConfig}
+            resizeConfig={resizeConfig}
             onLayoutChange={handleLayoutChange}
-            compactType="vertical"
+            compactor={verticalCompactor}
             margin={[16, 16]}
           >
             {widgetKeys.map((key) => {
