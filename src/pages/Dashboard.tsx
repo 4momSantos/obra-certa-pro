@@ -147,6 +147,9 @@ function DashboardContent() {
         </div>
       </div>
 
+      {/* Formula Bar */}
+      <FormulaBar />
+
       {/* Slicers + Series Toggle */}
       <DashboardSlicers />
       <SeriesToggle />
