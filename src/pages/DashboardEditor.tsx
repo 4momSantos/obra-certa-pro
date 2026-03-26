@@ -11,15 +11,14 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { WidgetRenderer } from "@/components/editor/WidgetRenderer";
-import { useDashboard, useDeleteWidget, useBatchUpdateWidgetPositions } from "@/hooks/useDashboard";
+import { VisualBuilder, type VisualBuilderResult } from "@/components/editor/VisualBuilder";
+import { useDashboard, useDeleteWidget, useBatchUpdateWidgetPositions, useCreateWidget, useUpdateWidget } from "@/hooks/useDashboard";
 import { useUpdateDashboard, useDeleteDashboard, useDuplicateDashboard } from "@/hooks/useDashboards";
 import { EditorFilterProvider, type EditorFilterState } from "@/contexts/EditorFilterContext";
+import type { Json } from "@/integrations/supabase/types";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -34,10 +33,13 @@ function DashboardEditorInner() {
   const duplicateMut = useDuplicateDashboard();
   const deleteWidgetMut = useDeleteWidget();
   const batchPositionsMut = useBatchUpdateWidgetPositions();
+  const createWidgetMut = useCreateWidget();
+  const updateWidgetMut = useUpdateWidget();
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showDeleteDash, setShowDeleteDash] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<{ id: string; type: string; title: string; config: Record<string, unknown> } | null>(null);
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -96,6 +98,28 @@ function DashboardEditorInner() {
     },
     [id, deleteWidgetMut]
   );
+
+  const handleAddWidget = useCallback((result: VisualBuilderResult) => {
+    if (!id) return;
+    createWidgetMut.mutate(
+      {
+        dashboard_id: id,
+        type: result.type,
+        title: result.title,
+        config: result.config,
+        position: { x: 0, y: 100, w: result.type === "kpi" ? 3 : result.type === "table" ? 12 : 4, h: result.type === "table" ? 5 : 3 },
+      },
+      { onSuccess: () => setShowAddWidget(false) }
+    );
+  }, [id, createWidgetMut]);
+
+  const handleEditWidget = useCallback((result: VisualBuilderResult) => {
+    if (!id || !editingWidget) return;
+    updateWidgetMut.mutate(
+      { id: editingWidget.id, dashboardId: id, updates: { type: result.type, title: result.title, config: result.config } },
+      { onSuccess: () => setEditingWidget(null) }
+    );
+  }, [id, editingWidget, updateWidgetMut]);
 
   const handleDeleteDashboard = useCallback(() => {
     if (!id) return;
@@ -285,7 +309,7 @@ function DashboardEditorInner() {
                           <div className="w-8 h-1 rounded-full bg-muted-foreground/30" />
                         </div>
                       )}
-                      <WidgetRenderer widget={widget} onDelete={handleDeleteWidget} />
+                      <WidgetRenderer widget={widget} onDelete={handleDeleteWidget} onEdit={(w) => setEditingWidget({ id: w.id, type: w.type, title: w.title, config: w.config })} />
                     </div>
                   ))}
                 </ResponsiveGridLayout>
@@ -314,16 +338,22 @@ function DashboardEditorInner() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={showAddWidget} onOpenChange={setShowAddWidget}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Adicionar Widget</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Em breve — o Visual Builder será implementado na próxima versão.
-            </p>
-          </DialogContent>
-        </Dialog>
+        <VisualBuilder
+          open={showAddWidget}
+          onOpenChange={setShowAddWidget}
+          onSubmit={handleAddWidget}
+          isPending={createWidgetMut.isPending}
+          widgetCount={widgets.length}
+        />
+
+        <VisualBuilder
+          open={!!editingWidget}
+          onOpenChange={(v) => { if (!v) setEditingWidget(null); }}
+          onSubmit={handleEditWidget}
+          isPending={updateWidgetMut.isPending}
+          widgetCount={widgets.length}
+          editConfig={editingWidget}
+        />
       </motion.div>
     </EditorFilterProvider>
   );
