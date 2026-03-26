@@ -18,6 +18,11 @@ import {
 } from "recharts";
 import type { DashboardWidget } from "@/hooks/useDashboard";
 import { useEditorFilters } from "@/contexts/EditorFilterContext";
+import { DonutWidgetContent } from "@/components/widgets/DonutWidgetContent";
+import { GaugeWidgetContent } from "@/components/widgets/GaugeWidgetContent";
+import { WaterfallWidgetContent } from "@/components/widgets/WaterfallWidgetContent";
+import { TableWidgetContent } from "@/components/widgets/TableWidgetContent";
+import { KPIWidgetContent } from "@/components/widgets/KPIWidgetContent";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -44,14 +49,12 @@ const sampleData = [
   { name: "BM-06", baseline: 800, previsto: 790, projetado: 820, realizado: 760 },
 ];
 
-function ChartContent({ type }: { type: string }) {
+function BarLineAreaContent({ type }: { type: "bar" | "line" | "area" | "pie" }) {
   const { selectedPeriod, periodRange, seriesVisibility, setSelectedPeriod } = useEditorFilters();
 
   const filteredData = useMemo(() => {
     let data = sampleData;
-    if (periodRange) {
-      data = data.slice(periodRange[0], periodRange[1] + 1);
-    }
+    if (periodRange) data = data.slice(periodRange[0], periodRange[1] + 1);
     return data;
   }, [periodRange]);
 
@@ -60,129 +63,96 @@ function ChartContent({ type }: { type: string }) {
     [seriesVisibility]
   );
 
-  const handleBarClick = (data: { name?: string }) => {
-    if (data?.name) {
-      setSelectedPeriod(selectedPeriod === data.name ? null : data.name);
-    }
+  const handleClick = (data: { name?: string }) => {
+    if (data?.name) setSelectedPeriod(selectedPeriod === data.name ? null : data.name);
   };
 
   const commonProps = { data: filteredData, margin: { top: 5, right: 20, bottom: 5, left: 0 } };
   const tickStyle = { fontSize: 11, fill: "hsl(var(--muted-foreground))" };
 
+  if (type === "bar") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart {...commonProps}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="name" tick={tickStyle} />
+          <YAxis tick={tickStyle} />
+          <Tooltip />
+          {selectedPeriod && <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />}
+          {visibleSeries.map((key, i) => (
+            <Bar key={key} dataKey={key} fill={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]} radius={[3, 3, 0, 0]} opacity={selectedPeriod ? 0.6 : 1} onClick={handleClick} cursor="pointer" />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (type === "line") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart {...commonProps}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="name" tick={tickStyle} />
+          <YAxis tick={tickStyle} />
+          <Tooltip />
+          {selectedPeriod && <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />}
+          {visibleSeries.map((key, i) => (
+            <Line key={key} type="monotone" dataKey={key} stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (type === "area") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart {...commonProps}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="name" tick={tickStyle} />
+          <YAxis tick={tickStyle} />
+          <Tooltip />
+          {selectedPeriod && <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />}
+          {visibleSeries.map((key, i) => (
+            <Area key={key} type="monotone" dataKey={key} fill={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.15} stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // pie
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie data={filteredData} cx="50%" cy="50%" outerRadius="80%" dataKey={visibleSeries[0] || "baseline"} nameKey="name" paddingAngle={2}>
+          {filteredData.map((entry, i) => (
+            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={selectedPeriod && entry.name !== selectedPeriod ? 0.3 : 1} cursor="pointer" onClick={() => handleClick(entry)} />
+          ))}
+        </Pie>
+        <Tooltip />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+function ChartContent({ type }: { type: string }) {
   switch (type) {
     case "bar":
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={tickStyle} />
-            <YAxis tick={tickStyle} />
-            <Tooltip />
-            {selectedPeriod && (
-              <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />
-            )}
-            {visibleSeries.map((key, i) => (
-              <Bar
-                key={key}
-                dataKey={key}
-                fill={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
-                radius={[3, 3, 0, 0]}
-                opacity={selectedPeriod ? 0.6 : 1}
-                onClick={(d) => handleBarClick(d)}
-                cursor="pointer"
-              />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      );
     case "line":
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={tickStyle} />
-            <YAxis tick={tickStyle} />
-            <Tooltip />
-            {selectedPeriod && (
-              <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />
-            )}
-            {visibleSeries.map((key, i) => (
-              <Line
-                key={key}
-                type="monotone"
-                dataKey={key}
-                stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      );
     case "area":
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={tickStyle} />
-            <YAxis tick={tickStyle} />
-            <Tooltip />
-            {selectedPeriod && (
-              <ReferenceLine x={selectedPeriod} stroke="hsl(var(--primary))" strokeDasharray="4 4" strokeWidth={2} />
-            )}
-            {visibleSeries.map((key, i) => (
-              <Area
-                key={key}
-                type="monotone"
-                dataKey={key}
-                fill={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
-                fillOpacity={0.15}
-                stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
-                strokeWidth={2}
-              />
-            ))}
-          </AreaChart>
-        </ResponsiveContainer>
-      );
     case "pie":
+      return <BarLineAreaContent type={type} />;
     case "donut":
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={filteredData}
-              cx="50%"
-              cy="50%"
-              innerRadius={type === "donut" ? "55%" : 0}
-              outerRadius="80%"
-              dataKey={visibleSeries[0] || "baseline"}
-              nameKey="name"
-              paddingAngle={2}
-            >
-              {filteredData.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={CHART_COLORS[i % CHART_COLORS.length]}
-                  opacity={selectedPeriod && entry.name !== selectedPeriod ? 0.3 : 1}
-                  cursor="pointer"
-                  onClick={() => handleBarClick(entry)}
-                />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      );
-    case "kpi": {
-      const total = filteredData.reduce((s, d) => s + (d[visibleSeries[0] as keyof typeof d] as number ?? 0), 0);
-      return (
-        <div className="flex flex-col items-center justify-center h-full gap-1">
-          <span className="text-3xl font-bold text-foreground">{total.toLocaleString("pt-BR")}</span>
-          <span className="text-xs text-muted-foreground capitalize">{visibleSeries[0] || "baseline"}</span>
-        </div>
-      );
-    }
+      return <DonutWidgetContent />;
+    case "gauge":
+      return <GaugeWidgetContent />;
+    case "waterfall":
+      return <WaterfallWidgetContent />;
+    case "table":
+      return <TableWidgetContent />;
+    case "kpi":
+      return <KPIWidgetContent />;
     default:
       return (
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
