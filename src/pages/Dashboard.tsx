@@ -18,6 +18,7 @@ import { GaugeWidget } from "@/components/dashboard/GaugeWidget";
 import { WaterfallWidget } from "@/components/dashboard/WaterfallWidget";
 import { DataTableWidget } from "@/components/dashboard/DataTableWidget";
 import { SeriesToggle } from "@/components/dashboard/SeriesToggle";
+import { FieldPicker } from "@/components/dashboard/FieldPicker";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
