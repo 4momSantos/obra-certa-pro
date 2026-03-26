@@ -29,6 +29,5 @@ export default defineConfig(({ mode }) => ({
       "react-router-dom",
       "html-to-image",
     ],
-    force: true,
   },
 }));
