@@ -34,8 +34,8 @@ function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, progress
             )}
             {trend && (
               <div className="flex items-center gap-1 mt-0.5">
-                {trend.direction === "up" && <ArrowUpRight className="h-3 w-3 text-green-500" />}
-                {trend.direction === "down" && <ArrowDownRight className="h-3 w-3 text-red-500" />}
+                {trend.direction === "up" && <ArrowUpRight className="h-3 w-3" style={{ color: "hsl(var(--chart-3))" }} />}
+                {trend.direction === "down" && <ArrowDownRight className="h-3 w-3 text-destructive" />}
                 {trend.direction === "neutral" && <Minus className="h-3 w-3 text-muted-foreground" />}
                 <span className={`text-[10px] font-medium ${
                   trend.direction === "up" ? "text-green-500" :
