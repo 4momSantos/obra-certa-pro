@@ -14,6 +14,121 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_shares: {
+        Row: {
+          created_at: string | null
+          dashboard_id: string
+          id: string
+          permission: string
+          shared_with: string
+        }
+        Insert: {
+          created_at?: string | null
+          dashboard_id: string
+          id?: string
+          permission?: string
+          shared_with: string
+        }
+        Update: {
+          created_at?: string | null
+          dashboard_id?: string
+          id?: string
+          permission?: string
+          shared_with?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_shares_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_widgets: {
+        Row: {
+          config: Json
+          created_at: string | null
+          dashboard_id: string
+          id: string
+          position: Json
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string | null
+          dashboard_id: string
+          id?: string
+          position?: Json
+          title?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          dashboard_id?: string
+          id?: string
+          position?: Json
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          filters: Json | null
+          id: string
+          is_template: boolean | null
+          layout: Json | null
+          name: string
+          owner_id: string
+          settings: Json | null
+          thumbnail_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          is_template?: boolean | null
+          layout?: Json | null
+          name?: string
+          owner_id: string
+          settings?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          is_template?: boolean | null
+          layout?: Json | null
+          name?: string
+          owner_id?: string
+          settings?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
