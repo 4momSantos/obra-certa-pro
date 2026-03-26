@@ -114,7 +114,7 @@ function ChartContent({ type }: { type: string }) {
                 stroke={SERIES_COLORS[key] || CHART_COLORS[i % CHART_COLORS.length]}
                 strokeWidth={2}
                 dot={{ r: 3 }}
-                activeDot={{ r: 5, onClick: (_: unknown, payload: { payload?: { name?: string } }) => handleBarClick(payload?.payload ?? {}) }}
+                activeDot={{ r: 5 }}
               />
             ))}
           </LineChart>
