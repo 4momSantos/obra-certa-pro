@@ -341,16 +341,22 @@ function DashboardEditorInner() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={showAddWidget} onOpenChange={setShowAddWidget}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Adicionar Widget</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Em breve — o Visual Builder será implementado na próxima versão.
-            </p>
-          </DialogContent>
-        </Dialog>
+        <VisualBuilder
+          open={showAddWidget}
+          onOpenChange={setShowAddWidget}
+          onSubmit={handleAddWidget}
+          isPending={createWidgetMut.isPending}
+          widgetCount={widgets.length}
+        />
+
+        <VisualBuilder
+          open={!!editingWidget}
+          onOpenChange={(v) => { if (!v) setEditingWidget(null); }}
+          onSubmit={handleEditWidget}
+          isPending={updateWidgetMut.isPending}
+          widgetCount={widgets.length}
+          editConfig={editingWidget}
+        />
       </motion.div>
     </EditorFilterProvider>
   );
