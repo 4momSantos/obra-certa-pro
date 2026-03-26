@@ -35,6 +35,7 @@ const AppRoutes = () => {
     <ProtectedRoute>
       <Layout>
         <Routes>
+          <Route path="/dashboards" element={<DashboardList />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/etf" element={<ETF />} />
