@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Dashboards", url: "/dashboards", icon: LayoutDashboard },
   { title: "Cronograma", url: "/cronograma", icon: CalendarRange },
   { title: "ETF Semanal", url: "/etf", icon: Users },
   { title: "Medição", url: "/medicao", icon: FileCheck },
