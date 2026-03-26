@@ -87,6 +87,18 @@ export function EditorToolbar({
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Adicionar Widget" onClick={onAddWidget}>
             <PlusCircle className="h-4 w-4" />
           </Button>
+          {onToggleEditLayout && (
+            <Button
+              variant={isEditingLayout ? "default" : "ghost"}
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={onToggleEditLayout}
+              title={isEditingLayout ? "Travar Layout" : "Editar Layout"}
+            >
+              {isEditingLayout ? <Lock className="h-3.5 w-3.5" /> : <Move className="h-3.5 w-3.5" />}
+              {isEditingLayout ? "Travar" : "Layout"}
+            </Button>
+          )}
           <FilterPanel />
           <Button
             variant="ghost" size="sm" className="h-8 w-8 p-0" title="Tela Cheia"
