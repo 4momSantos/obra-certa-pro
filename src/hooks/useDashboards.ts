@@ -145,15 +145,31 @@ export function useCreateDashboard() {
       // If template, insert default widgets
       if (template === "financeiro") {
         const widgets = [
-          { dashboard_id: data.id, type: "kpi", title: "KPIs Financeiros", config: {}, position: { x: 0, y: 0, w: 12, h: 3 } },
-          { dashboard_id: data.id, type: "line", title: "Curva S", config: { preset: "curvaS" }, position: { x: 0, y: 3, w: 6, h: 8 } },
-          { dashboard_id: data.id, type: "waterfall", title: "Waterfall", config: { preset: "waterfall" }, position: { x: 6, y: 3, w: 6, h: 8 } },
+          { dashboard_id: data.id, type: "kpi", title: "Valor Contratual", config: { table: "periodos", valueField: "custoRealizado", format: "currency", label: "Valor Contratual", icon: "dollar" }, position: { x: 0, y: 0, w: 3, h: 2 } },
+          { dashboard_id: data.id, type: "kpi", title: "Avanço %", config: { table: "periodos", valueField: "avanco", format: "percent", label: "Avanço", icon: "trending-up" }, position: { x: 3, y: 0, w: 3, h: 2 } },
+          { dashboard_id: data.id, type: "kpi", title: "Saldo", config: { table: "periodos", valueField: "saldo", format: "currency", label: "Saldo", icon: "wallet" }, position: { x: 6, y: 0, w: 3, h: 2 } },
+          { dashboard_id: data.id, type: "kpi", title: "Último Fechamento", config: { table: "periodos", valueField: "custoRealizado", format: "currency", label: "Fechamento", icon: "calendar" }, position: { x: 9, y: 0, w: 3, h: 2 } },
+          { dashboard_id: data.id, type: "area", title: "Curva S", config: { table: "periodos", xField: "nome", yFields: ["baseline", "realizado", "projetado"] }, position: { x: 0, y: 2, w: 6, h: 5 } },
+          { dashboard_id: data.id, type: "waterfall", title: "Variação", config: { table: "periodos", xField: "nome", compareFields: ["baseline", "realizado"] }, position: { x: 6, y: 2, w: 6, h: 5 } },
+          { dashboard_id: data.id, type: "donut", title: "Distribuição", config: { table: "periodos", valueFields: ["custoRealizado", "saldo"], labels: ["Realizado", "Saldo"] }, position: { x: 0, y: 7, w: 4, h: 4 } },
         ];
         await supabase.from("dashboard_widgets").insert(widgets);
       } else if (template === "efetivo") {
         const widgets = [
-          { dashboard_id: data.id, type: "kpi", title: "KPIs ETF", config: { preset: "etf" }, position: { x: 0, y: 0, w: 12, h: 3 } },
-          { dashboard_id: data.id, type: "bar", title: "Efetivo por Período", config: { preset: "etfBar" }, position: { x: 0, y: 3, w: 12, h: 8 } },
+          { dashboard_id: data.id, type: "kpi", title: "Total Efetivo", config: { table: "etf", valueField: "total", format: "integer", label: "Total Efetivo", icon: "users" }, position: { x: 0, y: 0, w: 4, h: 2 } },
+          { dashboard_id: data.id, type: "kpi", title: "Média Semanal", config: { table: "etf", valueField: "media", format: "integer", label: "Média Semanal", icon: "bar-chart" }, position: { x: 4, y: 0, w: 4, h: 2 } },
+          { dashboard_id: data.id, type: "kpi", title: "Pico", config: { table: "etf", valueField: "pico", format: "integer", label: "Pico", icon: "arrow-up" }, position: { x: 8, y: 0, w: 4, h: 2 } },
+          { dashboard_id: data.id, type: "bar", title: "Efetivo por Semana", config: { table: "etf", xField: "semana", yFields: ["previsto", "realizado"] }, position: { x: 0, y: 2, w: 12, h: 5 } },
+          { dashboard_id: data.id, type: "table", title: "Detalhamento", config: { table: "etf", columns: ["semana", "previsto", "realizado", "variacao"], sortable: true }, position: { x: 0, y: 7, w: 12, h: 5 } },
+        ];
+        await supabase.from("dashboard_widgets").insert(widgets);
+      } else if (template === "executivo") {
+        const widgets = [
+          { dashboard_id: data.id, type: "gauge", title: "Avanço Financeiro", config: { table: "periodos", valueField: "avanco", maxField: "meta", thresholds: [50, 80] }, position: { x: 0, y: 0, w: 3, h: 3 } },
+          { dashboard_id: data.id, type: "gauge", title: "Avanço Físico", config: { table: "periodos", valueField: "fisico", maxField: "meta", thresholds: [50, 80] }, position: { x: 3, y: 0, w: 3, h: 3 } },
+          { dashboard_id: data.id, type: "kpi", title: "Valor Contratual", config: { table: "periodos", valueField: "custoRealizado", format: "currency", label: "Contrato" }, position: { x: 6, y: 0, w: 3, h: 3 } },
+          { dashboard_id: data.id, type: "kpi", title: "Saldo", config: { table: "periodos", valueField: "saldo", format: "currency", label: "Saldo" }, position: { x: 9, y: 0, w: 3, h: 3 } },
+          { dashboard_id: data.id, type: "area", title: "Curva S", config: { table: "periodos", xField: "nome", yFields: ["baseline", "realizado"] }, position: { x: 0, y: 3, w: 12, h: 5 } },
         ];
         await supabase.from("dashboard_widgets").insert(widgets);
       }

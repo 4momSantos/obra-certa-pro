@@ -44,6 +44,7 @@ function DashboardEditorInner() {
   const [showShare, setShowShare] = useState(false);
   const [editingWidget, setEditingWidget] = useState<{ id: string; type: string; title: string; config: Record<string, unknown> } | null>(null);
   const [isEditingLayout, setIsEditingLayout] = useState(false);
+  const widgetAreaRef = useRef<HTMLDivElement>(null);
 
   // Determine permission
   const permission = useMemo((): "owner" | "view" | "edit" => {
@@ -281,9 +282,10 @@ function DashboardEditorInner() {
           onToggleEditLayout={() => setIsEditingLayout(!isEditingLayout)}
           onShare={() => setShowShare(true)}
           permission={permission}
+          exportTargetRef={widgetAreaRef}
         />
 
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4" ref={widgetAreaRef}>
           {widgets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
               <LayoutDashboard className="h-16 w-16 text-muted-foreground/30" />
