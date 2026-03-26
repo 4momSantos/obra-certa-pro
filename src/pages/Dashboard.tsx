@@ -1,8 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
-import { Responsive, WidthProvider, Layout } from "react-grid-layout";
-
-const ResponsiveGrid = WidthProvider(Responsive);
-type Layouts = Record<string, Layout[]>;
+import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
+import type { Layout, LayoutItem, ResponsiveLayouts } from "react-grid-layout";
 import { motion } from "framer-motion";
 import {
   LayoutGrid, RotateCcw, Save, Lock, Unlock,
@@ -24,34 +22,38 @@ import "react-resizable/css/styles.css";
 
 const STORAGE_KEY = "dashboard-layouts";
 
-const defaultLayouts: Layouts = {
+const mkLayout = (i: string, x: number, y: number, w: number, h: number, minW?: number, minH?: number): LayoutItem => ({
+  i, x, y, w, h, ...(minW != null ? { minW } : {}), ...(minH != null ? { minH } : {}),
+});
+
+const defaultLayouts: ResponsiveLayouts = {
   lg: [
-    { i: "curvaS", x: 0, y: 0, w: 6, h: 8, minW: 4, minH: 6 },
-    { i: "periodBar", x: 6, y: 0, w: 6, h: 8, minW: 4, minH: 6 },
-    { i: "donut", x: 0, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-    { i: "gauge", x: 4, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-    { i: "waterfall", x: 8, y: 8, w: 4, h: 8, minW: 4, minH: 6 },
-    { i: "table", x: 0, y: 16, w: 12, h: 9, minW: 6, minH: 6 },
+    mkLayout("curvaS", 0, 0, 6, 8, 4, 6),
+    mkLayout("periodBar", 6, 0, 6, 8, 4, 6),
+    mkLayout("donut", 0, 8, 4, 8, 3, 6),
+    mkLayout("gauge", 4, 8, 4, 8, 3, 6),
+    mkLayout("waterfall", 8, 8, 4, 8, 4, 6),
+    mkLayout("table", 0, 16, 12, 9, 6, 6),
   ],
   md: [
-    { i: "curvaS", x: 0, y: 0, w: 6, h: 8, minW: 4, minH: 6 },
-    { i: "periodBar", x: 6, y: 0, w: 6, h: 8, minW: 4, minH: 6 },
-    { i: "donut", x: 0, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-    { i: "gauge", x: 4, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-    { i: "waterfall", x: 8, y: 8, w: 4, h: 8, minW: 4, minH: 6 },
-    { i: "table", x: 0, y: 16, w: 12, h: 9, minW: 6, minH: 6 },
+    mkLayout("curvaS", 0, 0, 6, 8, 4, 6),
+    mkLayout("periodBar", 6, 0, 6, 8, 4, 6),
+    mkLayout("donut", 0, 8, 4, 8, 3, 6),
+    mkLayout("gauge", 4, 8, 4, 8, 3, 6),
+    mkLayout("waterfall", 8, 8, 4, 8, 4, 6),
+    mkLayout("table", 0, 16, 12, 9, 6, 6),
   ],
   sm: [
-    { i: "curvaS", x: 0, y: 0, w: 6, h: 7 },
-    { i: "periodBar", x: 0, y: 7, w: 6, h: 7 },
-    { i: "donut", x: 0, y: 14, w: 3, h: 7 },
-    { i: "gauge", x: 3, y: 14, w: 3, h: 7 },
-    { i: "waterfall", x: 0, y: 21, w: 6, h: 7 },
-    { i: "table", x: 0, y: 28, w: 6, h: 9 },
+    mkLayout("curvaS", 0, 0, 6, 7),
+    mkLayout("periodBar", 0, 7, 6, 7),
+    mkLayout("donut", 0, 14, 3, 7),
+    mkLayout("gauge", 3, 14, 3, 7),
+    mkLayout("waterfall", 0, 21, 6, 7),
+    mkLayout("table", 0, 28, 6, 9),
   ],
 };
 
-function loadLayouts(): Layouts {
+function loadLayouts(): ResponsiveLayouts {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved);
@@ -70,12 +72,11 @@ const widgetComponents: Record<string, React.FC> = {
 
 function DashboardContent() {
   const { state } = useCronograma();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const width = useContainerWidth(containerRef);
-  const [layouts, setLayouts] = useState<Layouts>(loadLayouts);
+  const { width, mounted, containerRef } = useContainerWidth();
+  const [layouts, setLayouts] = useState<ResponsiveLayouts>(loadLayouts);
   const [isLocked, setIsLocked] = useState(true);
 
-  const handleLayoutChange = useCallback((_: Layout[], allLayouts: Layouts) => {
+  const handleLayoutChange = useCallback((_: Layout, allLayouts: ResponsiveLayouts) => {
     setLayouts(allLayouts);
   }, []);
 
@@ -140,7 +141,7 @@ function DashboardContent() {
 
       {/* Draggable Grid */}
       <div ref={containerRef}>
-        {width > 0 && (
+        {mounted && width > 0 && (
           <ResponsiveGridLayout
             className="layout"
             width={width}
