@@ -38,9 +38,9 @@ function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, progress
                 {trend.direction === "down" && <ArrowDownRight className="h-3 w-3 text-destructive" />}
                 {trend.direction === "neutral" && <Minus className="h-3 w-3 text-muted-foreground" />}
                 <span className={`text-[10px] font-medium ${
-                  trend.direction === "up" ? "text-green-500" :
-                  trend.direction === "down" ? "text-red-500" : "text-muted-foreground"
-                }`}>
+                  trend.direction === "up" ? "" :
+                  trend.direction === "down" ? "text-destructive" : "text-muted-foreground"
+                }`} style={trend.direction === "up" ? { color: "hsl(var(--chart-3))" } : undefined}>
                   {trend.value}
                 </span>
               </div>
