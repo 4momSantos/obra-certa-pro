@@ -17,10 +17,11 @@ import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { WidgetRenderer } from "@/components/editor/WidgetRenderer";
 import { useDashboard, useDeleteWidget } from "@/hooks/useDashboard";
 import { useUpdateDashboard, useDeleteDashboard, useDuplicateDashboard } from "@/hooks/useDashboards";
+import { EditorFilterProvider, type EditorFilterState } from "@/contexts/EditorFilterContext";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export default function DashboardEditor() {
+function DashboardEditorInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: dashboard, isLoading, isError } = useDashboard(id);
@@ -35,7 +36,6 @@ export default function DashboardEditor() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Auto-save helper
   const autoSave = useCallback(
     (updates: Record<string, unknown>) => {
       if (!id) return;
@@ -74,6 +74,11 @@ export default function DashboardEditor() {
     [autoSave]
   );
 
+  const handleFiltersChange = useCallback(
+    (filters: EditorFilterState) => autoSave({ filters }),
+    [autoSave]
+  );
+
   const handleDeleteWidget = useCallback(
     (widgetId: string) => {
       if (!id) return;
@@ -96,7 +101,6 @@ export default function DashboardEditor() {
     });
   }, [id, duplicateMut, navigate]);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -110,7 +114,6 @@ export default function DashboardEditor() {
     );
   }
 
-  // Not found
   if (isError || !dashboard) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -124,94 +127,95 @@ export default function DashboardEditor() {
   }
 
   const widgets = dashboard.widgets;
+  const savedFilters = dashboard.filters as Partial<EditorFilterState> | undefined;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="flex flex-col min-h-[calc(100vh-64px)]"
-    >
-      <EditorToolbar
-        dashboardId={dashboard.id}
-        name={dashboard.name}
-        saveStatus={saveStatus}
-        onNameChange={handleNameChange}
-        onAddWidget={() => setShowAddWidget(true)}
-        onDuplicate={handleDuplicate}
-        onDelete={() => setShowDeleteDash(true)}
-      />
+    <EditorFilterProvider initialFilters={savedFilters} onFiltersChange={handleFiltersChange}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col min-h-[calc(100vh-64px)]"
+      >
+        <EditorToolbar
+          dashboardId={dashboard.id}
+          name={dashboard.name}
+          saveStatus={saveStatus}
+          onNameChange={handleNameChange}
+          onAddWidget={() => setShowAddWidget(true)}
+          onDuplicate={handleDuplicate}
+          onDelete={() => setShowDeleteDash(true)}
+        />
 
-      {/* Widget Grid */}
-      <div className="flex-1 p-4">
-        {widgets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-            <LayoutDashboard className="h-16 w-16 text-muted-foreground/30" />
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Dashboard vazio</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Adicione seu primeiro widget para começar
-              </p>
-            </div>
-            <Button className="gap-1.5" onClick={() => setShowAddWidget(true)}>
-              <PlusCircle className="h-4 w-4" /> Adicionar Widget
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {widgets.map((widget) => (
-              <div
-                key={widget.id}
-                className={
-                  widget.position.w >= 8
-                    ? "lg:col-span-3 md:col-span-2"
-                    : widget.position.w >= 6
-                    ? "lg:col-span-2 md:col-span-2"
-                    : ""
-                }
-              >
-                <WidgetRenderer
-                  widget={widget}
-                  onDelete={handleDeleteWidget}
-                />
+        <div className="flex-1 p-4">
+          {widgets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+              <LayoutDashboard className="h-16 w-16 text-muted-foreground/30" />
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Dashboard vazio</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Adicione seu primeiro widget para começar
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <Button className="gap-1.5" onClick={() => setShowAddWidget(true)}>
+                <PlusCircle className="h-4 w-4" /> Adicionar Widget
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {widgets.map((widget) => (
+                <div
+                  key={widget.id}
+                  className={
+                    widget.position.w >= 8
+                      ? "lg:col-span-3 md:col-span-2"
+                      : widget.position.w >= 6
+                      ? "lg:col-span-2 md:col-span-2"
+                      : ""
+                  }
+                >
+                  <WidgetRenderer widget={widget} onDelete={handleDeleteWidget} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* Delete Dashboard Dialog */}
-      <AlertDialog open={showDeleteDash} onOpenChange={setShowDeleteDash}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir dashboard</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza? O dashboard "{dashboard.name}" e todos os seus widgets serão excluídos permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDeleteDashboard}
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={showDeleteDash} onOpenChange={setShowDeleteDash}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir dashboard</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza? O dashboard "{dashboard.name}" e todos os seus widgets serão excluídos permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={handleDeleteDashboard}
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      {/* Add Widget placeholder */}
-      <Dialog open={showAddWidget} onOpenChange={setShowAddWidget}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Adicionar Widget</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            Em breve — o Visual Builder será implementado na próxima versão.
-          </p>
-        </DialogContent>
-      </Dialog>
-    </motion.div>
+        <Dialog open={showAddWidget} onOpenChange={setShowAddWidget}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Adicionar Widget</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              Em breve — o Visual Builder será implementado na próxima versão.
+            </p>
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+    </EditorFilterProvider>
   );
+}
+
+export default function DashboardEditor() {
+  return <DashboardEditorInner />;
 }
