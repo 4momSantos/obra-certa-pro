@@ -22,6 +22,8 @@ interface Props {
   onAddWidget: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  isEditingLayout?: boolean;
+  onToggleEditLayout?: () => void;
 }
 
 export function EditorToolbar({
