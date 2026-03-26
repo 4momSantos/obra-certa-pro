@@ -38,6 +38,8 @@ const AppRoutes = () => {
       <Layout>
         <Routes>
           <Route path="/dashboards" element={<DashboardList />} />
+          <Route path="/dashboards/:id" element={<DashboardEditor />} />
+          <Route path="/dashboards/:id/view" element={<DashboardView />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/etf" element={<ETF />} />
