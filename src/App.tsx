@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "@/pages/Dashboard";
+import DashboardList from "@/pages/DashboardList";
 import LandingPage from "@/pages/LandingPage";
 import Auth from "@/pages/Auth";
 import AdminUsers from "@/pages/AdminUsers";
