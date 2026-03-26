@@ -1,11 +1,14 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { ResponsiveGridLayout, useContainerWidth, verticalCompactor } from "react-grid-layout";
 import type { Layout, LayoutItem, ResponsiveLayouts } from "react-grid-layout";
 import { motion } from "framer-motion";
 import {
-  LayoutGrid, RotateCcw, Save, Lock, Unlock,
+  LayoutGrid, RotateCcw, Save, Lock, Unlock, Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useCronograma } from "@/contexts/CronogramaContext";
 import { DashboardFilterProvider } from "@/contexts/DashboardFilterContext";
@@ -22,6 +25,7 @@ import { FieldPicker } from "@/components/dashboard/FieldPicker";
 import { FormulaBar } from "@/components/dashboard/FormulaBar";
 import { VisualBuilder } from "@/components/dashboard/VisualBuilder";
 import { CustomWidget } from "@/components/dashboard/CustomWidget";
+import { DashboardExport } from "@/components/dashboard/DashboardExport";
 import { loadCustomWidgets, saveCustomWidgets, type CustomWidgetConfig } from "@/lib/custom-widgets";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -54,10 +58,10 @@ const defaultNativeLayouts = {
   sm: [
     mkLayout("curvaS", 0, 0, 6, 7),
     mkLayout("periodBar", 0, 7, 6, 7),
-    mkLayout("donut", 0, 14, 3, 7),
-    mkLayout("gauge", 3, 14, 3, 7),
-    mkLayout("waterfall", 0, 21, 6, 7),
-    mkLayout("table", 0, 28, 6, 9),
+    mkLayout("donut", 0, 14, 6, 7),
+    mkLayout("gauge", 0, 21, 6, 7),
+    mkLayout("waterfall", 0, 28, 6, 7),
+    mkLayout("table", 0, 35, 6, 9),
   ],
 };
 
@@ -81,6 +85,7 @@ const nativeWidgets: Record<string, React.FC> = {
 function DashboardContent() {
   const { state } = useCronograma();
   const { width, mounted, containerRef } = useContainerWidth();
+  const dashboardRef = useRef<HTMLDivElement>(null);
   const [layouts, setLayouts] = useState<ResponsiveLayouts>(loadLayouts);
   const [isLocked, setIsLocked] = useState(true);
   const [customWidgets, setCustomWidgets] = useState<CustomWidgetConfig[]>(loadCustomWidgets);
@@ -107,7 +112,6 @@ function DashboardContent() {
       saveCustomWidgets(next);
       return next;
     });
-    // Add layout entry for new widget — place at bottom
     setLayouts((prev) => {
       const newItem = mkLayout(config.id, 0, 100, 6, 8, 3, 6);
       const updated: ResponsiveLayouts = {};
@@ -156,13 +160,14 @@ function DashboardContent() {
 
   return (
     <motion.div
+      ref={dashboardRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
       className="space-y-4"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" data-export-hide>
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <LayoutGrid className="h-6 w-6 text-accent" />
@@ -172,7 +177,10 @@ function DashboardContent() {
             Cronograma Financeiro — {state.projectName}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Desktop toolbar */}
+        <div className="hidden sm:flex items-center gap-2 flex-wrap">
+          <DashboardExport targetRef={dashboardRef} />
           <FieldPicker />
           <VisualBuilder customCount={customWidgets.length} onAdd={handleAddCustomWidget} />
           <Button
@@ -195,14 +203,55 @@ function DashboardContent() {
             </>
           )}
         </div>
+
+        {/* Mobile toolbar — hamburger menu */}
+        <div className="flex sm:hidden items-center gap-2">
+          <DashboardExport targetRef={dashboardRef} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <div><FieldPicker /></div>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <div><VisualBuilder customCount={customWidgets.length} onAdd={handleAddCustomWidget} /></div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setIsLocked(!isLocked)}>
+                {isLocked ? <Lock className="h-3 w-3 mr-2" /> : <Unlock className="h-3 w-3 mr-2" />}
+                {isLocked ? "Editar Layout" : "Travar Layout"}
+              </DropdownMenuItem>
+              {!isLocked && (
+                <>
+                  <DropdownMenuItem onClick={handleSaveLayout}>
+                    <Save className="h-3 w-3 mr-2" /> Salvar Layout
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleResetLayout}>
+                    <RotateCcw className="h-3 w-3 mr-2" /> Resetar Layout
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Formula Bar */}
-      <FormulaBar />
+      <div data-export-hide>
+        <FormulaBar />
+      </div>
 
       {/* Slicers + Series Toggle */}
-      <DashboardSlicers />
-      <SeriesToggle />
+      <div data-export-hide>
+        <DashboardSlicers />
+      </div>
+      <div data-export-hide>
+        <SeriesToggle />
+      </div>
 
       {/* KPI Cards */}
       <KPICards />
