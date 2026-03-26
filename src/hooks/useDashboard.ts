@@ -79,6 +79,7 @@ export function useDashboardWidgets(dashboardId: string | undefined) {
   return useQuery({
     queryKey: [WIDGETS_KEY, dashboardId],
     enabled: !!dashboardId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<DashboardWidget[]> => {
       if (!dashboardId) return [];
 
