@@ -279,6 +279,8 @@ function DashboardEditorInner() {
           onDelete={() => setShowDeleteDash(true)}
           isEditingLayout={isEditingLayout}
           onToggleEditLayout={() => setIsEditingLayout(!isEditingLayout)}
+          onShare={() => setShowShare(true)}
+          permission={permission}
         />
 
         <div className="flex-1 p-4">
@@ -366,6 +368,16 @@ function DashboardEditorInner() {
           widgetCount={widgets.length}
           editConfig={editingWidget}
         />
+
+        {isOwner && dashboard && (
+          <ShareDialog
+            open={showShare}
+            onOpenChange={setShowShare}
+            dashboardId={dashboard.id}
+            dashboardName={dashboard.name}
+            ownerId={dashboard.owner_id}
+          />
+        )}
       </motion.div>
     </EditorFilterProvider>
   );
