@@ -15,10 +15,11 @@ import { toast } from "sonner";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { WidgetRenderer } from "@/components/editor/WidgetRenderer";
 import { VisualBuilder, type VisualBuilderResult } from "@/components/editor/VisualBuilder";
+import { ShareDialog } from "@/components/editor/ShareDialog";
 import { useDashboard, useDeleteWidget, useBatchUpdateWidgetPositions, useCreateWidget, useUpdateWidget } from "@/hooks/useDashboard";
 import { useUpdateDashboard, useDeleteDashboard, useDuplicateDashboard } from "@/hooks/useDashboards";
 import { EditorFilterProvider, type EditorFilterState } from "@/contexts/EditorFilterContext";
-import type { Json } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -27,6 +28,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 function DashboardEditorInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: dashboard, isLoading, isError } = useDashboard(id);
   const updateMut = useUpdateDashboard();
   const deleteDashMut = useDeleteDashboard();
@@ -39,8 +41,18 @@ function DashboardEditorInner() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showDeleteDash, setShowDeleteDash] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [editingWidget, setEditingWidget] = useState<{ id: string; type: string; title: string; config: Record<string, unknown> } | null>(null);
   const [isEditingLayout, setIsEditingLayout] = useState(false);
+
+  // Determine permission
+  const permission = useMemo((): "owner" | "view" | "edit" => {
+    if (!dashboard || !user) return "view";
+    if (dashboard.owner_id === user.id) return "owner";
+    return "view";
+  }, [dashboard, user]);
+  const isOwner = permission === "owner";
+  const canEdit = isOwner || permission === "edit";
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const positionDebounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -267,6 +279,8 @@ function DashboardEditorInner() {
           onDelete={() => setShowDeleteDash(true)}
           isEditingLayout={isEditingLayout}
           onToggleEditLayout={() => setIsEditingLayout(!isEditingLayout)}
+          onShare={() => setShowShare(true)}
+          permission={permission}
         />
 
         <div className="flex-1 p-4">
@@ -354,6 +368,16 @@ function DashboardEditorInner() {
           widgetCount={widgets.length}
           editConfig={editingWidget}
         />
+
+        {isOwner && dashboard && (
+          <ShareDialog
+            open={showShare}
+            onOpenChange={setShowShare}
+            dashboardId={dashboard.id}
+            dashboardName={dashboard.name}
+            ownerId={dashboard.owner_id}
+          />
+        )}
       </motion.div>
     </EditorFilterProvider>
   );
