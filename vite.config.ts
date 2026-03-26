@@ -20,6 +20,14 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react/jsx-runtime", "html-to-image"],
+    include: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react-dom/client",
+      "@tanstack/react-query",
+      "react-router-dom",
+      "html-to-image",
+    ],
   },
 }));
