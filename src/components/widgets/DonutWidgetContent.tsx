@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -68,3 +68,5 @@ export function DonutWidgetContent() {
     </ResponsiveContainer>
   );
 }
+
+export default memo(DonutWidgetContent);

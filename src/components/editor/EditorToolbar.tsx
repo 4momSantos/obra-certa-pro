@@ -1,9 +1,10 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, PlusCircle, Maximize, Share2, Move,
-  MoreHorizontal, Copy, Download, Trash2, Check, Loader2, Lock, Eye, Edit3,
+  MoreHorizontal, Copy, Download, Trash2, Check, Loader2, Lock, Eye, Edit3, Image,
 } from "lucide-react";
+import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +15,7 @@ import { FilterPanel } from "@/components/editor/FilterPanel";
 import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface Props {
   dashboardId: string;
@@ -27,15 +29,42 @@ interface Props {
   onToggleEditLayout?: () => void;
   onShare?: () => void;
   permission?: "owner" | "view" | "edit";
+  exportTargetRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function EditorToolbar({
   dashboardId, name, saveStatus, onNameChange, onAddWidget, onDuplicate, onDelete,
-  isEditingLayout, onToggleEditLayout, onShare, permission = "owner",
+  isEditingLayout, onToggleEditLayout, onShare, permission = "owner", exportTargetRef,
 }: Props) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [editingName, setEditingName] = useState(name);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPNG = useCallback(async () => {
+    if (!exportTargetRef?.current) return;
+    setExporting(true);
+    try {
+      const hideEls = exportTargetRef.current.querySelectorAll("[data-export-hide]");
+      hideEls.forEach((el) => (el as HTMLElement).style.display = "none");
+      const dataUrl = await toPng(exportTargetRef.current, {
+        backgroundColor: "hsl(220, 20%, 97%)",
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+      hideEls.forEach((el) => (el as HTMLElement).style.display = "");
+      const link = document.createElement("a");
+      link.download = `${name || "dashboard"}-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Dashboard exportado como PNG");
+    } catch {
+      toast.error("Falha ao exportar dashboard");
+      exportTargetRef.current?.querySelectorAll("[data-export-hide]").forEach((el) => (el as HTMLElement).style.display = "");
+    } finally {
+      setExporting(false);
+    }
+  }, [exportTargetRef, name]);
 
   const isOwner = permission === "owner";
   const canEdit = isOwner || permission === "edit";
@@ -147,8 +176,9 @@ export function EditorToolbar({
             <DropdownMenuItem onClick={onDuplicate}>
               <Copy className="h-3.5 w-3.5 mr-2" /> {isOwner ? "Duplicar" : "Duplicar para Mim"}
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <Download className="h-3.5 w-3.5 mr-2" /> Exportar
+            <DropdownMenuItem onClick={handleExportPNG} disabled={exporting}>
+              {exporting ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Image className="h-3.5 w-3.5 mr-2" />}
+              {exporting ? "Exportando..." : "Exportar PNG"}
             </DropdownMenuItem>
             {isOwner && (
               <>

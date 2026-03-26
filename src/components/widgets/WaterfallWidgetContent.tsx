@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -66,3 +66,5 @@ export function WaterfallWidgetContent() {
     </ResponsiveContainer>
   );
 }
+
+export default memo(WaterfallWidgetContent);

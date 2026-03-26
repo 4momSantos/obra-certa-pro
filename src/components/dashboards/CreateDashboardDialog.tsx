@@ -58,8 +58,9 @@ export function CreateDashboardDialog({ isPending, onCreate }: Props) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="blank">Em branco</SelectItem>
-                <SelectItem value="financeiro">Financeiro — KPIs + Curva S + Waterfall</SelectItem>
-                <SelectItem value="efetivo">Efetivo — KPIs ETF + Gráfico de barras</SelectItem>
+                <SelectItem value="financeiro">Financeiro — KPIs + Curva S + Donut + Waterfall</SelectItem>
+                <SelectItem value="efetivo">Efetivo — KPIs + Barras + Tabela</SelectItem>
+                <SelectItem value="executivo">Executivo — Gauges + KPIs + Curva S</SelectItem>
               </SelectContent>
             </Select>
           </div>
