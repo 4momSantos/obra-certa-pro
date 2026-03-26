@@ -15,10 +15,11 @@ import { toast } from "sonner";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { WidgetRenderer } from "@/components/editor/WidgetRenderer";
 import { VisualBuilder, type VisualBuilderResult } from "@/components/editor/VisualBuilder";
+import { ShareDialog } from "@/components/editor/ShareDialog";
 import { useDashboard, useDeleteWidget, useBatchUpdateWidgetPositions, useCreateWidget, useUpdateWidget } from "@/hooks/useDashboard";
 import { useUpdateDashboard, useDeleteDashboard, useDuplicateDashboard } from "@/hooks/useDashboards";
 import { EditorFilterProvider, type EditorFilterState } from "@/contexts/EditorFilterContext";
-import type { Json } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
