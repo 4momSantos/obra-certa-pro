@@ -28,6 +28,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 function DashboardEditorInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: dashboard, isLoading, isError } = useDashboard(id);
   const updateMut = useUpdateDashboard();
   const deleteDashMut = useDeleteDashboard();
@@ -40,8 +41,19 @@ function DashboardEditorInner() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showDeleteDash, setShowDeleteDash] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [editingWidget, setEditingWidget] = useState<{ id: string; type: string; title: string; config: Record<string, unknown> } | null>(null);
   const [isEditingLayout, setIsEditingLayout] = useState(false);
+
+  // Determine permission
+  const permission: "owner" | "view" | "edit" = useMemo(() => {
+    if (!dashboard || !user) return "view";
+    if (dashboard.owner_id === user.id) return "owner";
+    // Will be determined by the shares query in useDashboards
+    return "view"; // TODO: could be enhanced with a share lookup
+  }, [dashboard, user]);
+  const isOwner = permission === "owner";
+  const canEdit = isOwner || permission === "edit";
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const positionDebounceRef = useRef<ReturnType<typeof setTimeout>>();
