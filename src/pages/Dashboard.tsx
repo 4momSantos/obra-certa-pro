@@ -6,6 +6,7 @@ import {
   LayoutGrid, RotateCcw, Save, Lock, Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useCronograma } from "@/contexts/CronogramaContext";
 import { DashboardFilterProvider } from "@/contexts/DashboardFilterContext";
 import { DashboardSlicers } from "@/components/dashboard/DashboardSlicers";
