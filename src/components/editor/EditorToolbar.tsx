@@ -28,6 +28,7 @@ interface Props {
 
 export function EditorToolbar({
   dashboardId, name, saveStatus, onNameChange, onAddWidget, onDuplicate, onDelete,
+  isEditingLayout, onToggleEditLayout,
 }: Props) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
