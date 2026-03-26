@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useEditorFilters } from "@/contexts/EditorFilterContext";
@@ -74,3 +74,5 @@ export function KPIWidgetContent() {
     </div>
   );
 }
+
+export default memo(KPIWidgetContent);
