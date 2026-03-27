@@ -24,6 +24,7 @@ import Ajuste from "@/pages/Ajuste";
 import Config from "@/pages/Config";
 import ImportData from "@/pages/ImportData";
 import GitecPipeline from "@/pages/GitecPipeline";
+import DocumentsPage from "@/pages/DocumentsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const AppRoutes = () => {
           <Route path="/tubulacao" element={<Tubulacao />} />
           <Route path="/import" element={<ImportData />} />
           <Route path="/gitec" element={<GitecPipeline />} />
+          <Route path="/documentos" element={<DocumentsPage />} />
           <Route path="/ajuste" element={<Ajuste />} />
           <Route path="/config" element={<Config />} />
           <Route
