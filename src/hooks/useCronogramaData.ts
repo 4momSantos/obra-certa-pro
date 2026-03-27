@@ -130,7 +130,7 @@ export function useUltimoBm() {
         .select("ultimo_bm")
         .single();
       if (error) throw error;
-      return data?.ultimo_bm || 0;
+      return (data as any)?.ultimo_bm || 0;
     },
   });
 }
