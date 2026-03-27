@@ -24,6 +24,7 @@ import Ajuste from "@/pages/Ajuste";
 import Config from "@/pages/Config";
 import ImportData from "@/pages/ImportData";
 import GitecPipeline from "@/pages/GitecPipeline";
+import DocumentsPage from "@/pages/DocumentsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
