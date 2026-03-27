@@ -6,56 +6,7 @@ import * as XLSX from "xlsx";
 
 const BATCHES_KEY = "import-batches";
 
-// ── Types ──
-
-export interface ParsedGitecRow {
-  agrupamento: string;
-  ippu: string | null;
-  tag: string;
-  etapa: string;
-  status: string;
-  valor: number;
-  data_execucao: string | null;
-  data_inf_execucao: string | null;
-  data_aprovacao: string | null;
-  executado_por: string;
-  fiscal: string;
-  evidencias: string;
-  comentario: string;
-}
-
-export interface ParsedDocumentRow {
-  documento: string;
-  revisao: string;
-  incluido_em: string;
-  titulo: string;
-  status: string;
-  nivel2: string;
-  nivel3: string;
-  tipo: string;
-  status_workflow: string;
-  dias_corridos_wf: number;
-}
-
-export interface ParsedRevisionRow {
-  documento: string;
-  revisao: string;
-  modificado_em: string;
-  titulo: string;
-  status: string;
-  nivel2: string;
-  texto_consolidacao: string;
-  proposito_emissao: string;
-}
-
-export interface ParseResult {
-  gitec: ParsedGitecRow[];
-  documents: ParsedDocumentRow[];
-  revisions: ParsedRevisionRow[];
-  warnings: string[];
-}
-
-// ── Parsers ──
+// ── Helpers ──
 
 function str(v: unknown): string {
   if (v == null) return "";
@@ -64,11 +15,12 @@ function str(v: unknown): string {
 
 function num(v: unknown): number {
   if (v == null) return 0;
-  const n = Number(v);
+  const s = String(v).replace(",", ".");
+  const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
 
-function dateStr(v: unknown): string | null {
+function dateVal(v: unknown): string | null {
   if (v == null || v === "") return null;
   if (v instanceof Date) return v.toISOString().slice(0, 10);
   if (typeof v === "number") {
@@ -77,28 +29,83 @@ function dateStr(v: unknown): string | null {
   }
   const s = String(v).trim();
   if (!s) return null;
-  // Try DD/MM/YYYY
-  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   return s.slice(0, 10);
 }
 
-const IPPU_RE = /^([A-Z])_(\d+(?:\.\d+)*)/;
+// ── Types ──
 
-function extractIppu(agrupamento: string): string | null {
-  const m = agrupamento.match(IPPU_RE);
-  return m ? `${m[1]}-${m[2]}` : null;
+export interface ParsedSigemRow {
+  documento: string;
+  revisao: string;
+  incluido_em: string;
+  titulo: string;
+  status: string;
+  up: string;
+  status_correto: string;
+  ppu: string;
+  status_gitec: string;
+  documento_revisao: string;
 }
 
-function findCol(headers: string[], ...candidates: string[]): number {
-  for (const c of candidates) {
-    const idx = headers.findIndex(h => h.toLowerCase().includes(c.toLowerCase()));
-    if (idx >= 0) return idx;
-  }
-  return -1;
+export interface ParsedRelEventoRow {
+  item_ppu: string;
+  rel_status: string;
+  rel_status_item: string;
+  tag_agrup: string;
+  quantidade_ponderada: number;
+  estrutura: string;
+  fase: string;
+  subfase: string;
+  agrupamento: string;
+  caracteristica: string;
+  tag: string;
+  qtd: number;
+  um: string;
+  etapa: string;
+  peso_fisico: number;
+  peso_financeiro: number;
+  data_execucao: string | null;
+  data_inf_execucao: string | null;
+  executado_por: string;
+  necessita_evidencias: string;
+  numero_evidencias: string;
+  data_aprovacao: string | null;
+  fiscal_responsavel: string;
+  status: string;
+  valor: number;
+  comentario: string;
 }
 
-export function parseGitecFile(file: File): Promise<{ rows: ParsedGitecRow[]; warnings: string[] }> {
+export interface ParsedSconRow {
+  item_criterio: string;
+  relatorio_esperado: string;
+  status_sigem: string;
+  status_gitec: string;
+  obra_desc: string;
+  classe: string;
+  disciplina: string;
+  tipo: string;
+  item_wbs: string;
+  tag: string;
+  tag_desc: string;
+  qtde_etapa: number;
+  qtde_etapa_exec_acum: number;
+  avanco_ponderado: number;
+  tag_id_proj: string;
+}
+
+export interface ParseResult {
+  sigem: ParsedSigemRow[];
+  relEvento: ParsedRelEventoRow[];
+  scon: ParsedSconRow[];
+  warnings: string[];
+}
+
+// ── Parsers ──
+
+export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; warnings: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -107,171 +114,138 @@ export function parseGitecFile(file: File): Promise<{ rows: ParsedGitecRow[]; wa
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
         const warnings: string[] = [];
+        const headers = (raw[0] || []).map(h => str(h).toLowerCase());
 
-        const headers = (raw[0] || []).map(h => str(h));
-        const col = {
-          agrupamento: findCol(headers, "agrupamento"),
-          tag: findCol(headers, "tag"),
-          etapa: findCol(headers, "etapa"),
-          status: findCol(headers, "status"),
-          valor: findCol(headers, "valor"),
-          dataExec: findCol(headers, "data de execu", "data_execucao"),
-          dataInf: findCol(headers, "data inf", "data_inf_execucao"),
-          dataAprov: findCol(headers, "data de aprova", "data_aprovacao"),
-          executado: findCol(headers, "executado"),
-          fiscal: findCol(headers, "fiscal"),
-          evidencias: findCol(headers, "evid", "número evid"),
-          comentario: findCol(headers, "coment"),
-        };
+        const hasStatusCorreto = headers.some(h => h.includes("status correto") || h.includes("status_correto"));
+        const hasPpu = headers.some(h => h === "ppu");
+        if (!hasStatusCorreto) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
+        if (!hasPpu) warnings.push("Coluna PPU não encontrada");
 
-        const missing = Object.entries(col).filter(([, v]) => v < 0).map(([k]) => k);
-        if (missing.length > 0) warnings.push(`Colunas não encontradas: ${missing.join(", ")}`);
-
-        let noAgrup = 0, noStatus = 0;
-        const rows: ParsedGitecRow[] = [];
+        let noDoc = 0;
+        const rows: ParsedSigemRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const agrupamento = col.agrupamento >= 0 ? str(r[col.agrupamento]) : "";
-          const tag = col.tag >= 0 ? str(r[col.tag]) : "";
-          const status = col.status >= 0 ? str(r[col.status]) : "";
-          if (!agrupamento && !tag && !status) continue;
-          if (!agrupamento) noAgrup++;
-          if (!status) noStatus++;
+          const documento = str(r[0]);
+          if (!documento) { noDoc++; continue; }
+          const status = str(r[4]);
           rows.push({
-            agrupamento,
-            ippu: extractIppu(agrupamento),
-            tag,
-            etapa: col.etapa >= 0 ? str(r[col.etapa]) : "",
+            documento,
+            revisao: str(r[1]),
+            incluido_em: str(r[2]),
+            titulo: str(r[3]),
             status,
-            valor: col.valor >= 0 ? num(r[col.valor]) : 0,
-            data_execucao: col.dataExec >= 0 ? dateStr(r[col.dataExec]) : null,
-            data_inf_execucao: col.dataInf >= 0 ? dateStr(r[col.dataInf]) : null,
-            data_aprovacao: col.dataAprov >= 0 ? dateStr(r[col.dataAprov]) : null,
-            executado_por: col.executado >= 0 ? str(r[col.executado]) : "",
-            fiscal: col.fiscal >= 0 ? str(r[col.fiscal]) : "",
-            evidencias: col.evidencias >= 0 ? str(r[col.evidencias]) : "",
-            comentario: col.comentario >= 0 ? str(r[col.comentario]) : "",
+            up: str(r[5]),
+            status_correto: hasStatusCorreto ? str(r[15]) || status : status,
+            ppu: hasPpu ? str(r[16]) : "",
+            status_gitec: str(r[17]),
+            documento_revisao: str(r[18]),
           });
         }
-        if (noAgrup > 0) warnings.push(`${noAgrup} linhas sem Agrupamento`);
-        if (noStatus > 0) warnings.push(`${noStatus} linhas sem Status`);
+        if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
         resolve({ rows, warnings });
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
 }
 
-export function parseDocumentsFile(file: File): Promise<{ rows: ParsedDocumentRow[]; warnings: string[] }> {
+export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoRow[]; warnings: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
+        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 2, defval: "" });
         const warnings: string[] = [];
 
-        const headers = (raw[0] || []).map(h => str(h));
-        const col = {
-          documento: findCol(headers, "documento"),
-          revisao: findCol(headers, "revis"),
-          incluido: findCol(headers, "incluido", "incluído"),
-          titulo: findCol(headers, "titulo", "título"),
-          status: findCol(headers, "status"),
-          nivel2: findCol(headers, "nível 2", "nivel 2", "2 nível", "2 nivel"),
-          nivel3: findCol(headers, "nível 3", "nivel 3", "3 nível", "3 nivel"),
-          tipo: findCol(headers, "tipo"),
-          statusWf: findCol(headers, "workflow", "status workflow"),
-          diasWf: findCol(headers, "dias corridos", "dias"),
-        };
-
-        const missing = Object.entries(col).filter(([, v]) => v < 0).map(([k]) => k);
-        if (missing.length > 0) warnings.push(`Colunas não encontradas: ${missing.join(", ")}`);
-
-        let noDoc = 0;
-        const rows: ParsedDocumentRow[] = [];
+        let noKey = 0;
+        const rows: ParsedRelEventoRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const documento = col.documento >= 0 ? str(r[col.documento]) : "";
-          if (!documento) { noDoc++; continue; }
+          const item_ppu = str(r[0]);
+          const tag = str(r[10]);
+          if (!item_ppu && !tag) { noKey++; continue; }
           rows.push({
-            documento,
-            revisao: col.revisao >= 0 ? str(r[col.revisao]) : "",
-            incluido_em: col.incluido >= 0 ? str(r[col.incluido]) : "",
-            titulo: col.titulo >= 0 ? str(r[col.titulo]) : "",
-            status: col.status >= 0 ? str(r[col.status]) : "",
-            nivel2: col.nivel2 >= 0 ? str(r[col.nivel2]) : "",
-            nivel3: col.nivel3 >= 0 ? str(r[col.nivel3]) : "",
-            tipo: col.tipo >= 0 ? str(r[col.tipo]) : "",
-            status_workflow: col.statusWf >= 0 ? str(r[col.statusWf]) : "",
-            dias_corridos_wf: col.diasWf >= 0 ? num(r[col.diasWf]) : 0,
+            item_ppu,
+            rel_status: str(r[1]),
+            rel_status_item: str(r[2]),
+            tag_agrup: str(r[3]),
+            quantidade_ponderada: num(r[4]),
+            estrutura: str(r[5]),
+            fase: str(r[6]),
+            subfase: str(r[7]),
+            agrupamento: str(r[8]),
+            caracteristica: str(r[9]),
+            tag,
+            qtd: num(r[11]),
+            um: str(r[12]),
+            etapa: str(r[13]),
+            peso_fisico: num(r[14]),
+            peso_financeiro: num(r[15]),
+            data_execucao: dateVal(r[16]),
+            data_inf_execucao: dateVal(r[17]),
+            executado_por: str(r[18]),
+            necessita_evidencias: str(r[19]),
+            numero_evidencias: str(r[20]),
+            data_aprovacao: dateVal(r[21]),
+            fiscal_responsavel: str(r[22]),
+            status: str(r[23]),
+            valor: num(r[24]),
+            comentario: str(r[25]),
           });
         }
-        if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
+        if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU nem TAG (ignoradas)`);
         resolve({ rows, warnings });
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
 }
 
-export function parseRevisionsFile(file: File): Promise<{ rows: ParsedRevisionRow[]; warnings: string[] }> {
+export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warnings: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
+        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: "" });
         const warnings: string[] = [];
 
-        const headers = (raw[0] || []).map(h => str(h));
-        const col = {
-          documento: findCol(headers, "documento"),
-          revisao: findCol(headers, "revis"),
-          modificado: findCol(headers, "modificado"),
-          titulo: findCol(headers, "titulo", "título"),
-          status: findCol(headers, "status"),
-          nivel2: findCol(headers, "nível 2", "nivel 2", "2 nível", "2 nivel"),
-          textoConsolidacao: findCol(headers, "consolida", "texto"),
-          proposito: findCol(headers, "propósito", "proposito", "emissão", "emissao"),
-        };
-
-        const missing = Object.entries(col).filter(([, v]) => v < 0).map(([k]) => k);
-        if (missing.length > 0) warnings.push(`Colunas não encontradas: ${missing.join(", ")}`);
-
-        let noDoc = 0;
-        const rows: ParsedRevisionRow[] = [];
+        let noTag = 0;
+        const rows: ParsedSconRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const documento = col.documento >= 0 ? str(r[col.documento]) : "";
-          if (!documento) { noDoc++; continue; }
+          const tag = str(r[9]);
+          const item_wbs = str(r[8]);
+          if (!tag && !item_wbs) { noTag++; continue; }
           rows.push({
-            documento,
-            revisao: col.revisao >= 0 ? str(r[col.revisao]) : "",
-            modificado_em: col.modificado >= 0 ? str(r[col.modificado]) : "",
-            titulo: col.titulo >= 0 ? str(r[col.titulo]) : "",
-            status: col.status >= 0 ? str(r[col.status]) : "",
-            nivel2: col.nivel2 >= 0 ? str(r[col.nivel2]) : "",
-            texto_consolidacao: col.textoConsolidacao >= 0 ? str(r[col.textoConsolidacao]) : "",
-            proposito_emissao: col.proposito >= 0 ? str(r[col.proposito]) : "",
+            item_criterio: str(r[0]),
+            relatorio_esperado: str(r[1]),
+            status_sigem: str(r[2]),
+            status_gitec: str(r[3]),
+            obra_desc: str(r[4]),
+            classe: str(r[5]),
+            disciplina: str(r[6]),
+            tipo: str(r[7]),
+            item_wbs,
+            tag,
+            tag_desc: str(r[10]),
+            qtde_etapa: num(r[11]),
+            qtde_etapa_exec_acum: num(r[12]),
+            avanco_ponderado: num(r[13]),
+            tag_id_proj: str(r[14]),
           });
         }
-        if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
+        if (noTag > 0) warnings.push(`${noTag} linhas sem TAG nem ItemWBS (ignoradas)`);
         resolve({ rows, warnings });
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
@@ -317,43 +291,42 @@ export function useExistingCounts() {
     queryKey: ["import-existing-counts", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const [g, d, r] = await Promise.all([
-        supabase.from("gitec_events").select("id", { count: "exact", head: true }),
-        supabase.from("documents").select("id", { count: "exact", head: true }),
-        supabase.from("document_revisions").select("id", { count: "exact", head: true }),
+      const [s, r, c] = await Promise.all([
+        supabase.from("sigem_documents").select("id", { count: "exact", head: true }),
+        supabase.from("rel_eventos").select("id", { count: "exact", head: true }),
+        supabase.from("scon_components").select("id", { count: "exact", head: true }),
       ]);
       return {
-        gitec: g.count ?? 0,
-        documents: d.count ?? 0,
-        revisions: r.count ?? 0,
+        sigem: s.count ?? 0,
+        relEvento: r.count ?? 0,
+        scon: c.count ?? 0,
       };
     },
   });
 }
 
-async function insertInBatches<T extends Record<string, unknown>>(
-  table: "gitec_events" | "documents" | "document_revisions",
-  rows: T[],
+async function insertInBatches(
+  table: string,
+  rows: Record<string, unknown>[],
   onProgress?: (done: number, total: number) => void
 ) {
   const BATCH = 500;
-  const total = Math.ceil(rows.length / BATCH);
+  const totalBatches = Math.ceil(rows.length / BATCH);
   for (let i = 0; i < rows.length; i += BATCH) {
     const chunk = rows.slice(i, i + BATCH);
-    const { error } = await supabase.from(table).insert(chunk as any);
+    const { error } = await supabase.from(table as any).insert(chunk as any);
     if (error) throw error;
-    onProgress?.(Math.min(Math.floor(i / BATCH) + 1, total), total);
+    onProgress?.(Math.min(Math.floor(i / BATCH) + 1, totalBatches), totalBatches);
   }
 }
 
 export interface ProcessInput {
-  gitecRows: ParsedGitecRow[];
-  docRows: ParsedDocumentRow[];
-  revRows: ParsedRevisionRow[];
-  gitecFile: File | null;
-  docFile: File | null;
-  revFile: File | null;
-  replaceMode: boolean;
+  sigemRows: ParsedSigemRow[];
+  relEventoRows: ParsedRelEventoRow[];
+  sconRows: ParsedSconRow[];
+  sigemFile: File | null;
+  relEventoFile: File | null;
+  sconFile: File | null;
   onProgress: (msg: string, pct: number) => void;
 }
 
@@ -364,93 +337,72 @@ export function useProcessImport() {
   return useMutation({
     mutationFn: async (input: ProcessInput) => {
       if (!user) throw new Error("Não autenticado");
-      const { gitecRows, docRows, revRows, gitecFile, docFile, revFile, replaceMode, onProgress } = input;
-      const totalRows = gitecRows.length + docRows.length + revRows.length;
+      const { sigemRows, relEventoRows, sconRows, sigemFile, relEventoFile, sconFile, onProgress } = input;
+      const totalRows = sigemRows.length + relEventoRows.length + sconRows.length;
       let processed = 0;
-
-      const report = (msg: string) => {
-        onProgress(msg, Math.round((processed / totalRows) * 100));
-      };
-
-      // If replace mode, delete old batches for each source
-      if (replaceMode) {
-        report("Removendo dados anteriores...");
-        if (gitecRows.length > 0) {
-          const { data: old } = await supabase.from("import_batches").select("id").eq("source", "gitec").eq("user_id", user.id);
-          if (old && old.length > 0) {
-            await supabase.from("import_batches").delete().in("id", old.map(b => b.id));
-          }
-        }
-        if (docRows.length > 0) {
-          const { data: old } = await supabase.from("import_batches").select("id").eq("source", "consulta_geral").eq("user_id", user.id);
-          if (old && old.length > 0) {
-            await supabase.from("import_batches").delete().in("id", old.map(b => b.id));
-          }
-        }
-        if (revRows.length > 0) {
-          const { data: old } = await supabase.from("import_batches").select("id").eq("source", "consolidacao").eq("user_id", user.id);
-          if (old && old.length > 0) {
-            await supabase.from("import_batches").delete().in("id", old.map(b => b.id));
-          }
-        }
-      }
-
+      const report = (msg: string) => onProgress(msg, Math.round((processed / totalRows) * 100));
       const results: string[] = [];
 
-      // GITEC
-      if (gitecRows.length > 0 && gitecFile) {
-        report("Criando batch GITEC...");
+      // Delete previous batches for these sources
+      report("Removendo dados anteriores...");
+      for (const src of ["sigem", "rel_evento", "scon"]) {
+        const { data: old } = await supabase.from("import_batches").select("id").eq("source", src).eq("user_id", user.id);
+        if (old && old.length > 0) {
+          await supabase.from("import_batches").delete().in("id", old.map(b => b.id));
+        }
+      }
+
+      // SIGEM
+      if (sigemRows.length > 0 && sigemFile) {
+        report("Criando batch SIGEM...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "gitec", filename: gitecFile.name, row_count: gitecRows.length, status: "processing",
+          user_id: user.id, source: "sigem", filename: sigemFile.name, row_count: sigemRows.length, status: "processing",
         }).select().single();
         if (bErr) throw bErr;
-
-        const mapped = gitecRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("gitec_events", mapped, (done, total) => {
+        const mapped = sigemRows.map(r => ({ ...r, batch_id: batch.id }));
+        await insertInBatches("sigem_documents", mapped, (done, total) => {
           processed = done * 500;
-          report(`Gravando GITEC — lote ${done} de ${total}...`);
+          report(`Gravando SIGEM — lote ${done} de ${total}...`);
         });
-        await supabase.from("import_batches").update({ status: "completed", row_count: gitecRows.length }).eq("id", batch.id);
-        processed = gitecRows.length;
-        results.push(`${gitecRows.length} eventos GITEC`);
+        await supabase.from("import_batches").update({ status: "completed", row_count: sigemRows.length }).eq("id", batch.id);
+        processed = sigemRows.length;
+        results.push(`${sigemRows.length.toLocaleString("pt-BR")} docs SIGEM`);
       }
 
-      // Documents
-      if (docRows.length > 0 && docFile) {
-        report("Criando batch Documentos...");
+      // REL_EVENTO
+      if (relEventoRows.length > 0 && relEventoFile) {
+        report("Criando batch REL_EVENTO...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "consulta_geral", filename: docFile.name, row_count: docRows.length, status: "processing",
+          user_id: user.id, source: "rel_evento", filename: relEventoFile.name, row_count: relEventoRows.length, status: "processing",
         }).select().single();
         if (bErr) throw bErr;
-
-        const mapped = docRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("documents", mapped, (done, total) => {
-          report(`Gravando Documentos — lote ${done} de ${total}...`);
+        const mapped = relEventoRows.map(r => ({ ...r, batch_id: batch.id }));
+        await insertInBatches("rel_eventos", mapped, (done, total) => {
+          report(`Gravando REL_EVENTO — lote ${done} de ${total}...`);
         });
-        await supabase.from("import_batches").update({ status: "completed", row_count: docRows.length }).eq("id", batch.id);
-        processed += docRows.length;
-        results.push(`${docRows.length} documentos`);
+        await supabase.from("import_batches").update({ status: "completed", row_count: relEventoRows.length }).eq("id", batch.id);
+        processed += relEventoRows.length;
+        results.push(`${relEventoRows.length.toLocaleString("pt-BR")} eventos`);
       }
 
-      // Revisions
-      if (revRows.length > 0 && revFile) {
-        report("Criando batch Revisões...");
+      // SCON
+      if (sconRows.length > 0 && sconFile) {
+        report("Criando batch SCON...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "consolidacao", filename: revFile.name, row_count: revRows.length, status: "processing",
+          user_id: user.id, source: "scon", filename: sconFile.name, row_count: sconRows.length, status: "processing",
         }).select().single();
         if (bErr) throw bErr;
-
-        const mapped = revRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("document_revisions", mapped, (done, total) => {
-          report(`Gravando Revisões — lote ${done} de ${total}...`);
+        const mapped = sconRows.map(r => ({ ...r, batch_id: batch.id }));
+        await insertInBatches("scon_components", mapped, (done, total) => {
+          report(`Gravando SCON — lote ${done} de ${total}...`);
         });
-        await supabase.from("import_batches").update({ status: "completed", row_count: revRows.length }).eq("id", batch.id);
-        processed += revRows.length;
-        results.push(`${revRows.length} revisões`);
+        await supabase.from("import_batches").update({ status: "completed", row_count: sconRows.length }).eq("id", batch.id);
+        processed += sconRows.length;
+        results.push(`${sconRows.length.toLocaleString("pt-BR")} componentes`);
       }
 
       onProgress("Concluído!", 100);
-      return results.join(", ");
+      return results.join(" + ");
     },
     onSuccess: (msg) => {
       qc.invalidateQueries({ queryKey: [BATCHES_KEY] });
