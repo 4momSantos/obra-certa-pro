@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, Circle } from "lucide-react";
 import type { MedicaoPPU, Semaforo } from "@/hooks/useMedicao";
 import { usePPUDetail } from "@/hooks/usePPUDetail";
+import { ComponentDetailPanel } from "./ComponentDetailPanel";
 
 function fmtBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -81,6 +82,7 @@ interface Props {
 }
 
 export function PPUDetailSheet({ item, onClose }: Props) {
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
   const { scon, rel, sigem, criterio, eac, isLoading } = usePPUDetail(
     item?.item_ppu ?? null,
     item?.item_gitec ?? null
