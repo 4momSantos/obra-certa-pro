@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CalendarRange, Users, FileCheck, BarChart3, TrendingUp,
-  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle, Calculator, Clock,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle, Calculator, Clock, HardHat, Layers, ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -24,6 +24,9 @@ const mainItems = [
   { title: "Documentos", url: "/documentos", icon: FileText },
   { title: "Cronograma", url: "/cronograma", icon: CalendarRange },
   { title: "ETF Semanal", url: "/etf", icon: Users },
+  { title: "Equipes", url: "/equipes", icon: HardHat },
+  { title: "Disciplinas", url: "/disciplinas", icon: Layers },
+  { title: "Cobertura SCON", url: "/cobertura", icon: ShieldCheck },
   { title: "Tubulação", url: "/tubulacao", icon: Pipette },
   { title: "Importar Dados", url: "/import", icon: Upload },
 ];

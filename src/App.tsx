@@ -29,6 +29,9 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import AlertsPage from "@/pages/AlertsPage";
 import Simulador from "@/pages/Simulador";
 import Configuracao from "@/pages/Configuracao";
+import Equipes from "@/pages/Equipes";
+import Disciplinas from "@/pages/Disciplinas";
+import Cobertura from "@/pages/Cobertura";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +63,9 @@ const AppRoutes = () => {
           <Route path="/documentos" element={<DocumentsPage />} />
           <Route path="/alertas" element={<AlertsPage />} />
           <Route path="/simulador" element={<Simulador />} />
+          <Route path="/equipes" element={<Equipes />} />
+          <Route path="/disciplinas" element={<Disciplinas />} />
+          <Route path="/cobertura" element={<Cobertura />} />
           <Route path="/ajuste" element={<Ajuste />} />
           <Route path="/config" element={<Config />} />
           <Route path="/configuracao" element={<Configuracao />} />
