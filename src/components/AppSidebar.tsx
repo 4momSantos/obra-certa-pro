@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CalendarRange, Users, FileCheck, BarChart3,
-  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle, Calculator,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -21,6 +21,7 @@ const mainItems = [
   { title: "GITEC", url: "/gitec", icon: ClipboardCheck },
   { title: "Documentos", url: "/documentos", icon: FileText },
   { title: "Alertas", url: "/alertas", icon: AlertTriangle },
+  { title: "Simulador", url: "/simulador", icon: Calculator },
   { title: "Importar Dados", url: "/import", icon: Upload },
 ];
 
