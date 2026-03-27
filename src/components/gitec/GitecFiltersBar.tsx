@@ -57,7 +57,7 @@ export const GitecFiltersBar: React.FC<Props> = ({ filters, onChange, fiscais })
       </Select>
 
       <Input
-        placeholder="Buscar TAG, iPPU, fiscal..."
+        placeholder="Buscar TAG, PPU, fiscal..."
         value={filters.search}
         onChange={(e) => onChange({ ...filters, search: e.target.value })}
         className="w-[220px]"

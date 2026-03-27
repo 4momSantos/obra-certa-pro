@@ -12,6 +12,7 @@ import { GitecFiltersBar } from "@/components/gitec/GitecFiltersBar";
 import { GitecDetailSheet } from "@/components/gitec/GitecDetailSheet";
 import { FiscaisTab } from "@/components/gitec/FiscaisTab";
 import { AgrupamentosTab } from "@/components/gitec/AgrupamentosTab";
+import { PPUDetailSheet } from "@/components/medicao/PPUDetailSheet";
 import {
   useGitecStats, useGitecEvents, useGitecByIPPU, useGitecFiscais,
   defaultFilters, type GitecFilters,
@@ -20,6 +21,7 @@ import {
 const GitecPipeline: React.FC = () => {
   const [filters, setFilters] = useState<GitecFilters>(defaultFilters);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [selectedPPU, setSelectedPPU] = useState<{ item_ppu: string; item_gitec: string } | null>(null);
   const [limit, setLimit] = useState(100);
   const [activeTab, setActiveTab] = useState("pipeline");
 
@@ -35,18 +37,17 @@ const GitecPipeline: React.FC = () => {
     setActiveTab("pipeline");
   };
 
-  const handleFilterIPPU = (ippu: string) => {
-    setFilters({ ...defaultFilters, search: ippu });
-    setActiveTab("pipeline");
+  const handleSelectPPU = (itemPpu: string) => {
+    setSelectedPPU({ item_ppu: itemPpu, item_gitec: itemPpu });
   };
 
   if (isEmpty) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Nenhum dado GITEC importado.</p>
+        <p className="text-muted-foreground">Importe REL_EVENTO primeiro.</p>
         <Button asChild>
           <Link to="/import">
-            <Upload className="h-4 w-4 mr-2" /> Importar Dados GITEC
+            <Upload className="h-4 w-4 mr-2" /> Importar Dados
           </Link>
         </Button>
       </div>
@@ -69,11 +70,10 @@ const GitecPipeline: React.FC = () => {
         <TabsList>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="fiscais">Fiscais</TabsTrigger>
-          <TabsTrigger value="agrupamentos">Por Agrupamento</TabsTrigger>
+          <TabsTrigger value="por-ppu">Por PPU</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pipeline" className="space-y-4 mt-4">
-          {/* Active filter badge */}
           {(filters.fiscal !== "all" || filters.search || filters.status !== "all" || filters.agingRange !== "all") && (
             <div className="flex items-center gap-2 flex-wrap">
               {filters.fiscal !== "all" && (
@@ -92,7 +92,7 @@ const GitecPipeline: React.FC = () => {
           )}
 
           <GitecFiltersBar filters={filters} onChange={setFilters} fiscais={fiscais ?? []} />
-          <GitecRanking data={ranking} loading={loadingRanking} onSelect={(ippu) => setFilters({ ...filters, search: ippu })} />
+          <GitecRanking data={ranking} loading={loadingRanking} onSelect={(ppu) => setFilters({ ...filters, search: ppu })} />
 
           <div className="space-y-2">
             <p className="text-sm font-medium">Eventos {filters.status !== "all" ? `— ${filters.status}` : ""}</p>
@@ -109,12 +109,44 @@ const GitecPipeline: React.FC = () => {
           <FiscaisTab onFilterFiscal={handleFilterFiscal} />
         </TabsContent>
 
-        <TabsContent value="agrupamentos" className="mt-4">
-          <AgrupamentosTab data={ranking} loading={loadingRanking} onSelect={handleFilterIPPU} />
+        <TabsContent value="por-ppu" className="mt-4">
+          <AgrupamentosTab data={ranking} loading={loadingRanking} onSelect={handleSelectPPU} />
         </TabsContent>
       </Tabs>
 
       <GitecDetailSheet eventId={selectedEvent} open={!!selectedEvent} onClose={() => setSelectedEvent(null)} />
+      
+      {selectedPPU && (
+        <PPUDetailSheet
+          item={{
+            item_ppu: selectedPPU.item_ppu,
+            item_gitec: selectedPPU.item_gitec,
+            descricao: "",
+            fase: "",
+            subfase: "",
+            disciplina: "",
+            agrupamento: "",
+            valor_total: 0,
+            valor_medido: 0,
+            scon_avg_avanco: 0,
+            scon_total: 0,
+            scon_concluidos: 0,
+            scon_em_andamento: 0,
+            scon_nao_iniciados: 0,
+            scon_valor_estimado: 0,
+            sigem_total: 0,
+            sigem_ok: 0,
+            sigem_recusados: 0,
+            gitec_total: 0,
+            gitec_valor_aprovado: 0,
+            eac_previsto: 0,
+            eac_realizado: 0,
+            gap: 0,
+            semaforo: "futuro" as const,
+          }}
+          onClose={() => setSelectedPPU(null)}
+        />
+      )}
     </div>
   );
 };

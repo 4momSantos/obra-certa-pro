@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { agingBadge } from "@/hooks/useGitec";
 import type { GitecEvent } from "@/hooks/useGitec";
 
-const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 const statusVariant = (s: string): "default" | "secondary" | "destructive" | "outline" => {
   if (s === "Aprovado") return "default";
@@ -31,14 +31,16 @@ export const GitecEventsTable: React.FC<Props> = ({ events, loading, onSelect })
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>TAG</TableHead>
-            <TableHead>iPPU</TableHead>
-            <TableHead>Etapa</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Valor</TableHead>
-            <TableHead>Data Inf. Exec.</TableHead>
-            <TableHead>Aging</TableHead>
-            <TableHead>Fiscal</TableHead>
+            <TableHead className="text-xs">TAG</TableHead>
+            <TableHead className="text-xs">Item PPU</TableHead>
+            <TableHead className="text-xs">Etapa</TableHead>
+            <TableHead className="text-xs">Status</TableHead>
+            <TableHead className="text-xs text-right">Valor</TableHead>
+            <TableHead className="text-xs text-right">Qtd Pond.</TableHead>
+            <TableHead className="text-xs">Data Inf. Exec.</TableHead>
+            <TableHead className="text-xs">Aging</TableHead>
+            <TableHead className="text-xs">Fiscal</TableHead>
+            <TableHead className="text-xs">Evidências</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,19 +49,21 @@ export const GitecEventsTable: React.FC<Props> = ({ events, loading, onSelect })
             return (
               <TableRow key={ev.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onSelect(ev.id)}>
                 <TableCell className="text-xs font-mono">{ev.tag || "-"}</TableCell>
-                <TableCell className="text-xs font-mono">{ev.ippu ?? "-"}</TableCell>
+                <TableCell className="text-xs font-mono">{ev.item_ppu || "-"}</TableCell>
                 <TableCell className="text-xs">{ev.etapa || "-"}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant(ev.status)} className="text-xs">{ev.status || "-"}</Badge>
+                  <Badge variant={statusVariant(ev.status)} className="text-[10px]">{ev.status || "-"}</Badge>
                 </TableCell>
-                <TableCell className="text-right text-xs font-mono">{fmt(ev.valor)}</TableCell>
+                <TableCell className="text-right text-xs font-mono">{fmtBRL(ev.valor)}</TableCell>
+                <TableCell className="text-right text-xs font-mono">{ev.quantidade_ponderada.toFixed(2)}</TableCell>
                 <TableCell className="text-xs">{ev.data_inf_execucao ?? "-"}</TableCell>
                 <TableCell>
                   {ev.data_inf_execucao ? (
-                    <Badge variant={ab.variant} className={`text-xs ${ev.aging > 60 ? "animate-pulse" : ""}`}>{ab.label}</Badge>
+                    <Badge variant={ab.variant} className={`text-[10px] ${ev.aging > 60 ? "animate-pulse" : ""}`}>{ab.label}</Badge>
                   ) : "-"}
                 </TableCell>
-                <TableCell className="text-xs">{ev.fiscal || "-"}</TableCell>
+                <TableCell className="text-xs">{ev.fiscal_responsavel || "-"}</TableCell>
+                <TableCell className="text-xs font-mono">{ev.numero_evidencias || "-"}</TableCell>
               </TableRow>
             );
           })}

@@ -37,6 +37,10 @@ export function agingBadge(days: number): { label: string; variant: "default" | 
 
 export interface GitecStats {
   total: number;
+  concluidos: number;
+  valConcluidos: number;
+  pendentes: number;
+  valPendentes: number;
   aprovados: number;
   valAprovado: number;
   pendVerif: number;
@@ -54,15 +58,33 @@ export function useGitecStats() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GitecStats> => {
-      const { data, error } = await supabase.from("gitec_events").select("status, valor, data_inf_execucao");
-      if (error) throw error;
-      if (!data || data.length === 0) return { total: 0, aprovados: 0, valAprovado: 0, pendVerif: 0, valPendVerif: 0, pendAprov: 0, valPendAprov: 0, agingMedio: 0, agingMaximo: 0 };
+      const rows: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("rel_eventos")
+          .select("etapa, status, valor, data_inf_execucao")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
 
+      if (rows.length === 0)
+        return { total: 0, concluidos: 0, valConcluidos: 0, pendentes: 0, valPendentes: 0, aprovados: 0, valAprovado: 0, pendVerif: 0, valPendVerif: 0, pendAprov: 0, valPendAprov: 0, agingMedio: 0, agingMaximo: 0 };
+
+      let concluidos = 0, valConcluidos = 0, pendentes = 0, valPendentes = 0;
       let aprovados = 0, valAprovado = 0, pendVerif = 0, valPendVerif = 0, pendAprov = 0, valPendAprov = 0;
       const agings: number[] = [];
 
-      for (const r of data) {
+      for (const r of rows) {
         const v = Number(r.valor) || 0;
+        if (r.etapa === "Concluída") { concluidos++; valConcluidos += v; }
+        else { pendentes++; valPendentes += v; }
+
         if (r.status === "Aprovado") { aprovados++; valAprovado += v; }
         else if (r.status === "Pendente de Verificação") {
           pendVerif++; valPendVerif += v;
@@ -74,7 +96,9 @@ export function useGitecStats() {
       }
 
       return {
-        total: data.length,
+        total: rows.length,
+        concluidos, valConcluidos,
+        pendentes, valPendentes,
         aprovados, valAprovado,
         pendVerif, valPendVerif,
         pendAprov, valPendAprov,
@@ -88,33 +112,31 @@ export function useGitecStats() {
 export function useGitecFiscais() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: [GITEC_KEY, "fiscais", user?.id],
+    queryKey: [GITEC_KEY, "fiscais-list", user?.id],
     enabled: !!user,
     staleTime: 10 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("gitec_events").select("fiscal");
+      const { data, error } = await supabase.from("vw_fiscais").select("fiscal_responsavel");
       if (error) throw error;
-      const unique = [...new Set((data ?? []).map(r => r.fiscal).filter(Boolean))].sort();
-      return unique;
+      return (data ?? []).map(r => r.fiscal_responsavel).filter(Boolean).sort() as string[];
     },
   });
 }
 
 export interface GitecEvent {
   id: string;
-  agrupamento: string;
-  ippu: string | null;
+  item_ppu: string;
   tag: string;
   etapa: string;
   status: string;
   valor: number;
+  quantidade_ponderada: number;
   data_execucao: string | null;
   data_inf_execucao: string | null;
   data_aprovacao: string | null;
   executado_por: string;
-  fiscal: string;
-  evidencias: string;
-  comentario: string;
+  fiscal_responsavel: string;
+  numero_evidencias: string;
   aging: number;
 }
 
@@ -125,12 +147,16 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GitecEvent[]> => {
-      let q = supabase.from("gitec_events").select("*").order("valor", { ascending: false }).limit(limit);
+      let q = supabase
+        .from("rel_eventos")
+        .select("id, item_ppu, tag, etapa, status, valor, quantidade_ponderada, data_execucao, data_inf_execucao, data_aprovacao, executado_por, fiscal_responsavel, numero_evidencias")
+        .order("valor", { ascending: false })
+        .limit(limit);
 
       if (filters.status !== "all") q = q.eq("status", filters.status);
-      if (filters.fiscal !== "all") q = q.eq("fiscal", filters.fiscal);
+      if (filters.fiscal !== "all") q = q.eq("fiscal_responsavel", filters.fiscal);
       if (filters.search) {
-        q = q.or(`tag.ilike.%${filters.search}%,ippu.ilike.%${filters.search}%,fiscal.ilike.%${filters.search}%`);
+        q = q.or(`tag.ilike.%${filters.search}%,item_ppu.ilike.%${filters.search}%,fiscal_responsavel.ilike.%${filters.search}%`);
       }
 
       const { data, error } = await q;
@@ -139,6 +165,7 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
       let rows = (data ?? []).map(r => ({
         ...r,
         valor: Number(r.valor) || 0,
+        quantidade_ponderada: Number(r.quantidade_ponderada) || 0,
         aging: calcAging(r.data_inf_execucao),
       }));
 
@@ -152,13 +179,12 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
 }
 
 export interface GitecFiscalRow {
-  fiscal: string;
+  fiscal_responsavel: string;
   total: number;
   aprovados: number;
-  pend_verif: number;
-  pend_aprov: number;
-  val_pend_verif: number;
-  val_pend_aprov: number;
+  pendentes: number;
+  valor_pendente: number;
+  valor_aprovado: number;
 }
 
 export function useGitecByFiscal() {
@@ -168,33 +194,30 @@ export function useGitecByFiscal() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GitecFiscalRow[]> => {
-      const { data, error } = await supabase.from("gitec_by_fiscal").select("*");
+      const { data, error } = await supabase.from("vw_fiscais").select("*");
       if (error) throw error;
       return ((data ?? []) as any[])
         .map(r => ({
-          ...r,
+          fiscal_responsavel: r.fiscal_responsavel ?? "",
           total: Number(r.total) || 0,
           aprovados: Number(r.aprovados) || 0,
-          pend_verif: Number(r.pend_verif) || 0,
-          pend_aprov: Number(r.pend_aprov) || 0,
-          val_pend_verif: Number(r.val_pend_verif) || 0,
-          val_pend_aprov: Number(r.val_pend_aprov) || 0,
+          pendentes: Number(r.pendentes) || 0,
+          valor_pendente: Number(r.valor_pendente) || 0,
+          valor_aprovado: Number(r.valor_aprovado) || 0,
         }))
-        .sort((a, b) => (b.val_pend_verif + b.val_pend_aprov) - (a.val_pend_verif + a.val_pend_aprov));
+        .sort((a, b) => b.valor_pendente - a.valor_pendente);
     },
   });
 }
 
 export interface GitecIPPURow {
-  ippu: string;
+  item_ppu: string;
   total_eventos: number;
-  aprovados: number;
-  pend_verificacao: number;
-  pend_aprovacao: number;
-  val_aprovado: number;
-  val_pend_verif: number;
-  val_pend_aprov: number;
-  val_total: number;
+  eventos_concluidos: number;
+  eventos_pendentes: number;
+  valor_total: number;
+  valor_aprovado: number;
+  valor_pendente: number;
 }
 
 export function useGitecByIPPU() {
@@ -204,17 +227,19 @@ export function useGitecByIPPU() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GitecIPPURow[]> => {
-      const { data, error } = await supabase.from("gitec_by_ippu").select("*");
+      const { data, error } = await supabase.from("vw_gitec_por_ppu").select("*");
       if (error) throw error;
       return ((data ?? []) as any[])
         .map(r => ({
-          ...r,
-          val_aprovado: Number(r.val_aprovado) || 0,
-          val_pend_verif: Number(r.val_pend_verif) || 0,
-          val_pend_aprov: Number(r.val_pend_aprov) || 0,
-          val_total: Number(r.val_total) || 0,
+          item_ppu: r.item_ppu ?? "",
+          total_eventos: Number(r.total_eventos) || 0,
+          eventos_concluidos: Number(r.eventos_concluidos) || 0,
+          eventos_pendentes: Number(r.eventos_pendentes) || 0,
+          valor_total: Number(r.valor_total) || 0,
+          valor_aprovado: Number(r.valor_aprovado) || 0,
+          valor_pendente: Number(r.valor_pendente) || 0,
         }))
-        .sort((a, b) => (b.val_pend_verif + b.val_pend_aprov) - (a.val_pend_verif + a.val_pend_aprov));
+        .sort((a, b) => b.valor_pendente - a.valor_pendente);
     },
   });
 }
@@ -224,12 +249,11 @@ export function useGitecEventDetail(eventId: string | null) {
     queryKey: [GITEC_KEY, "detail", eventId],
     enabled: !!eventId,
     queryFn: async () => {
-      const { data: event, error } = await supabase.from("gitec_events").select("*").eq("id", eventId!).maybeSingle();
+      const { data: event, error } = await supabase.from("rel_eventos").select("*").eq("id", eventId!).maybeSingle();
       if (error) throw error;
       if (!event) return null;
 
-      // Parse evidence numbers
-      const evidenceNums = (event.evidencias ?? "")
+      const evidenceNums = (event.numero_evidencias ?? "")
         .split(";")
         .map((s: string) => s.trim())
         .filter(Boolean);
