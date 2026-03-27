@@ -6,9 +6,10 @@ import { UploadCard } from "@/components/import/UploadCard";
 import { ImportPreview } from "@/components/import/ImportPreview";
 import { ImportHistory } from "@/components/import/ImportHistory";
 import {
-  parseSigemFile, parseRelEventoFile, parseSconFile,
+  parseSigemFile, parseRelEventoFile, parseSconFile, parseCronogramaFile,
   useExistingCounts, useProcessImport,
   type ParsedSigemRow, type ParsedRelEventoRow, type ParsedSconRow,
+  type CronogramaParseResult,
 } from "@/hooks/useImport";
 
 const ImportData: React.FC = () => {
@@ -18,10 +19,12 @@ const ImportData: React.FC = () => {
   const [sigemFile, setSigemFile] = useState<File | null>(null);
   const [relFile, setRelFile] = useState<File | null>(null);
   const [sconFile, setSconFile] = useState<File | null>(null);
+  const [cronoFile, setCronoFile] = useState<File | null>(null);
 
   const [sigemRows, setSigemRows] = useState<ParsedSigemRow[]>([]);
   const [relRows, setRelRows] = useState<ParsedRelEventoRow[]>([]);
   const [sconRows, setSconRows] = useState<ParsedSconRow[]>([]);
+  const [cronoResult, setCronoResult] = useState<CronogramaParseResult | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [parsing, setParsing] = useState(false);
 
@@ -64,18 +67,32 @@ const ImportData: React.FC = () => {
     setParsing(false);
   }, []);
 
+  const handleCrono = useCallback(async (f: File | null) => {
+    setCronoFile(f);
+    if (!f) { setCronoResult(null); return; }
+    setParsing(true);
+    try {
+      const result = await parseCronogramaFile(f);
+      setCronoResult(result);
+      setWarnings(prev => [...prev.filter(p => !p.includes("Cronograma") && !p.includes("EAP") && !p.includes("BM")), ...result.warnings]);
+    } catch { setWarnings(prev => [...prev, "Erro ao ler arquivo Cronograma"]); }
+    setParsing(false);
+  }, []);
+
   const allLoaded = !!sigemFile && !!relFile && !!sconFile;
-  const totalRows = sigemRows.length + relRows.length + sconRows.length;
+  const cronoRows = cronoResult ? cronoResult.tree.length + cronoResult.bmValues.length + cronoResult.curvaS.length : 0;
+  const totalRows = sigemRows.length + relRows.length + sconRows.length + cronoRows;
 
   const doProcess = () => {
     processImport.mutate({
       sigemRows, relEventoRows: relRows, sconRows,
       sigemFile, relEventoFile: relFile, sconFile,
+      cronogramaResult: cronoResult, cronogramaFile: cronoFile,
       onProgress: (msg, pct) => { setProgressMsg(msg); setProgressPct(pct); },
     }, {
       onSuccess: () => {
-        setSigemFile(null); setRelFile(null); setSconFile(null);
-        setSigemRows([]); setRelRows([]); setSconRows([]);
+        setSigemFile(null); setRelFile(null); setSconFile(null); setCronoFile(null);
+        setSigemRows([]); setRelRows([]); setSconRows([]); setCronoResult(null);
         setWarnings([]);
         setProgressMsg(""); setProgressPct(0);
       },
@@ -87,14 +104,15 @@ const ImportData: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold">Importar Dados</h1>
         <p className="text-sm text-muted-foreground">
-          Upload dos 3 arquivos operacionais — atualização a cada medição
+          Upload dos arquivos operacionais — atualização a cada medição
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <UploadCard label="SIGEM" description="~22k documentos (.xlsx)" required file={sigemFile} onFile={handleSigem} />
         <UploadCard label="REL_EVENTO" description="~6k eventos GITEC (.xlsx)" required file={relFile} onFile={handleRel} />
         <UploadCard label="SCON" description="~1.5k componentes (.xlsx)" required file={sconFile} onFile={handleScon} />
+        <UploadCard label="Cronograma CR-5290" description="Cronograma financeiro (.xlsx)" file={cronoFile} onFile={handleCrono} />
       </div>
 
       {parsing && (
@@ -110,6 +128,12 @@ const ImportData: React.FC = () => {
         </div>
       )}
 
+      {cronoResult && (
+        <div className="rounded-lg border border-muted bg-muted/30 p-3 text-sm text-muted-foreground">
+          Cronograma: {cronoResult.tree.length} nós EAP, {cronoResult.bmValues.length} valores BM, {cronoResult.curvaS.length} pontos Curva S
+        </div>
+      )}
+
       <ImportPreview sigem={sigemRows} relEvento={relRows} scon={sconRows} warnings={warnings} />
 
       {!processImport.isPending && (
@@ -118,10 +142,10 @@ const ImportData: React.FC = () => {
             size="lg"
             className="w-full"
             onClick={doProcess}
-            disabled={!allLoaded || totalRows === 0}
+            disabled={(!allLoaded && !cronoFile) || totalRows === 0}
           >
             <Upload className="h-5 w-5 mr-2" />
-            {allLoaded
+            {allLoaded || cronoFile
               ? `▶ Processar Tudo (${totalRows.toLocaleString("pt-BR")} registros)`
               : `Carregue os 3 arquivos (${[sigemFile, relFile, sconFile].filter(Boolean).length}/3)`
             }

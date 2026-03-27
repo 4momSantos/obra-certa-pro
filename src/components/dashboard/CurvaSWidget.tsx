@@ -3,12 +3,25 @@ import {
   ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
 import { useDashboardFilters } from "@/contexts/DashboardFilterContext";
+import { useCurvaS } from "@/hooks/useCronogramaData";
 import { formatCurrency } from "@/lib/format";
 import { WidgetWrapper } from "./WidgetWrapper";
 
 export function CurvaSWidget() {
   const { filteredCurvaS, filters, setSelectedPeriod } = useDashboardFilters();
   const { seriesVisibility } = filters;
+  const { data: dbCurvaS } = useCurvaS();
+
+  // Use DB data if available, otherwise fall back to context data
+  const chartData = dbCurvaS && dbCurvaS.length > 0
+    ? dbCurvaS.map(d => ({
+        period: d.label,
+        baselineAcum: d.previsto_acum, // baseline = previsto in DB
+        previstoAcum: d.previsto_acum,
+        projetadoAcum: d.projetado_acum,
+        realizadoAcum: d.realizado_acum,
+      }))
+    : filteredCurvaS;
 
   const handleClick = (data: any) => {
     if (data?.activeLabel) {
@@ -20,7 +33,7 @@ export function CurvaSWidget() {
     <WidgetWrapper title="Curva S — Avanço Acumulado">
       <div className="h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={filteredCurvaS} onClick={handleClick} style={{ cursor: "pointer" }}>
+          <AreaChart data={chartData} onClick={handleClick} style={{ cursor: "pointer" }}>
             <defs>
               <linearGradient id="gradBaseline" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.2} />

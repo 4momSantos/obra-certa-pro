@@ -108,6 +108,167 @@ export type Database = {
           },
         ]
       }
+      cronograma_bm_values: {
+        Row: {
+          batch_id: string
+          bm_name: string
+          bm_number: number
+          created_at: string | null
+          id: string
+          ippu: string | null
+          tipo: string
+          tree_id: string | null
+          valor: number | null
+        }
+        Insert: {
+          batch_id: string
+          bm_name: string
+          bm_number: number
+          created_at?: string | null
+          id?: string
+          ippu?: string | null
+          tipo: string
+          tree_id?: string | null
+          valor?: number | null
+        }
+        Update: {
+          batch_id?: string
+          bm_name?: string
+          bm_number?: number
+          created_at?: string | null
+          id?: string
+          ippu?: string | null
+          tipo?: string
+          tree_id?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_bm_values_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_bm_values_tree_id_fkey"
+            columns: ["tree_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_tree"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_bm_values_tree_id_fkey"
+            columns: ["tree_id"]
+            isOneToOne: false
+            referencedRelation: "vw_cronograma_tree_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronograma_tree: {
+        Row: {
+          acumulado: number | null
+          batch_id: string
+          created_at: string | null
+          fase_nome: string | null
+          id: string
+          ippu: string | null
+          nivel: string
+          nome: string
+          saldo: number | null
+          sort_order: number | null
+          subfase_nome: string | null
+          valor: number | null
+        }
+        Insert: {
+          acumulado?: number | null
+          batch_id: string
+          created_at?: string | null
+          fase_nome?: string | null
+          id?: string
+          ippu?: string | null
+          nivel: string
+          nome?: string
+          saldo?: number | null
+          sort_order?: number | null
+          subfase_nome?: string | null
+          valor?: number | null
+        }
+        Update: {
+          acumulado?: number | null
+          batch_id?: string
+          created_at?: string | null
+          fase_nome?: string | null
+          id?: string
+          ippu?: string | null
+          nivel?: string
+          nome?: string
+          saldo?: number | null
+          sort_order?: number | null
+          subfase_nome?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_tree_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curva_s: {
+        Row: {
+          batch_id: string
+          col_index: number
+          created_at: string | null
+          id: string
+          label: string
+          previsto_acum: number | null
+          previsto_mensal: number | null
+          projetado_acum: number | null
+          projetado_mensal: number | null
+          realizado_acum: number | null
+          realizado_mensal: number | null
+        }
+        Insert: {
+          batch_id: string
+          col_index: number
+          created_at?: string | null
+          id?: string
+          label: string
+          previsto_acum?: number | null
+          previsto_mensal?: number | null
+          projetado_acum?: number | null
+          projetado_mensal?: number | null
+          realizado_acum?: number | null
+          realizado_mensal?: number | null
+        }
+        Update: {
+          batch_id?: string
+          col_index?: number
+          created_at?: string | null
+          id?: string
+          label?: string
+          previsto_acum?: number | null
+          previsto_mensal?: number | null
+          projetado_acum?: number | null
+          projetado_mensal?: number | null
+          realizado_acum?: number | null
+          realizado_mensal?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curva_s_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_shares: {
         Row: {
           created_at: string | null
@@ -974,6 +1135,45 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_cronograma_bm_por_ippu: {
+        Row: {
+          bm_name: string | null
+          bm_number: number | null
+          ippu: string | null
+          previsto: number | null
+          projetado: number | null
+          realizado: number | null
+        }
+        Relationships: []
+      }
+      vw_cronograma_tree_completo: {
+        Row: {
+          acumulado: number | null
+          batch_id: string | null
+          created_at: string | null
+          fase_nome: string | null
+          id: string | null
+          ippu: string | null
+          nivel: string | null
+          nome: string | null
+          saldo: number | null
+          sort_order: number | null
+          subfase_nome: string | null
+          total_previsto_bm: number | null
+          total_projetado_bm: number | null
+          total_realizado_bm: number | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_tree_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_fiscais: {
         Row: {
           aprovados: number | null
@@ -1022,6 +1222,12 @@ export type Database = {
           docs_workflow: number | null
           ppu: string | null
           total_docs: number | null
+        }
+        Relationships: []
+      }
+      vw_ultimo_bm_realizado: {
+        Row: {
+          ultimo_bm: number | null
         }
         Relationships: []
       }
