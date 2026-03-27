@@ -98,22 +98,49 @@ function cell(row: unknown[], col: number): unknown {
 }
 
 function sanitizeForInsert(value: unknown): unknown {
-  if (value == null) return null;
-  if (value instanceof Date) return value.toISOString();
+  if (value == null || typeof value === "undefined") return null;
+  if (typeof value === "symbol" || typeof value === "bigint") return String(value);
+  if (value instanceof Date) {
+    const iso = value.toISOString();
+    return iso === "Invalid Date" ? null : iso;
+  }
   if (typeof value === "string") return str(value);
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value === "boolean") return value;
   if (Array.isArray(value)) return value.map(sanitizeForInsert);
 
   if (typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .map(([key, innerValue]) => [key, sanitizeForInsert(innerValue)])
-        .filter(([, innerValue]) => innerValue !== undefined)
-    );
+    try {
+      return Object.fromEntries(
+        Object.entries(value)
+          .map(([key, innerValue]) => [key, sanitizeForInsert(innerValue)])
+          .filter(([, innerValue]) => innerValue !== undefined)
+      );
+    } catch {
+      return "{}";
+    }
   }
 
   return str(value);
+}
+
+/** Ensure entire row is JSON-serializable */
+function ensureJsonSafe(row: Record<string, unknown>): Record<string, unknown> {
+  try {
+    JSON.stringify(row);
+    return row;
+  } catch {
+    const safe: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(row)) {
+      try {
+        JSON.stringify(v);
+        safe[k] = v;
+      } catch {
+        safe[k] = typeof v === "string" ? str(v) : "";
+      }
+    }
+    return safe;
+  }
 }
 
 function sanitizeRowForInsert(row: Record<string, unknown>) {
@@ -675,7 +702,7 @@ async function insertInBatches(
   rows: Record<string, unknown>[],
   onProgress?: (done: number, total: number) => void
 ) {
-  const sanitizedRows = rows.map(sanitizeRowForInsert);
+  const sanitizedRows = rows.map(r => ensureJsonSafe(sanitizeRowForInsert(r)));
   const BATCH = 500;
   const totalBatches = Math.ceil(sanitizedRows.length / BATCH);
   for (let i = 0; i < sanitizedRows.length; i += BATCH) {
@@ -686,10 +713,11 @@ async function insertInBatches(
         const row = chunk[j];
         const { error: rowError } = await supabase.from(table as any).insert(row as any);
         if (rowError) {
+          console.error(`[import] Row ${i + j + 1} in ${table} failed:`, JSON.stringify(row));
           const sample = Object.entries(row)
             .filter(([, value]) => value !== null && value !== "")
-            .slice(0, 6)
-            .map(([key, value]) => `${key}=${String(value).slice(0, 40)}`)
+            .slice(0, 8)
+            .map(([key, value]) => `${key}=${String(value).slice(0, 60)}`)
             .join(", ");
 
           throw new Error(
@@ -745,7 +773,7 @@ export function useProcessImport() {
       if (sigemRows.length > 0 && sigemFile) {
         report("Criando batch SIGEM...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "sigem", filename: sigemFile.name, row_count: sigemRows.length, status: "processing",
+          user_id: user.id, source: "sigem", filename: sigemFile.name, row_count: sigemRows.length, status: "processing", errors: [],
         }).select().single();
         if (bErr) throw bErr;
         const mapped = sigemRows.map(r => ({ ...r, batch_id: batch.id }));
@@ -762,7 +790,7 @@ export function useProcessImport() {
       if (relEventoRows.length > 0 && relEventoFile) {
         report("Criando batch REL_EVENTO...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "rel_evento", filename: relEventoFile.name, row_count: relEventoRows.length, status: "processing",
+          user_id: user.id, source: "rel_evento", filename: relEventoFile.name, row_count: relEventoRows.length, status: "processing", errors: [],
         }).select().single();
         if (bErr) throw bErr;
         const mapped = relEventoRows.map(r => ({ ...r, batch_id: batch.id }));
@@ -778,7 +806,7 @@ export function useProcessImport() {
       if (sconRows.length > 0 && sconFile) {
         report("Criando batch SCON...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "scon", filename: sconFile.name, row_count: sconRows.length, status: "processing",
+          user_id: user.id, source: "scon", filename: sconFile.name, row_count: sconRows.length, status: "processing", errors: [],
         }).select().single();
         if (bErr) throw bErr;
         const mapped = sconRows.map(r => ({ ...r, batch_id: batch.id }));
@@ -796,7 +824,7 @@ export function useProcessImport() {
         const totalCronoRows = tree.length + bmValues.length + curvaS.length;
         report("Criando batch Cronograma...");
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "cronograma", filename: cronogramaFile.name, row_count: totalCronoRows, status: "processing",
+          user_id: user.id, source: "cronograma", filename: cronogramaFile.name, row_count: totalCronoRows, status: "processing", errors: [],
         }).select().single();
         if (bErr) throw bErr;
 
