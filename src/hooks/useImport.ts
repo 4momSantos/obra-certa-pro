@@ -90,6 +90,14 @@ function extractIppu(agrupamento: string): string | null {
   return m ? `${m[1]}-${m[2]}` : null;
 }
 
+function findCol(headers: string[], ...candidates: string[]): number {
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h.toLowerCase().includes(c.toLowerCase()));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
 export function parseGitecFile(file: File): Promise<{ rows: ParsedGitecRow[]; warnings: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -99,15 +107,34 @@ export function parseGitecFile(file: File): Promise<{ rows: ParsedGitecRow[]; wa
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
         const warnings: string[] = [];
-        let noAgrup = 0, noStatus = 0;
 
+        const headers = (raw[0] || []).map(h => str(h));
+        const col = {
+          agrupamento: findCol(headers, "agrupamento"),
+          tag: findCol(headers, "tag"),
+          etapa: findCol(headers, "etapa"),
+          status: findCol(headers, "status"),
+          valor: findCol(headers, "valor"),
+          dataExec: findCol(headers, "data de execu", "data_execucao"),
+          dataInf: findCol(headers, "data inf", "data_inf_execucao"),
+          dataAprov: findCol(headers, "data de aprova", "data_aprovacao"),
+          executado: findCol(headers, "executado"),
+          fiscal: findCol(headers, "fiscal"),
+          evidencias: findCol(headers, "evid", "número evid"),
+          comentario: findCol(headers, "coment"),
+        };
+
+        const missing = Object.entries(col).filter(([, v]) => v < 0).map(([k]) => k);
+        if (missing.length > 0) warnings.push(`Colunas não encontradas: ${missing.join(", ")}`);
+
+        let noAgrup = 0, noStatus = 0;
         const rows: ParsedGitecRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const agrupamento = str(r[0]);
-          const tag = str(r[1]);
-          const status = str(r[3]);
+          const agrupamento = col.agrupamento >= 0 ? str(r[col.agrupamento]) : "";
+          const tag = col.tag >= 0 ? str(r[col.tag]) : "";
+          const status = col.status >= 0 ? str(r[col.status]) : "";
           if (!agrupamento && !tag && !status) continue;
           if (!agrupamento) noAgrup++;
           if (!status) noStatus++;
@@ -115,16 +142,16 @@ export function parseGitecFile(file: File): Promise<{ rows: ParsedGitecRow[]; wa
             agrupamento,
             ippu: extractIppu(agrupamento),
             tag,
-            etapa: str(r[2]),
+            etapa: col.etapa >= 0 ? str(r[col.etapa]) : "",
             status,
-            valor: num(r[4]),
-            data_execucao: dateStr(r[5]),
-            data_inf_execucao: dateStr(r[6]),
-            data_aprovacao: dateStr(r[7]),
-            executado_por: str(r[8]),
-            fiscal: str(r[9]),
-            evidencias: str(r[10]),
-            comentario: str(r[11]),
+            valor: col.valor >= 0 ? num(r[col.valor]) : 0,
+            data_execucao: col.dataExec >= 0 ? dateStr(r[col.dataExec]) : null,
+            data_inf_execucao: col.dataInf >= 0 ? dateStr(r[col.dataInf]) : null,
+            data_aprovacao: col.dataAprov >= 0 ? dateStr(r[col.dataAprov]) : null,
+            executado_por: col.executado >= 0 ? str(r[col.executado]) : "",
+            fiscal: col.fiscal >= 0 ? str(r[col.fiscal]) : "",
+            evidencias: col.evidencias >= 0 ? str(r[col.evidencias]) : "",
+            comentario: col.comentario >= 0 ? str(r[col.comentario]) : "",
           });
         }
         if (noAgrup > 0) warnings.push(`${noAgrup} linhas sem Agrupamento`);
@@ -148,24 +175,42 @@ export function parseDocumentsFile(file: File): Promise<{ rows: ParsedDocumentRo
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
         const warnings: string[] = [];
+
+        const headers = (raw[0] || []).map(h => str(h));
+        const col = {
+          documento: findCol(headers, "documento"),
+          revisao: findCol(headers, "revis"),
+          incluido: findCol(headers, "incluido", "incluído"),
+          titulo: findCol(headers, "titulo", "título"),
+          status: findCol(headers, "status"),
+          nivel2: findCol(headers, "nível 2", "nivel 2", "2 nível", "2 nivel"),
+          nivel3: findCol(headers, "nível 3", "nivel 3", "3 nível", "3 nivel"),
+          tipo: findCol(headers, "tipo"),
+          statusWf: findCol(headers, "workflow", "status workflow"),
+          diasWf: findCol(headers, "dias corridos", "dias"),
+        };
+
+        const missing = Object.entries(col).filter(([, v]) => v < 0).map(([k]) => k);
+        if (missing.length > 0) warnings.push(`Colunas não encontradas: ${missing.join(", ")}`);
+
         let noDoc = 0;
         const rows: ParsedDocumentRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const documento = str(r[0]);
+          const documento = col.documento >= 0 ? str(r[col.documento]) : "";
           if (!documento) { noDoc++; continue; }
           rows.push({
             documento,
-            revisao: str(r[1]),
-            incluido_em: str(r[2]),
-            titulo: str(r[3]),
-            status: str(r[4]),
-            nivel2: str(r[5]),
-            nivel3: str(r[6]),
-            tipo: str(r[7]),
-            status_workflow: str(r[8]),
-            dias_corridos_wf: num(r[9]),
+            revisao: col.revisao >= 0 ? str(r[col.revisao]) : "",
+            incluido_em: col.incluido >= 0 ? str(r[col.incluido]) : "",
+            titulo: col.titulo >= 0 ? str(r[col.titulo]) : "",
+            status: col.status >= 0 ? str(r[col.status]) : "",
+            nivel2: col.nivel2 >= 0 ? str(r[col.nivel2]) : "",
+            nivel3: col.nivel3 >= 0 ? str(r[col.nivel3]) : "",
+            tipo: col.tipo >= 0 ? str(r[col.tipo]) : "",
+            status_workflow: col.statusWf >= 0 ? str(r[col.statusWf]) : "",
+            dias_corridos_wf: col.diasWf >= 0 ? num(r[col.diasWf]) : 0,
           });
         }
         if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
@@ -188,22 +233,38 @@ export function parseRevisionsFile(file: File): Promise<{ rows: ParsedRevisionRo
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
         const warnings: string[] = [];
+
+        const headers = (raw[0] || []).map(h => str(h));
+        const col = {
+          documento: findCol(headers, "documento"),
+          revisao: findCol(headers, "revis"),
+          modificado: findCol(headers, "modificado"),
+          titulo: findCol(headers, "titulo", "título"),
+          status: findCol(headers, "status"),
+          nivel2: findCol(headers, "nível 2", "nivel 2", "2 nível", "2 nivel"),
+          textoConsolidacao: findCol(headers, "consolida", "texto"),
+          proposito: findCol(headers, "propósito", "proposito", "emissão", "emissao"),
+        };
+
+        const missing = Object.entries(col).filter(([, v]) => v < 0).map(([k]) => k);
+        if (missing.length > 0) warnings.push(`Colunas não encontradas: ${missing.join(", ")}`);
+
         let noDoc = 0;
         const rows: ParsedRevisionRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const documento = str(r[0]);
+          const documento = col.documento >= 0 ? str(r[col.documento]) : "";
           if (!documento) { noDoc++; continue; }
           rows.push({
             documento,
-            revisao: str(r[1]),
-            modificado_em: str(r[2]),
-            titulo: str(r[3]),
-            status: str(r[4]),
-            nivel2: str(r[5]),
-            texto_consolidacao: str(r[6]),
-            proposito_emissao: str(r[7]),
+            revisao: col.revisao >= 0 ? str(r[col.revisao]) : "",
+            modificado_em: col.modificado >= 0 ? str(r[col.modificado]) : "",
+            titulo: col.titulo >= 0 ? str(r[col.titulo]) : "",
+            status: col.status >= 0 ? str(r[col.status]) : "",
+            nivel2: col.nivel2 >= 0 ? str(r[col.nivel2]) : "",
+            texto_consolidacao: col.textoConsolidacao >= 0 ? str(r[col.textoConsolidacao]) : "",
+            proposito_emissao: col.proposito >= 0 ? str(r[col.proposito]) : "",
           });
         }
         if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
