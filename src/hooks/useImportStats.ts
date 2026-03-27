@@ -31,13 +31,14 @@ export function useImportStats() {
         ? Date.now() - new Date(lastImportAt).getTime() > 7 * 86400000
         : true;
 
-      const counts = { sigem: 0, gitec: 0, scon: 0 };
+      const counts = { sigem: 0, gitec: 0, scon: 0, cronograma: 0 };
       batches.forEach(b => {
         const src = (b.source || "").toLowerCase();
         const rc = b.row_count || 0;
         if (src.includes("sigem")) counts.sigem += rc;
         else if (src.includes("gitec") || src.includes("rel_evento")) counts.gitec += rc;
         else if (src.includes("scon")) counts.scon += rc;
+        else if (src.includes("cronograma")) counts.cronograma += rc;
       });
 
       return { lastImportAt, counts, isStale };
