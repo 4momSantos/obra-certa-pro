@@ -131,8 +131,19 @@ export function PPUDetailSheet({ item, onClose }: Props) {
   const sem = semLabel[item.semaforo];
 
   return (
-    <Sheet open={!!item} onOpenChange={() => onClose()}>
+    <Sheet open={!!item} onOpenChange={() => { setSelectedComponent(null); onClose(); }}>
       <SheetContent className="w-[740px] max-w-full overflow-y-auto p-0">
+        {selectedComponent ? (
+          <div className="p-6">
+            <ComponentDetailPanel
+              componente={selectedComponent}
+              itemWbs={item.item_ppu}
+              onBack={() => setSelectedComponent(null)}
+              onSelectComponent={(c) => setSelectedComponent(c)}
+            />
+          </div>
+        ) : (
+        <>
         {/* Header */}
         <SheetHeader className="p-6 pb-4 border-b">
           <div className="flex items-center gap-3">
