@@ -129,32 +129,42 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
         const warnings: string[] = [];
-        const headers = (raw[0] || []).map(h => str(h).toLowerCase());
+        const headers = (raw[0] || []).map(h => str(h));
 
-        const hasStatusCorreto = headers.some(h => h.includes("status correto") || h.includes("status_correto"));
-        const hasPpu = headers.some(h => h === "ppu");
-        if (!hasStatusCorreto) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
-        if (!hasPpu) warnings.push("Coluna PPU não encontrada");
+        const cDoc = findCol(headers, "documento");
+        const cRev = findCol(headers, "revisão", "revisao", "rev");
+        const cInc = findCol(headers, "incluido em", "incluído em", "incluido");
+        const cTit = findCol(headers, "título", "titulo");
+        const cSta = findCol(headers, "status");
+        const cUp = findCol(headers, "up");
+        const cStaCorr = findCol(headers, "status correto", "status_correto");
+        const cPpu = findCol(headers, "ppu");
+        const cStaGitec = findCol(headers, "status gitec", "status_gitec");
+        const cDocRev = findCol(headers, "documento_revisao", "documento revisão", "doc_rev");
+
+        if (cDoc < 0) warnings.push("Coluna 'Documento' não encontrada no cabeçalho SIGEM");
+        if (cStaCorr < 0) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
+        if (cPpu < 0) warnings.push("Coluna PPU não encontrada");
 
         let noDoc = 0;
         const rows: ParsedSigemRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const documento = str(r[0]);
+          const documento = str(cell(r, cDoc >= 0 ? cDoc : 0));
           if (!documento) { noDoc++; continue; }
-          const status = str(r[4]);
+          const status = str(cell(r, cSta));
           rows.push({
             documento,
-            revisao: str(r[1]),
-            incluido_em: str(r[2]),
-            titulo: str(r[3]),
+            revisao: str(cell(r, cRev)),
+            incluido_em: str(cell(r, cInc)),
+            titulo: str(cell(r, cTit)),
             status,
-            up: str(r[5]),
-            status_correto: hasStatusCorreto ? str(r[15]) || status : status,
-            ppu: hasPpu ? str(r[16]) : "",
-            status_gitec: str(r[17]),
-            documento_revisao: str(r[18]),
+            up: str(cell(r, cUp)),
+            status_correto: cStaCorr >= 0 ? (str(cell(r, cStaCorr)) || status) : status,
+            ppu: cPpu >= 0 ? str(cell(r, cPpu)) : "",
+            status_gitec: str(cell(r, cStaGitec)),
+            documento_revisao: str(cell(r, cDocRev)),
           });
         }
         if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
