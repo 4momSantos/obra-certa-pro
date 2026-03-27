@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, Circle } from "lucide-react";
 import type { MedicaoPPU, Semaforo } from "@/hooks/useMedicao";
 import { usePPUDetail } from "@/hooks/usePPUDetail";
+import { ComponentDetailPanel } from "./ComponentDetailPanel";
 
 function fmtBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -81,6 +82,7 @@ interface Props {
 }
 
 export function PPUDetailSheet({ item, onClose }: Props) {
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
   const { scon, rel, sigem, criterio, eac, isLoading } = usePPUDetail(
     item?.item_ppu ?? null,
     item?.item_gitec ?? null
@@ -129,8 +131,19 @@ export function PPUDetailSheet({ item, onClose }: Props) {
   const sem = semLabel[item.semaforo];
 
   return (
-    <Sheet open={!!item} onOpenChange={() => onClose()}>
+    <Sheet open={!!item} onOpenChange={() => { setSelectedComponent(null); onClose(); }}>
       <SheetContent className="w-[740px] max-w-full overflow-y-auto p-0">
+        {selectedComponent ? (
+          <div className="p-6">
+            <ComponentDetailPanel
+              componente={selectedComponent}
+              itemWbs={item.item_ppu}
+              onBack={() => setSelectedComponent(null)}
+              onSelectComponent={(c) => setSelectedComponent(c)}
+            />
+          </div>
+        ) : (
+        <>
         {/* Header */}
         <SheetHeader className="p-6 pb-4 border-b">
           <div className="flex items-center gap-3">
@@ -219,7 +232,7 @@ export function PPUDetailSheet({ item, onClose }: Props) {
                           {sconSorted.map((c: any, i: number) => {
                             const av = Number(c.avanco_ponderado) || 0;
                             return (
-                              <TableRow key={i}>
+                              <TableRow key={i} className="cursor-pointer hover:bg-muted/60" onClick={() => setSelectedComponent(c.tag_id_proj || c.tag || "")}>
                                 <TableCell className="text-[10px] font-mono">{c.tag || "-"}</TableCell>
                                 <TableCell className="text-[10px]">{c.disciplina || "-"}</TableCell>
                                 <TableCell className="text-[10px]">{c.classe || "-"}</TableCell>
@@ -362,6 +375,8 @@ export function PPUDetailSheet({ item, onClose }: Props) {
             </Accordion>
           )}
         </div>
+        </>
+        )}
       </SheetContent>
     </Sheet>
   );
