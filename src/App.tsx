@@ -22,6 +22,7 @@ import Medicao from "@/pages/Medicao";
 import Tubulacao from "@/pages/Tubulacao";
 import Ajuste from "@/pages/Ajuste";
 import Config from "@/pages/Config";
+import ImportData from "@/pages/ImportData";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const AppRoutes = () => {
           <Route path="/etf" element={<ETF />} />
           <Route path="/medicao" element={<Medicao />} />
           <Route path="/tubulacao" element={<Tubulacao />} />
+          <Route path="/import" element={<ImportData />} />
           <Route path="/ajuste" element={<Ajuste />} />
           <Route path="/config" element={<Config />} />
           <Route
