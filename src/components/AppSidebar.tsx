@@ -1,9 +1,10 @@
 import {
   LayoutDashboard, CalendarRange, Users, FileCheck,
-  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAlertCounts } from "@/hooks/useAlerts";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -19,6 +20,7 @@ const mainItems = [
   { title: "Tubulação", url: "/tubulacao", icon: Pipette },
   { title: "GITEC", url: "/gitec", icon: ClipboardCheck },
   { title: "Documentos", url: "/documentos", icon: FileText },
+  { title: "Alertas", url: "/alertas", icon: AlertTriangle },
   { title: "Importar Dados", url: "/import", icon: Upload },
 ];
 
@@ -32,6 +34,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { role } = useAuth();
   const location = useLocation();
+  const alertCounts = useAlertCounts();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -71,6 +74,16 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
+                      {item.url === "/alertas" && alertCounts.alta > 0 && (
+                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse px-1">
+                          {alertCounts.alta}
+                        </span>
+                      )}
+                      {item.url === "/alertas" && alertCounts.alta === 0 && alertCounts.media > 0 && (
+                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white px-1">
+                          {alertCounts.media}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
