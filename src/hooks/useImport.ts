@@ -774,6 +774,8 @@ export interface ProcessInput {
   sigemFile: File | null;
   relEventoFile: File | null;
   sconFile: File | null;
+  cronogramaResult: CronogramaParseResult | null;
+  cronogramaFile: File | null;
   onProgress: (msg: string, pct: number) => void;
 }
 
