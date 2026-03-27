@@ -232,7 +232,7 @@ export function PPUDetailSheet({ item, onClose }: Props) {
                           {sconSorted.map((c: any, i: number) => {
                             const av = Number(c.avanco_ponderado) || 0;
                             return (
-                              <TableRow key={i}>
+                              <TableRow key={i} className="cursor-pointer hover:bg-muted/60" onClick={() => setSelectedComponent(c.tag || c.tag_id_proj || `comp-${i}`)}>
                                 <TableCell className="text-[10px] font-mono">{c.tag || "-"}</TableCell>
                                 <TableCell className="text-[10px]">{c.disciplina || "-"}</TableCell>
                                 <TableCell className="text-[10px]">{c.classe || "-"}</TableCell>
