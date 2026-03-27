@@ -10,7 +10,8 @@ const BATCHES_KEY = "import-batches";
 
 function str(v: unknown): string {
   if (v == null) return "";
-  return String(v).trim();
+  // Remove null bytes and other chars that break JSON serialization
+  return String(v).trim().replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
 }
 
 function num(v: unknown): number {
@@ -32,6 +33,20 @@ function dateVal(v: unknown): string | null {
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   return s.slice(0, 10);
+}
+
+/** Find column index by fuzzy-matching header names */
+function findCol(headers: string[], ...candidates: string[]): number {
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h.toLowerCase().includes(c.toLowerCase()));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+/** Safe cell read — returns "" if column not found */
+function cell(row: unknown[], col: number): unknown {
+  return col >= 0 ? row[col] : undefined;
 }
 
 // ── Types ──
@@ -114,32 +129,42 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
         const warnings: string[] = [];
-        const headers = (raw[0] || []).map(h => str(h).toLowerCase());
+        const headers = (raw[0] || []).map(h => str(h));
 
-        const hasStatusCorreto = headers.some(h => h.includes("status correto") || h.includes("status_correto"));
-        const hasPpu = headers.some(h => h === "ppu");
-        if (!hasStatusCorreto) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
-        if (!hasPpu) warnings.push("Coluna PPU não encontrada");
+        const cDoc = findCol(headers, "documento");
+        const cRev = findCol(headers, "revisão", "revisao", "rev");
+        const cInc = findCol(headers, "incluido em", "incluído em", "incluido");
+        const cTit = findCol(headers, "título", "titulo");
+        const cSta = findCol(headers, "status");
+        const cUp = findCol(headers, "up");
+        const cStaCorr = findCol(headers, "status correto", "status_correto");
+        const cPpu = findCol(headers, "ppu");
+        const cStaGitec = findCol(headers, "status gitec", "status_gitec");
+        const cDocRev = findCol(headers, "documento_revisao", "documento revisão", "doc_rev");
+
+        if (cDoc < 0) warnings.push("Coluna 'Documento' não encontrada no cabeçalho SIGEM");
+        if (cStaCorr < 0) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
+        if (cPpu < 0) warnings.push("Coluna PPU não encontrada");
 
         let noDoc = 0;
         const rows: ParsedSigemRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const documento = str(r[0]);
+          const documento = str(cell(r, cDoc >= 0 ? cDoc : 0));
           if (!documento) { noDoc++; continue; }
-          const status = str(r[4]);
+          const status = str(cell(r, cSta));
           rows.push({
             documento,
-            revisao: str(r[1]),
-            incluido_em: str(r[2]),
-            titulo: str(r[3]),
+            revisao: str(cell(r, cRev)),
+            incluido_em: str(cell(r, cInc)),
+            titulo: str(cell(r, cTit)),
             status,
-            up: str(r[5]),
-            status_correto: hasStatusCorreto ? str(r[15]) || status : status,
-            ppu: hasPpu ? str(r[16]) : "",
-            status_gitec: str(r[17]),
-            documento_revisao: str(r[18]),
+            up: str(cell(r, cUp)),
+            status_correto: cStaCorr >= 0 ? (str(cell(r, cStaCorr)) || status) : status,
+            ppu: cPpu >= 0 ? str(cell(r, cPpu)) : "",
+            status_gitec: str(cell(r, cStaGitec)),
+            documento_revisao: str(cell(r, cDocRev)),
           });
         }
         if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
@@ -160,42 +185,74 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 2, defval: "" });
         const warnings: string[] = [];
+        const headers = (raw[0] || []).map(h => str(h));
+
+        const cItemPpu = findCol(headers, "item ppu", "item_ppu", "ippu");
+        const cRelSta = findCol(headers, "rel status", "rel_status", "status rel");
+        const cRelStaItem = findCol(headers, "rel status item", "rel_status_item", "status item");
+        const cTagAgrup = findCol(headers, "tag agrup", "tag_agrup");
+        const cQtdPond = findCol(headers, "quantidade ponderada", "qtd ponderada", "qtd_pond");
+        const cEstrutura = findCol(headers, "estrutura");
+        const cFase = findCol(headers, "fase");
+        const cSubfase = findCol(headers, "subfase");
+        const cAgrup = findCol(headers, "agrupamento");
+        const cCarac = findCol(headers, "caracteristica", "característica");
+        const cTag = findCol(headers, "tag");
+        const cQtd = findCol(headers, "qtd");
+        const cUm = findCol(headers, "um", "unidade");
+        const cEtapa = findCol(headers, "etapa");
+        const cPesoFis = findCol(headers, "peso fisico", "peso físico", "peso_fisico");
+        const cPesoFin = findCol(headers, "peso financeiro", "peso_financeiro");
+        const cDataExec = findCol(headers, "data de execução", "data execução", "data_execucao", "data execucao");
+        const cDataInf = findCol(headers, "data inf", "data_inf_execucao", "data inf. exec");
+        const cExecPor = findCol(headers, "executado por", "executado_por");
+        const cNecEvid = findCol(headers, "necessita evidencia", "necessita evidência", "necessita_evidencias");
+        const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero_evidencias", "evidência");
+        const cDataAprov = findCol(headers, "data de aprovação", "data aprovação", "data_aprovacao");
+        const cFiscal = findCol(headers, "fiscal responsável", "fiscal responsavel", "fiscal_responsavel", "fiscal");
+        const cStatus = findCol(headers, "status");
+        const cValor = findCol(headers, "valor");
+        const cComent = findCol(headers, "comentário", "comentario");
+
+        if (cTag < 0) warnings.push("Coluna 'TAG' não encontrada no cabeçalho REL_EVENTO");
+        if (cStatus < 0) warnings.push("Coluna 'Status' não encontrada no cabeçalho REL_EVENTO");
+        if (cValor < 0) warnings.push("Coluna 'Valor' não encontrada no cabeçalho REL_EVENTO");
 
         let noKey = 0;
         const rows: ParsedRelEventoRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const item_ppu = str(r[0]);
-          const tag = str(r[10]);
+          const item_ppu = str(cell(r, cItemPpu));
+          const tag = str(cell(r, cTag));
           if (!item_ppu && !tag) { noKey++; continue; }
           rows.push({
             item_ppu,
-            rel_status: str(r[1]),
-            rel_status_item: str(r[2]),
-            tag_agrup: str(r[3]),
-            quantidade_ponderada: num(r[4]),
-            estrutura: str(r[5]),
-            fase: str(r[6]),
-            subfase: str(r[7]),
-            agrupamento: str(r[8]),
-            caracteristica: str(r[9]),
+            rel_status: str(cell(r, cRelSta)),
+            rel_status_item: str(cell(r, cRelStaItem)),
+            tag_agrup: str(cell(r, cTagAgrup)),
+            quantidade_ponderada: num(cell(r, cQtdPond)),
+            estrutura: str(cell(r, cEstrutura)),
+            fase: str(cell(r, cFase)),
+            subfase: str(cell(r, cSubfase)),
+            agrupamento: str(cell(r, cAgrup)),
+            caracteristica: str(cell(r, cCarac)),
             tag,
-            qtd: num(r[11]),
-            um: str(r[12]),
-            etapa: str(r[13]),
-            peso_fisico: num(r[14]),
-            peso_financeiro: num(r[15]),
-            data_execucao: dateVal(r[16]),
-            data_inf_execucao: dateVal(r[17]),
-            executado_por: str(r[18]),
-            necessita_evidencias: str(r[19]),
-            numero_evidencias: str(r[20]),
-            data_aprovacao: dateVal(r[21]),
-            fiscal_responsavel: str(r[22]),
-            status: str(r[23]),
-            valor: num(r[24]),
-            comentario: str(r[25]),
+            qtd: num(cell(r, cQtd)),
+            um: str(cell(r, cUm)),
+            etapa: str(cell(r, cEtapa)),
+            peso_fisico: num(cell(r, cPesoFis)),
+            peso_financeiro: num(cell(r, cPesoFin)),
+            data_execucao: dateVal(cell(r, cDataExec)),
+            data_inf_execucao: dateVal(cell(r, cDataInf)),
+            executado_por: str(cell(r, cExecPor)),
+            necessita_evidencias: str(cell(r, cNecEvid)),
+            numero_evidencias: str(cell(r, cNumEvid)),
+            data_aprovacao: dateVal(cell(r, cDataAprov)),
+            fiscal_responsavel: str(cell(r, cFiscal)),
+            status: str(cell(r, cStatus)),
+            valor: num(cell(r, cValor)),
+            comentario: str(cell(r, cComent)),
           });
         }
         if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU nem TAG (ignoradas)`);
@@ -216,31 +273,50 @@ export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warn
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: "" });
         const warnings: string[] = [];
+        const headers = (raw[0] || []).map(h => str(h));
+
+        const cItemCrit = findCol(headers, "item criterio", "item critério", "item_criterio");
+        const cRelEsp = findCol(headers, "relatorio esperado", "relatório esperado", "relatorio_esperado");
+        const cStaSigem = findCol(headers, "status sigem", "status_sigem");
+        const cStaGitec = findCol(headers, "status gitec", "status_gitec");
+        const cObra = findCol(headers, "obra", "obra_desc");
+        const cClasse = findCol(headers, "classe");
+        const cDisc = findCol(headers, "disciplina");
+        const cTipo = findCol(headers, "tipo");
+        const cItemWbs = findCol(headers, "item wbs", "item_wbs", "wbs");
+        const cTag = findCol(headers, "tag");
+        const cTagDesc = findCol(headers, "tag desc", "tag_desc", "descrição tag");
+        const cQtdEtapa = findCol(headers, "qtde etapa", "qtde_etapa", "qtd etapa");
+        const cQtdExec = findCol(headers, "qtde etapa exec", "exec acum", "qtde_etapa_exec_acum");
+        const cAvanco = findCol(headers, "avanço ponderado", "avanco ponderado", "avanco_ponderado", "avanço");
+        const cTagIdProj = findCol(headers, "tag id proj", "tag_id_proj");
+
+        if (cTag < 0) warnings.push("Coluna 'TAG' não encontrada no cabeçalho SCON");
 
         let noTag = 0;
         const rows: ParsedSconRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const tag = str(r[9]);
-          const item_wbs = str(r[8]);
+          const tag = str(cell(r, cTag));
+          const item_wbs = str(cell(r, cItemWbs));
           if (!tag && !item_wbs) { noTag++; continue; }
           rows.push({
-            item_criterio: str(r[0]),
-            relatorio_esperado: str(r[1]),
-            status_sigem: str(r[2]),
-            status_gitec: str(r[3]),
-            obra_desc: str(r[4]),
-            classe: str(r[5]),
-            disciplina: str(r[6]),
-            tipo: str(r[7]),
+            item_criterio: str(cell(r, cItemCrit)),
+            relatorio_esperado: str(cell(r, cRelEsp)),
+            status_sigem: str(cell(r, cStaSigem)),
+            status_gitec: str(cell(r, cStaGitec)),
+            obra_desc: str(cell(r, cObra)),
+            classe: str(cell(r, cClasse)),
+            disciplina: str(cell(r, cDisc)),
+            tipo: str(cell(r, cTipo)),
             item_wbs,
             tag,
-            tag_desc: str(r[10]),
-            qtde_etapa: num(r[11]),
-            qtde_etapa_exec_acum: num(r[12]),
-            avanco_ponderado: num(r[13]),
-            tag_id_proj: str(r[14]),
+            tag_desc: str(cell(r, cTagDesc)),
+            qtde_etapa: num(cell(r, cQtdEtapa)),
+            qtde_etapa_exec_acum: num(cell(r, cQtdExec)),
+            avanco_ponderado: num(cell(r, cAvanco)),
+            tag_id_proj: str(cell(r, cTagIdProj)),
           });
         }
         if (noTag > 0) warnings.push(`${noTag} linhas sem TAG nem ItemWBS (ignoradas)`);
