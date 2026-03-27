@@ -10,7 +10,8 @@ const BATCHES_KEY = "import-batches";
 
 function str(v: unknown): string {
   if (v == null) return "";
-  return String(v).trim();
+  // Remove null bytes and other chars that break JSON serialization
+  return String(v).trim().replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
 }
 
 function num(v: unknown): number {
@@ -32,6 +33,20 @@ function dateVal(v: unknown): string | null {
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   return s.slice(0, 10);
+}
+
+/** Find column index by fuzzy-matching header names */
+function findCol(headers: string[], ...candidates: string[]): number {
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h.toLowerCase().includes(c.toLowerCase()));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+/** Safe cell read — returns "" if column not found */
+function cell(row: unknown[], col: number): unknown {
+  return col >= 0 ? row[col] : undefined;
 }
 
 // ── Types ──
