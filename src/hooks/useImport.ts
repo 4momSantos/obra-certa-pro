@@ -786,15 +786,18 @@ export function useProcessImport() {
   return useMutation({
     mutationFn: async (input: ProcessInput) => {
       if (!user) throw new Error("Não autenticado");
-      const { sigemRows, relEventoRows, sconRows, sigemFile, relEventoFile, sconFile, onProgress } = input;
-      const totalRows = sigemRows.length + relEventoRows.length + sconRows.length;
+      const { sigemRows, relEventoRows, sconRows, sigemFile, relEventoFile, sconFile, cronogramaResult, cronogramaFile, onProgress } = input;
+      const cronoRows = cronogramaResult ? cronogramaResult.tree.length + cronogramaResult.bmValues.length + cronogramaResult.curvaS.length : 0;
+      const totalRows = sigemRows.length + relEventoRows.length + sconRows.length + cronoRows;
       let processed = 0;
-      const report = (msg: string) => onProgress(msg, Math.round((processed / totalRows) * 100));
+      const report = (msg: string) => onProgress(msg, Math.round((processed / Math.max(totalRows, 1)) * 100));
       const results: string[] = [];
 
       // Delete previous batches for these sources
       report("Removendo dados anteriores...");
-      for (const src of ["sigem", "rel_evento", "scon"]) {
+      const sourcesToDelete = ["sigem", "rel_evento", "scon"];
+      if (cronogramaResult && cronogramaFile) sourcesToDelete.push("cronograma");
+      for (const src of sourcesToDelete) {
         const { data: old } = await supabase.from("import_batches").select("id").eq("source", src).eq("user_id", user.id);
         if (old && old.length > 0) {
           await supabase.from("import_batches").delete().in("id", old.map(b => b.id));
@@ -850,12 +853,56 @@ export function useProcessImport() {
         results.push(`${sconRows.length.toLocaleString("pt-BR")} componentes`);
       }
 
+      // CRONOGRAMA
+      if (cronogramaResult && cronogramaFile) {
+        const { tree, bmValues, curvaS } = cronogramaResult;
+        const totalCronoRows = tree.length + bmValues.length + curvaS.length;
+        report("Criando batch Cronograma...");
+        const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
+          user_id: user.id, source: "cronograma", filename: cronogramaFile.name, row_count: totalCronoRows, status: "processing",
+        }).select().single();
+        if (bErr) throw bErr;
+
+        // Insert tree nodes
+        if (tree.length > 0) {
+          const mappedTree = tree.map(r => ({ ...r, batch_id: batch.id }));
+          await insertInBatches("cronograma_tree", mappedTree, (done, total) => {
+            report(`Gravando árvore EAP — lote ${done} de ${total}...`);
+          });
+        }
+
+        // Insert BM values (without tree_id for now — linking by ippu)
+        if (bmValues.length > 0) {
+          const mappedBm = bmValues.map(r => ({ ...r, batch_id: batch.id }));
+          await insertInBatches("cronograma_bm_values", mappedBm, (done, total) => {
+            report(`Gravando valores BM — lote ${done} de ${total}...`);
+          });
+        }
+
+        // Insert Curva S
+        if (curvaS.length > 0) {
+          const mappedCs = curvaS.map(r => ({ ...r, batch_id: batch.id }));
+          await insertInBatches("curva_s", mappedCs, (done, total) => {
+            report(`Gravando Curva S — lote ${done} de ${total}...`);
+          });
+        }
+
+        await supabase.from("import_batches").update({ status: "completed", row_count: totalCronoRows }).eq("id", batch.id);
+        processed += totalCronoRows;
+        results.push(`${tree.length} nós EAP + ${bmValues.length} valores BM`);
+      }
+
       onProgress("Concluído!", 100);
       return results.join(" + ");
     },
     onSuccess: (msg) => {
       qc.invalidateQueries({ queryKey: [BATCHES_KEY] });
       qc.invalidateQueries({ queryKey: ["import-existing-counts"] });
+      qc.invalidateQueries({ queryKey: ["cronograma-tree"] });
+      qc.invalidateQueries({ queryKey: ["cronograma-bm"] });
+      qc.invalidateQueries({ queryKey: ["curva-s"] });
+      qc.invalidateQueries({ queryKey: ["ultimo-bm"] });
+      qc.invalidateQueries({ queryKey: ["import-stats"] });
       toast.success(`Importação concluída: ${msg}`);
     },
     onError: (err: Error) => {
