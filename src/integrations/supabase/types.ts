@@ -129,6 +129,210 @@ export type Database = {
         }
         Relationships: []
       }
+      document_revisions: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          documento: string
+          id: string
+          modificado_em: string | null
+          nivel2: string | null
+          proposito_emissao: string | null
+          revisao: string | null
+          status: string | null
+          texto_consolidacao: string | null
+          titulo: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          documento: string
+          id?: string
+          modificado_em?: string | null
+          nivel2?: string | null
+          proposito_emissao?: string | null
+          revisao?: string | null
+          status?: string | null
+          texto_consolidacao?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          documento?: string
+          id?: string
+          modificado_em?: string | null
+          nivel2?: string | null
+          proposito_emissao?: string | null
+          revisao?: string | null
+          status?: string | null
+          texto_consolidacao?: string | null
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_revisions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          dias_corridos_wf: number | null
+          documento: string
+          id: string
+          incluido_em: string | null
+          nivel2: string | null
+          nivel3: string | null
+          revisao: string | null
+          status: string | null
+          status_workflow: string | null
+          tipo: string | null
+          titulo: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          dias_corridos_wf?: number | null
+          documento: string
+          id?: string
+          incluido_em?: string | null
+          nivel2?: string | null
+          nivel3?: string | null
+          revisao?: string | null
+          status?: string | null
+          status_workflow?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          dias_corridos_wf?: number | null
+          documento?: string
+          id?: string
+          incluido_em?: string | null
+          nivel2?: string | null
+          nivel3?: string | null
+          revisao?: string | null
+          status?: string | null
+          status_workflow?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gitec_events: {
+        Row: {
+          agrupamento: string
+          batch_id: string
+          comentario: string | null
+          created_at: string | null
+          data_aprovacao: string | null
+          data_execucao: string | null
+          data_inf_execucao: string | null
+          etapa: string | null
+          evidencias: string | null
+          executado_por: string | null
+          fiscal: string | null
+          id: string
+          ippu: string | null
+          status: string
+          tag: string | null
+          valor: number | null
+        }
+        Insert: {
+          agrupamento?: string
+          batch_id: string
+          comentario?: string | null
+          created_at?: string | null
+          data_aprovacao?: string | null
+          data_execucao?: string | null
+          data_inf_execucao?: string | null
+          etapa?: string | null
+          evidencias?: string | null
+          executado_por?: string | null
+          fiscal?: string | null
+          id?: string
+          ippu?: string | null
+          status?: string
+          tag?: string | null
+          valor?: number | null
+        }
+        Update: {
+          agrupamento?: string
+          batch_id?: string
+          comentario?: string | null
+          created_at?: string | null
+          data_aprovacao?: string | null
+          data_execucao?: string | null
+          data_inf_execucao?: string | null
+          etapa?: string | null
+          evidencias?: string | null
+          executado_por?: string | null
+          fiscal?: string | null
+          id?: string
+          ippu?: string | null
+          status?: string
+          tag?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gitec_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_batches: {
+        Row: {
+          created_at: string | null
+          errors: Json | null
+          filename: string
+          id: string
+          row_count: number | null
+          source: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          errors?: Json | null
+          filename: string
+          id?: string
+          row_count?: number | null
+          source: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          errors?: Json | null
+          filename?: string
+          id?: string
+          row_count?: number | null
+          source?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -173,7 +377,94 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      documents_with_status: {
+        Row: {
+          batch_id: string | null
+          created_at: string | null
+          dias_corridos_wf: number | null
+          documento: string | null
+          has_gitec: boolean | null
+          has_recusa: boolean | null
+          id: string | null
+          incluido_em: string | null
+          nivel2: string | null
+          nivel3: string | null
+          revisao: string | null
+          status: string | null
+          status_workflow: string | null
+          tipo: string | null
+          titulo: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string | null
+          dias_corridos_wf?: number | null
+          documento?: string | null
+          has_gitec?: never
+          has_recusa?: never
+          id?: string | null
+          incluido_em?: string | null
+          nivel2?: string | null
+          nivel3?: string | null
+          revisao?: string | null
+          status?: string | null
+          status_workflow?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string | null
+          dias_corridos_wf?: number | null
+          documento?: string | null
+          has_gitec?: never
+          has_recusa?: never
+          id?: string | null
+          incluido_em?: string | null
+          nivel2?: string | null
+          nivel3?: string | null
+          revisao?: string | null
+          status?: string | null
+          status_workflow?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gitec_by_fiscal: {
+        Row: {
+          aprovados: number | null
+          fiscal: string | null
+          pend_aprov: number | null
+          pend_verif: number | null
+          total: number | null
+          val_pend_aprov: number | null
+          val_pend_verif: number | null
+        }
+        Relationships: []
+      }
+      gitec_by_ippu: {
+        Row: {
+          aprovados: number | null
+          ippu: string | null
+          pend_aprovacao: number | null
+          pend_verificacao: number | null
+          total_eventos: number | null
+          val_aprovado: number | null
+          val_pend_aprov: number | null
+          val_pend_verif: number | null
+          val_total: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
@@ -193,6 +484,10 @@ export type Database = {
       }
       is_dashboard_owner: {
         Args: { d_id: string; u_id: string }
+        Returns: boolean
+      }
+      owns_import_batch: {
+        Args: { b_id: string; u_id: string }
         Returns: boolean
       }
     }
