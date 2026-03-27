@@ -4,12 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle } from "lucide-react";
-import type { ParsedSigemRow, ParsedRelEventoRow, ParsedSconRow } from "@/hooks/useImport";
+import type { ParsedSigemRow, ParsedRelEventoRow, ParsedSconRow, ParsedSconProgRow } from "@/hooks/useImport";
 
 interface Props {
   sigem: ParsedSigemRow[];
   relEvento: ParsedRelEventoRow[];
   scon: ParsedSconRow[];
+  sconProg: ParsedSconProgRow[];
   warnings: string[];
 }
 
@@ -44,7 +45,7 @@ function StatusBar({ items }: { items: { label: string; count: number; color: st
   );
 }
 
-export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, warnings }) => {
+export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconProg, warnings }) => {
   const sigemKpis = useMemo(() => {
     const byStatus: Record<string, number> = {};
     sigem.forEach(r => { byStatus[r.status_correto || "Outros"] = (byStatus[r.status_correto || "Outros"] || 0) + 1; });
@@ -67,10 +68,31 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, warning
     return { zero, low, mid, done };
   }, [scon]);
 
-  const hasData = sigem.length > 0 || relEvento.length > 0 || scon.length > 0;
+  const sconProgKpis = useMemo(() => {
+    if (sconProg.length === 0) return null;
+    const componentes = new Set(sconProg.map(r => r.componente));
+    const disciplinas: Record<string, number> = {};
+    const equipes: Record<string, number> = {};
+    const semanas: string[] = [];
+    sconProg.forEach(r => {
+      if (r.disciplina) disciplinas[r.disciplina] = (disciplinas[r.disciplina] || 0) + 1;
+      if (r.equipe) equipes[r.equipe] = (equipes[r.equipe] || 0) + 1;
+      if (r.semana) semanas.push(r.semana);
+    });
+    const sortedSemanas = [...new Set(semanas)].sort((a, b) => Number(a) - Number(b));
+    return {
+      total: sconProg.length,
+      componentes: componentes.size,
+      disciplinas: Object.entries(disciplinas).sort((a, b) => b[1] - a[1]),
+      equipes: Object.entries(equipes).sort((a, b) => b[1] - a[1]),
+      semanaRange: sortedSemanas.length > 0 ? `${sortedSemanas[0]} → ${sortedSemanas[sortedSemanas.length - 1]}` : "—",
+    };
+  }, [sconProg]);
+
+  const hasData = sigem.length > 0 || relEvento.length > 0 || scon.length > 0 || sconProg.length > 0;
   if (!hasData) return null;
 
-  const defaultTab = sigem.length > 0 ? "sigem" : relEvento.length > 0 ? "rel" : "scon";
+  const defaultTab = sigem.length > 0 ? "sigem" : relEvento.length > 0 ? "rel" : scon.length > 0 ? "scon" : "sconprog";
 
   return (
     <div className="space-y-4">
@@ -100,6 +122,11 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, warning
           {scon.length > 0 && (
             <TabsTrigger value="scon">
               SCON <Badge variant="secondary" className="ml-2">{scon.length.toLocaleString("pt-BR")}</Badge>
+            </TabsTrigger>
+          )}
+          {sconProg.length > 0 && (
+            <TabsTrigger value="sconprog">
+              SCON Prog <Badge variant="secondary" className="ml-2">{sconProg.length.toLocaleString("pt-BR")}</Badge>
             </TabsTrigger>
           )}
         </TabsList>
@@ -218,6 +245,77 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, warning
               </Table>
             </div>
             {scon.length > 15 && <p className="text-xs text-muted-foreground text-center">Mostrando 15 de {scon.length.toLocaleString("pt-BR")}</p>}
+          </TabsContent>
+        )}
+
+        {/* SCON Programação tab */}
+        {sconProg.length > 0 && sconProgKpis && (
+          <TabsContent value="sconprog" className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <KpiCard label="Registros" value={sconProgKpis.total.toLocaleString("pt-BR")} />
+              <KpiCard label="Componentes Únicos" value={sconProgKpis.componentes.toLocaleString("pt-BR")} color="text-primary" />
+              <KpiCard label="Disciplinas" value={sconProgKpis.disciplinas.length} />
+              <KpiCard label="Semanas" value={sconProgKpis.semanaRange} />
+            </div>
+
+            {sconProgKpis.disciplinas.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {sconProgKpis.disciplinas.slice(0, 8).map(([disc, count]) => (
+                  <Badge key={disc} variant="outline" className="text-xs">
+                    {disc}: {count.toLocaleString("pt-BR")}
+                  </Badge>
+                ))}
+                {sconProgKpis.disciplinas.length > 8 && (
+                  <Badge variant="secondary" className="text-xs">+{sconProgKpis.disciplinas.length - 8}</Badge>
+                )}
+              </div>
+            )}
+
+            {sconProgKpis.equipes.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-muted-foreground mr-1">Equipes:</span>
+                {sconProgKpis.equipes.slice(0, 6).map(([eq, count]) => (
+                  <Badge key={eq} variant="outline" className="text-xs">
+                    {eq}: {count.toLocaleString("pt-BR")}
+                  </Badge>
+                ))}
+                {sconProgKpis.equipes.length > 6 && (
+                  <Badge variant="secondary" className="text-xs">+{sconProgKpis.equipes.length - 6}</Badge>
+                )}
+              </div>
+            )}
+
+            <div className="rounded-lg border overflow-auto max-h-[350px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Componente</TableHead>
+                    <TableHead>Etapa</TableHead>
+                    <TableHead>Semana</TableHead>
+                    <TableHead>Equipe</TableHead>
+                    <TableHead>Disciplina</TableHead>
+                    <TableHead className="text-right">Prog</TableHead>
+                    <TableHead className="text-right">Exec Sem</TableHead>
+                    <TableHead>ItemWBS</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sconProg.slice(0, 15).map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs max-w-[180px] truncate">{r.componente}</TableCell>
+                      <TableCell className="text-xs">{r.etapa || "-"}</TableCell>
+                      <TableCell className="text-xs">{r.semana || "-"}</TableCell>
+                      <TableCell className="text-xs">{r.equipe || "-"}</TableCell>
+                      <TableCell className="text-xs">{r.disciplina || "-"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{r.programado_componente}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{r.total_exec_semana}</TableCell>
+                      <TableCell className="font-mono text-xs">{r.item_wbs || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {sconProg.length > 15 && <p className="text-xs text-muted-foreground text-center">Mostrando 15 de {sconProg.length.toLocaleString("pt-BR")}</p>}
           </TabsContent>
         )}
       </Tabs>
