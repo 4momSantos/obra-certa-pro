@@ -41,7 +41,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({ label, description, requ
     <Card
       className={cn(
         "relative cursor-pointer transition-all hover:shadow-md",
-        file ? "border-emerald-500 bg-emerald-500/5" : required ? "border-primary border-2" : "border-dashed border-2 border-muted-foreground/30",
+        file ? "border-primary bg-primary/5" : required ? "border-primary border-2" : "border-dashed border-2 border-muted-foreground/30",
         dragOver && "border-primary bg-primary/5 scale-[1.02]"
       )}
       onClick={() => !file && inputRef.current?.click()}
@@ -54,7 +54,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({ label, description, requ
 
         {file ? (
           <>
-            <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            <CheckCircle2 className="h-10 w-10 text-primary" />
             <div className="text-center">
               <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
               <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>

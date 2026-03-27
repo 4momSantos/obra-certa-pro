@@ -156,8 +156,8 @@ const ImportData: React.FC = () => {
 
       {/* Existing data warning */}
       {hasExisting && hasData && (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 p-4 text-sm">
-          <p className="font-medium text-amber-600">⚠ Dados existentes encontrados</p>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm">
+          <p className="font-medium text-destructive">⚠ Dados existentes encontrados</p>
           <p className="text-muted-foreground mt-1">
             {existing?.gitec ? `${existing.gitec} eventos GITEC` : ""}
             {existing?.documents ? `${existing.gitec ? ", " : ""}${existing.documents} documentos` : ""}
