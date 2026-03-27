@@ -50,6 +50,7 @@ const AppRoutes = () => {
           <Route path="/medicao" element={<Medicao />} />
           <Route path="/tubulacao" element={<Tubulacao />} />
           <Route path="/import" element={<ImportData />} />
+          <Route path="/gitec" element={<GitecPipeline />} />
           <Route path="/ajuste" element={<Ajuste />} />
           <Route path="/config" element={<Config />} />
           <Route

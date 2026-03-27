@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CalendarRange, Users, FileCheck,
-  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
