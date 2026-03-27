@@ -27,6 +27,7 @@ const mainItems = [
 const configItems = [
   { title: "Ajuste Automático", url: "/ajuste", icon: SlidersHorizontal },
   { title: "Configurações", url: "/config", icon: Settings },
+  { title: "Configuração", url: "/configuracao", icon: Settings },
 ];
 
 export function AppSidebar() {
