@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, CalendarRange, Users, FileCheck,
+  LayoutDashboard, CalendarRange, Users, FileCheck, BarChart3,
   Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -13,10 +13,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 const mainItems = [
+  { title: "Medição", url: "/medicao", icon: BarChart3 },
   { title: "Dashboards", url: "/dashboards", icon: LayoutDashboard },
   { title: "Cronograma", url: "/cronograma", icon: CalendarRange },
   { title: "ETF Semanal", url: "/etf", icon: Users },
-  { title: "Medição", url: "/medicao", icon: FileCheck },
   { title: "Tubulação", url: "/tubulacao", icon: Pipette },
   { title: "GITEC", url: "/gitec", icon: ClipboardCheck },
   { title: "Documentos", url: "/documentos", icon: FileText },
