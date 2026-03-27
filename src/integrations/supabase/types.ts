@@ -14,6 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      classificacao_ppu: {
+        Row: {
+          agrupamento: string | null
+          batch_id: string | null
+          created_at: string | null
+          disciplina: string | null
+          fase: string | null
+          id: string
+          item_eap: string | null
+          item_gitec: string | null
+          item_ppu: string
+          subfase: string | null
+        }
+        Insert: {
+          agrupamento?: string | null
+          batch_id?: string | null
+          created_at?: string | null
+          disciplina?: string | null
+          fase?: string | null
+          id?: string
+          item_eap?: string | null
+          item_gitec?: string | null
+          item_ppu: string
+          subfase?: string | null
+        }
+        Update: {
+          agrupamento?: string | null
+          batch_id?: string | null
+          created_at?: string | null
+          disciplina?: string | null
+          fase?: string | null
+          id?: string
+          item_eap?: string | null
+          item_gitec?: string | null
+          item_ppu?: string
+          subfase?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classificacao_ppu_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      criterio_medicao: {
+        Row: {
+          batch_id: string | null
+          created_at: string | null
+          dicionario_etapa: string | null
+          id: string
+          identificador: string | null
+          item_ppu: string | null
+          nivel_estrutura: string | null
+          nome: string | null
+          peso_absoluto: number | null
+          peso_fisico_fin: number | null
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string | null
+          dicionario_etapa?: string | null
+          id?: string
+          identificador?: string | null
+          item_ppu?: string | null
+          nivel_estrutura?: string | null
+          nome?: string | null
+          peso_absoluto?: number | null
+          peso_fisico_fin?: number | null
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string | null
+          dicionario_etapa?: string | null
+          id?: string
+          identificador?: string | null
+          item_ppu?: string | null
+          nivel_estrutura?: string | null
+          nome?: string | null
+          peso_absoluto?: number | null
+          peso_fisico_fin?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "criterio_medicao_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_shares: {
         Row: {
           created_at: string | null
@@ -235,6 +329,101 @@ export type Database = {
           },
         ]
       }
+      eac_items: {
+        Row: {
+          agrupamento: string | null
+          batch_id: string | null
+          created_at: string | null
+          data_inicio: string | null
+          data_termino: string | null
+          estrutura: string | null
+          fase: string | null
+          id: string
+          med_acumulada: number | null
+          peso_fisico: number | null
+          ppu: string
+          ppu_agrup: string | null
+          previsto: number | null
+          qtd_escopo: number | null
+          qtd_prevista: number | null
+          qtd_utilizada_medicao: string | null
+          realizado: number | null
+          sistema: string | null
+          subfase: string | null
+          tipo_curva: string | null
+          um: string | null
+          up: string | null
+          up_id: string | null
+          valor_financeiro: number | null
+          valor_saldo: number | null
+          vlr_medido: number | null
+        }
+        Insert: {
+          agrupamento?: string | null
+          batch_id?: string | null
+          created_at?: string | null
+          data_inicio?: string | null
+          data_termino?: string | null
+          estrutura?: string | null
+          fase?: string | null
+          id?: string
+          med_acumulada?: number | null
+          peso_fisico?: number | null
+          ppu: string
+          ppu_agrup?: string | null
+          previsto?: number | null
+          qtd_escopo?: number | null
+          qtd_prevista?: number | null
+          qtd_utilizada_medicao?: string | null
+          realizado?: number | null
+          sistema?: string | null
+          subfase?: string | null
+          tipo_curva?: string | null
+          um?: string | null
+          up?: string | null
+          up_id?: string | null
+          valor_financeiro?: number | null
+          valor_saldo?: number | null
+          vlr_medido?: number | null
+        }
+        Update: {
+          agrupamento?: string | null
+          batch_id?: string | null
+          created_at?: string | null
+          data_inicio?: string | null
+          data_termino?: string | null
+          estrutura?: string | null
+          fase?: string | null
+          id?: string
+          med_acumulada?: number | null
+          peso_fisico?: number | null
+          ppu?: string
+          ppu_agrup?: string | null
+          previsto?: number | null
+          qtd_escopo?: number | null
+          qtd_prevista?: number | null
+          qtd_utilizada_medicao?: string | null
+          realizado?: number | null
+          sistema?: string | null
+          subfase?: string | null
+          tipo_curva?: string | null
+          um?: string | null
+          up?: string | null
+          up_id?: string | null
+          valor_financeiro?: number | null
+          valor_saldo?: number | null
+          vlr_medido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eac_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gitec_events: {
         Row: {
           agrupamento: string
@@ -333,6 +522,95 @@ export type Database = {
         }
         Relationships: []
       }
+      ppu_items: {
+        Row: {
+          agrupamento: string | null
+          batch_id: string | null
+          carac: string | null
+          created_at: string | null
+          criterio_medicao_ref: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          descricao: string | null
+          disc: string | null
+          fam: string | null
+          fase: string | null
+          flag: string | null
+          id: string
+          item_eap: string | null
+          item_gitec: string | null
+          item_lc: string | null
+          item_ppu: string
+          preco_unit: number | null
+          qtd: number | null
+          reajuste: string | null
+          subfase: string | null
+          unid_medida: string | null
+          valor_medido: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          agrupamento?: string | null
+          batch_id?: string | null
+          carac?: string | null
+          created_at?: string | null
+          criterio_medicao_ref?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          disc?: string | null
+          fam?: string | null
+          fase?: string | null
+          flag?: string | null
+          id?: string
+          item_eap?: string | null
+          item_gitec?: string | null
+          item_lc?: string | null
+          item_ppu: string
+          preco_unit?: number | null
+          qtd?: number | null
+          reajuste?: string | null
+          subfase?: string | null
+          unid_medida?: string | null
+          valor_medido?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          agrupamento?: string | null
+          batch_id?: string | null
+          carac?: string | null
+          created_at?: string | null
+          criterio_medicao_ref?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          disc?: string | null
+          fam?: string | null
+          fase?: string | null
+          flag?: string | null
+          id?: string
+          item_eap?: string | null
+          item_gitec?: string | null
+          item_lc?: string | null
+          item_ppu?: string
+          preco_unit?: number | null
+          qtd?: number | null
+          reajuste?: string | null
+          subfase?: string | null
+          unid_medida?: string | null
+          valor_medido?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ppu_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -356,6 +634,237 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      rel_eventos: {
+        Row: {
+          agrupamento: string | null
+          batch_id: string
+          caracteristica: string | null
+          comentario: string | null
+          created_at: string | null
+          data_aprovacao: string | null
+          data_execucao: string | null
+          data_inf_execucao: string | null
+          estrutura: string | null
+          etapa: string | null
+          executado_por: string | null
+          fase: string | null
+          fiscal_responsavel: string | null
+          id: string
+          item_ppu: string | null
+          necessita_evidencias: string | null
+          numero_evidencias: string | null
+          peso_financeiro: number | null
+          peso_fisico: number | null
+          qtd: number | null
+          quantidade_ponderada: number | null
+          rel_status: string | null
+          rel_status_item: string | null
+          status: string | null
+          subfase: string | null
+          tag: string | null
+          tag_agrup: string | null
+          um: string | null
+          valor: number | null
+        }
+        Insert: {
+          agrupamento?: string | null
+          batch_id: string
+          caracteristica?: string | null
+          comentario?: string | null
+          created_at?: string | null
+          data_aprovacao?: string | null
+          data_execucao?: string | null
+          data_inf_execucao?: string | null
+          estrutura?: string | null
+          etapa?: string | null
+          executado_por?: string | null
+          fase?: string | null
+          fiscal_responsavel?: string | null
+          id?: string
+          item_ppu?: string | null
+          necessita_evidencias?: string | null
+          numero_evidencias?: string | null
+          peso_financeiro?: number | null
+          peso_fisico?: number | null
+          qtd?: number | null
+          quantidade_ponderada?: number | null
+          rel_status?: string | null
+          rel_status_item?: string | null
+          status?: string | null
+          subfase?: string | null
+          tag?: string | null
+          tag_agrup?: string | null
+          um?: string | null
+          valor?: number | null
+        }
+        Update: {
+          agrupamento?: string | null
+          batch_id?: string
+          caracteristica?: string | null
+          comentario?: string | null
+          created_at?: string | null
+          data_aprovacao?: string | null
+          data_execucao?: string | null
+          data_inf_execucao?: string | null
+          estrutura?: string | null
+          etapa?: string | null
+          executado_por?: string | null
+          fase?: string | null
+          fiscal_responsavel?: string | null
+          id?: string
+          item_ppu?: string | null
+          necessita_evidencias?: string | null
+          numero_evidencias?: string | null
+          peso_financeiro?: number | null
+          peso_fisico?: number | null
+          qtd?: number | null
+          quantidade_ponderada?: number | null
+          rel_status?: string | null
+          rel_status_item?: string | null
+          status?: string | null
+          subfase?: string | null
+          tag?: string | null
+          tag_agrup?: string | null
+          um?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rel_eventos_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scon_components: {
+        Row: {
+          avanco_ponderado: number | null
+          batch_id: string
+          classe: string | null
+          created_at: string | null
+          disciplina: string | null
+          id: string
+          item_criterio: string | null
+          item_wbs: string | null
+          obra_desc: string | null
+          qtde_etapa: number | null
+          qtde_etapa_exec_acum: number | null
+          relatorio_esperado: string | null
+          status_gitec: string | null
+          status_sigem: string | null
+          tag: string | null
+          tag_desc: string | null
+          tag_id_proj: string | null
+          tipo: string | null
+        }
+        Insert: {
+          avanco_ponderado?: number | null
+          batch_id: string
+          classe?: string | null
+          created_at?: string | null
+          disciplina?: string | null
+          id?: string
+          item_criterio?: string | null
+          item_wbs?: string | null
+          obra_desc?: string | null
+          qtde_etapa?: number | null
+          qtde_etapa_exec_acum?: number | null
+          relatorio_esperado?: string | null
+          status_gitec?: string | null
+          status_sigem?: string | null
+          tag?: string | null
+          tag_desc?: string | null
+          tag_id_proj?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          avanco_ponderado?: number | null
+          batch_id?: string
+          classe?: string | null
+          created_at?: string | null
+          disciplina?: string | null
+          id?: string
+          item_criterio?: string | null
+          item_wbs?: string | null
+          obra_desc?: string | null
+          qtde_etapa?: number | null
+          qtde_etapa_exec_acum?: number | null
+          relatorio_esperado?: string | null
+          status_gitec?: string | null
+          status_sigem?: string | null
+          tag?: string | null
+          tag_desc?: string | null
+          tag_id_proj?: string | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scon_components_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sigem_documents: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          documento: string
+          documento_revisao: string | null
+          id: string
+          incluido_em: string | null
+          ppu: string | null
+          revisao: string | null
+          status: string | null
+          status_correto: string | null
+          status_gitec: string | null
+          titulo: string | null
+          up: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          documento: string
+          documento_revisao?: string | null
+          id?: string
+          incluido_em?: string | null
+          ppu?: string | null
+          revisao?: string | null
+          status?: string | null
+          status_correto?: string | null
+          status_gitec?: string | null
+          titulo?: string | null
+          up?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          documento?: string
+          documento_revisao?: string | null
+          id?: string
+          incluido_em?: string | null
+          ppu?: string | null
+          revisao?: string | null
+          status?: string | null
+          status_correto?: string | null
+          status_gitec?: string | null
+          titulo?: string | null
+          up?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sigem_documents_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -462,6 +971,57 @@ export type Database = {
           val_pend_aprov: number | null
           val_pend_verif: number | null
           val_total: number | null
+        }
+        Relationships: []
+      }
+      vw_fiscais: {
+        Row: {
+          aprovados: number | null
+          fiscal_responsavel: string | null
+          pendentes: number | null
+          total: number | null
+          valor_aprovado: number | null
+          valor_pendente: number | null
+        }
+        Relationships: []
+      }
+      vw_gitec_por_ppu: {
+        Row: {
+          eventos_concluidos: number | null
+          eventos_pendentes: number | null
+          item_ppu: string | null
+          status_aprovado: number | null
+          status_pendente: number | null
+          total_eventos: number | null
+          valor_aprovado: number | null
+          valor_pendente: number | null
+          valor_ponderado_concluido: number | null
+          valor_ponderado_total: number | null
+          valor_total: number | null
+        }
+        Relationships: []
+      }
+      vw_scon_por_ppu: {
+        Row: {
+          avg_avanco: number | null
+          concluidos: number | null
+          em_andamento: number | null
+          item_wbs: string | null
+          nao_iniciados: number | null
+          qtde_executada: number | null
+          qtde_programada: number | null
+          total_componentes: number | null
+        }
+        Relationships: []
+      }
+      vw_sigem_por_ppu: {
+        Row: {
+          docs_comentarios: number | null
+          docs_ok: number | null
+          docs_recusados: number | null
+          docs_workflow: number | null
+          ppu: string | null
+          total_docs: number | null
         }
         Relationships: []
       }
