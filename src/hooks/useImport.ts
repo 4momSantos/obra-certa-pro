@@ -10,15 +10,42 @@ const BATCHES_KEY = "import-batches";
 
 function str(v: unknown): string {
   if (v == null) return "";
-  // Remove null bytes and other chars that break JSON serialization
-  return String(v).trim().replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+  return String(v)
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u2028\u2029]/g, "")
+    .replace(/[\ud800-\udfff]/g, "")
+    .trim();
 }
 
 function num(v: unknown): number {
-  if (v == null) return 0;
-  const s = String(v).replace(",", ".");
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+  if (v == null || v === "") return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+
+  const raw = str(v)
+    .replace(/^R\$\s*/i, "")
+    .replace(/%$/i, "")
+    .replace(/\s+/g, "");
+
+  if (!raw) return 0;
+
+  const negative = raw.startsWith("(") && raw.endsWith(")");
+  const unsigned = raw.replace(/[()]/g, "");
+  const hasComma = unsigned.includes(",");
+  const hasDot = unsigned.includes(".");
+
+  let normalized = unsigned;
+  if (hasComma && hasDot) {
+    normalized = unsigned.lastIndexOf(",") > unsigned.lastIndexOf(".")
+      ? unsigned.replace(/\./g, "").replace(",", ".")
+      : unsigned.replace(/,/g, "");
+  } else if (hasComma) {
+    normalized = unsigned.replace(/\./g, "").replace(",", ".");
+  } else {
+    normalized = unsigned.replace(/,/g, "");
+  }
+
+  const n = Number.parseFloat(normalized);
+  if (!Number.isFinite(n)) return 0;
+  return negative ? -n : n;
 }
 
 function dateVal(v: unknown): string | null {
@@ -36,17 +63,65 @@ function dateVal(v: unknown): string | null {
 }
 
 /** Find column index by fuzzy-matching header names */
+function normalizeHeader(value: string): string {
+  return str(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function findCol(headers: string[], ...candidates: string[]): number {
+  const normalizedHeaders = headers.map(normalizeHeader);
+
   for (const c of candidates) {
-    const idx = headers.findIndex(h => h.toLowerCase().includes(c.toLowerCase()));
+    const normalizedCandidate = normalizeHeader(c);
+    const idx = normalizedHeaders.findIndex(h => h === normalizedCandidate);
     if (idx >= 0) return idx;
   }
+
+  for (const c of candidates) {
+    const normalizedCandidate = normalizeHeader(c);
+    const idx = normalizedHeaders.findIndex(
+      h => h.includes(normalizedCandidate) || normalizedCandidate.includes(h)
+    );
+    if (idx >= 0) return idx;
+  }
+
   return -1;
 }
 
 /** Safe cell read — returns "" if column not found */
 function cell(row: unknown[], col: number): unknown {
   return col >= 0 ? row[col] : undefined;
+}
+
+function sanitizeForInsert(value: unknown): unknown {
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return str(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.map(sanitizeForInsert);
+
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([key, innerValue]) => [key, sanitizeForInsert(innerValue)])
+        .filter(([, innerValue]) => innerValue !== undefined)
+    );
+  }
+
+  return str(value);
+}
+
+function sanitizeRowForInsert(row: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(row)
+      .map(([key, value]) => [key, sanitizeForInsert(value)])
+      .filter(([, value]) => value !== undefined)
+  );
 }
 
 // ── Types ──
@@ -135,10 +210,10 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
         const cRev = findCol(headers, "revisão", "revisao", "rev");
         const cInc = findCol(headers, "incluido em", "incluído em", "incluido");
         const cTit = findCol(headers, "título", "titulo");
-        const cSta = findCol(headers, "status");
+        const cSta = findCol(headers, "status", "status documento");
         const cUp = findCol(headers, "up");
         const cStaCorr = findCol(headers, "status correto", "status_correto");
-        const cPpu = findCol(headers, "ppu");
+        const cPpu = findCol(headers, "ppu", "item ppu", "item_ppu", "ippu");
         const cStaGitec = findCol(headers, "status gitec", "status_gitec");
         const cDocRev = findCol(headers, "documento_revisao", "documento revisão", "doc_rev");
 
@@ -210,7 +285,7 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero_evidencias", "evidência");
         const cDataAprov = findCol(headers, "data de aprovação", "data aprovação", "data_aprovacao");
         const cFiscal = findCol(headers, "fiscal responsável", "fiscal responsavel", "fiscal_responsavel", "fiscal");
-        const cStatus = findCol(headers, "status");
+        const cStatus = findCol(headers, "status", "status evento");
         const cValor = findCol(headers, "valor");
         const cComent = findCol(headers, "comentário", "comentario");
 
@@ -386,12 +461,31 @@ async function insertInBatches(
   rows: Record<string, unknown>[],
   onProgress?: (done: number, total: number) => void
 ) {
+  const sanitizedRows = rows.map(sanitizeRowForInsert);
   const BATCH = 500;
-  const totalBatches = Math.ceil(rows.length / BATCH);
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const chunk = rows.slice(i, i + BATCH);
+  const totalBatches = Math.ceil(sanitizedRows.length / BATCH);
+  for (let i = 0; i < sanitizedRows.length; i += BATCH) {
+    const chunk = sanitizedRows.slice(i, i + BATCH);
     const { error } = await supabase.from(table as any).insert(chunk as any);
-    if (error) throw error;
+    if (error) {
+      for (let j = 0; j < chunk.length; j++) {
+        const row = chunk[j];
+        const { error: rowError } = await supabase.from(table as any).insert(row as any);
+        if (rowError) {
+          const sample = Object.entries(row)
+            .filter(([, value]) => value !== null && value !== "")
+            .slice(0, 6)
+            .map(([key, value]) => `${key}=${String(value).slice(0, 40)}`)
+            .join(", ");
+
+          throw new Error(
+            `Erro ao gravar ${table} na linha ${i + j + 1}: ${rowError.message}${sample ? `. Campos: ${sample}` : ""}`
+          );
+        }
+      }
+
+      throw error;
+    }
     onProgress?.(Math.min(Math.floor(i / BATCH) + 1, totalBatches), totalBatches);
   }
 }
