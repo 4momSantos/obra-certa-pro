@@ -199,7 +199,7 @@ const ImportData: React.FC = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction variant="outline" onClick={() => doProcess(false)}>
+            <AlertDialogAction onClick={() => doProcess(false)} className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
               Adicionar
             </AlertDialogAction>
             <AlertDialogAction onClick={() => doProcess(true)}>

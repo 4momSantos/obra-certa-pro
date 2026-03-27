@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CalendarRange, Users, FileCheck,
-  Pipette, SlidersHorizontal, Settings, Building2, Shield,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -17,6 +17,7 @@ const mainItems = [
   { title: "ETF Semanal", url: "/etf", icon: Users },
   { title: "Medição", url: "/medicao", icon: FileCheck },
   { title: "Tubulação", url: "/tubulacao", icon: Pipette },
+  { title: "Importar Dados", url: "/import", icon: Upload },
 ];
 
 const configItems = [
