@@ -26,6 +26,7 @@ import ImportData from "@/pages/ImportData";
 import GitecPipeline from "@/pages/GitecPipeline";
 import DocumentsPage from "@/pages/DocumentsPage";
 import AlertsPage from "@/pages/AlertsPage";
+import Simulador from "@/pages/Simulador";
 import Configuracao from "@/pages/Configuracao";
 import NotFound from "@/pages/NotFound";
 
@@ -56,6 +57,7 @@ const AppRoutes = () => {
           <Route path="/gitec" element={<GitecPipeline />} />
           <Route path="/documentos" element={<DocumentsPage />} />
           <Route path="/alertas" element={<AlertsPage />} />
+          <Route path="/simulador" element={<Simulador />} />
           <Route path="/ajuste" element={<Ajuste />} />
           <Route path="/config" element={<Config />} />
           <Route path="/configuracao" element={<Configuracao />} />
