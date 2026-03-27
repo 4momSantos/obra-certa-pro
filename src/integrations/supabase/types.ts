@@ -180,11 +180,19 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_dashboard_share: {
+        Args: { d_id: string; u_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_dashboard_owner: {
+        Args: { d_id: string; u_id: string }
         Returns: boolean
       }
     }
