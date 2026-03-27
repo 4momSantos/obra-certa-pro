@@ -151,6 +151,40 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
   });
 }
 
+export interface GitecFiscalRow {
+  fiscal: string;
+  total: number;
+  aprovados: number;
+  pend_verif: number;
+  pend_aprov: number;
+  val_pend_verif: number;
+  val_pend_aprov: number;
+}
+
+export function useGitecByFiscal() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [GITEC_KEY, "by-fiscal", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<GitecFiscalRow[]> => {
+      const { data, error } = await supabase.from("gitec_by_fiscal").select("*");
+      if (error) throw error;
+      return ((data ?? []) as any[])
+        .map(r => ({
+          ...r,
+          total: Number(r.total) || 0,
+          aprovados: Number(r.aprovados) || 0,
+          pend_verif: Number(r.pend_verif) || 0,
+          pend_aprov: Number(r.pend_aprov) || 0,
+          val_pend_verif: Number(r.val_pend_verif) || 0,
+          val_pend_aprov: Number(r.val_pend_aprov) || 0,
+        }))
+        .sort((a, b) => (b.val_pend_verif + b.val_pend_aprov) - (a.val_pend_verif + a.val_pend_aprov));
+    },
+  });
+}
+
 export interface GitecIPPURow {
   ippu: string;
   total_eventos: number;
