@@ -375,6 +375,8 @@ export function PPUDetailSheet({ item, onClose }: Props) {
             </Accordion>
           )}
         </div>
+        </>
+        )}
       </SheetContent>
     </Sheet>
   );
