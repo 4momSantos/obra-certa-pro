@@ -12,6 +12,7 @@ export interface MedicaoPPU {
   subfase: string;
   agrupamento: string;
   disciplina: string;
+  item_gitec: string;
   valor_total: number;
   valor_medido: number;
   // SCON
@@ -74,7 +75,7 @@ export function useMedicaoData() {
     queryFn: async () => {
       const [ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView] = await Promise.all([
         fetchAll<any>("ppu_items", "item_ppu,descricao,valor_total,valor_medido"),
-        fetchAll<any>("classificacao_ppu", "item_ppu,fase,subfase,agrupamento,disciplina"),
+        fetchAll<any>("classificacao_ppu", "item_ppu,item_gitec,fase,subfase,agrupamento,disciplina"),
         fetchAll<any>("eac_items", "ppu,previsto,realizado,valor_financeiro"),
         fetchAll<any>("vw_scon_por_ppu"),
         fetchAll<any>("vw_sigem_por_ppu"),
@@ -161,7 +162,7 @@ export function useMedicaoData() {
       return {
         item_ppu: p.item_ppu,
         descricao: p.descricao || "",
-        fase, subfase, agrupamento: classif?.agrupamento || "", disciplina,
+        fase, subfase, agrupamento: classif?.agrupamento || "", disciplina, item_gitec: classif?.item_gitec || "",
         valor_total, valor_medido,
         scon_avg_avanco: scon_avg,
         scon_total: Number(scon?.total_componentes) || 0,
