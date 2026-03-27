@@ -213,6 +213,40 @@ export interface ParsedSconRow {
   tag_id_proj: string;
 }
 
+export interface ParsedSconProgRow {
+  componente: string;
+  etapa: string;
+  atividade: string;
+  semana: string;
+  data_inicio: string | null;
+  data_fim: string | null;
+  equipe: string;
+  equipe_desc: string;
+  encarregado: string;
+  supervisor: string;
+  engenheiro: string;
+  gerente: string;
+  programado_componente: number;
+  total_exec_semana: number;
+  total_exec_geral: number;
+  peso_stagecode: number;
+  cwp: string;
+  disciplina: string;
+  classe: string;
+  tipo: string;
+  tag_id_proj: string;
+  documento: string;
+  pacote: string;
+  proposito: string;
+  id_primavera: string;
+  unit_valor: number;
+  unit: string;
+  indice_rop: number;
+  peso_custcode: number;
+  indice_atual: number;
+  item_wbs: string;
+}
+
 export interface ParseResult {
   sigem: ParsedSigemRow[];
   relEvento: ParsedRelEventoRow[];
@@ -422,6 +456,129 @@ export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warn
           });
         }
         if (noTag > 0) warnings.push(`${noTag} linhas sem TAG nem ItemWBS (ignoradas)`);
+        resolve({ rows, warnings });
+      } catch (err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ── SCON Programação Parser ──
+
+export function parseSconProgramacaoFile(file: File): Promise<{ rows: ParsedSconProgRow[]; warnings: string[] }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target?.result, { type: "array", cellDates: false });
+        const sheetName = wb.SheetNames.find(s =>
+          s.toLowerCase().includes("consulta") || s.toLowerCase().includes("scon") || s.toLowerCase().includes("prog")
+        ) || wb.SheetNames[0];
+        const raw: unknown[][] = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: null, raw: false });
+        const warnings: string[] = [];
+        const headers = (raw[0] || []).map((h, i) => h != null ? str(h) : `col_${i}`);
+
+        const cComp = findCol(headers, "COMPONENTE", "componente");
+        const cEtapa = findCol(headers, "ETAPA", "etapa");
+        const cAtiv = findCol(headers, "ATIVIDADE", "atividade");
+        const cSemana = findCol(headers, "SEMANA", "semana");
+        const cDtIni = findCol(headers, "DATA_INICIO", "data inicio", "data_inicio");
+        const cDtFim = findCol(headers, "DATA_FIM", "data fim", "data_fim");
+        const cEquipe = findCol(headers, "EQUIPE", "equipe");
+        const cEquipeDesc = findCol(headers, "EQUIPE_DESC", "equipe desc", "equipe_desc");
+        const cEncarr = findCol(headers, "ENCARREGADO", "encarregado");
+        const cSuper = findCol(headers, "SUPERVISOR", "supervisor");
+        const cEng = findCol(headers, "ENGENHEIRO", "engenheiro");
+        const cGer = findCol(headers, "GERENTE", "gerente");
+        const cProgComp = findCol(headers, "PROGRAMADO_COMPONENTE", "programado componente", "programado_componente");
+        const cExecSem = findCol(headers, "TOTAL_EXEC_SEMANA", "total exec semana", "total_exec_semana");
+        const cExecGeral = findCol(headers, "TOTAL_EXEC_GERAL", "total exec geral", "total_exec_geral");
+        const cPesoStage = findCol(headers, "PESO_STAGECODE", "peso stagecode", "peso_stagecode");
+        const cCwp = findCol(headers, "CWP", "cwp");
+        const cDisc = findCol(headers, "DISCIPLINA", "disciplina");
+        const cClasse = findCol(headers, "Classe", "classe", "CLASSE");
+        const cTipo = findCol(headers, "Tipo", "tipo", "TIPO");
+        const cTagIdProj = findCol(headers, "TagIDProj", "tag id proj", "tag_id_proj", "TAGIDPROJ");
+        const cDoc = findCol(headers, "Documento", "documento", "DOCUMENTO");
+        const cPacote = findCol(headers, "PACOTE", "pacote");
+        const cProposito = findCol(headers, "PROPOSITO", "proposito", "propósito");
+        const cIdPrimavera = findCol(headers, "IDPrimavera", "id primavera", "id_primavera", "IDPRIMAVERA");
+        const cUnitValor = findCol(headers, "UNIT_VALOR", "unit valor", "unit_valor");
+        const cUnit = findCol(headers, "UNIT", "unit");
+        const cIndiceRop = findCol(headers, "IndiceROP", "indice rop", "indice_rop", "INDICEROP");
+        const cPesoCust = findCol(headers, "PESO_CUSTCODE", "peso custcode", "peso_custcode");
+        const cIndiceAtual = findCol(headers, "IndiceAtual", "indice atual", "indice_atual", "INDICEATUAL");
+        const cItemWbs = findCol(headers, "ItemWBS", "Item WBS", "item_wbs", "item wbs", "ITEMWBS");
+
+        if (cComp < 0) warnings.push("Coluna 'COMPONENTE' não encontrada no SCON Programação");
+        if (cItemWbs < 0) warnings.push("Coluna 'ItemWBS' não encontrada no SCON Programação");
+
+        let noComp = 0;
+        let noDisc = 0;
+        let zeroProg = 0;
+        const rows: ParsedSconProgRow[] = [];
+
+        for (let i = 1; i < raw.length; i++) {
+          const r = raw[i];
+          if (!r) continue;
+          const componente = str(cell(r, cComp));
+          if (!componente) { noComp++; continue; }
+
+          const programado_componente = num(cell(r, cProgComp));
+          const disciplina = str(cell(r, cDisc));
+          if (!disciplina) noDisc++;
+          if (programado_componente === 0) zeroProg++;
+
+          // Date handling for raw:false mode
+          const parseDate = (v: unknown): string | null => {
+            if (v == null || v === "") return null;
+            const n = parseFloat(String(v));
+            if (!isNaN(n) && n > 40000) {
+              return new Date((n - 25569) * 86400000).toISOString().slice(0, 10);
+            }
+            return dateVal(v);
+          };
+
+          rows.push({
+            componente,
+            etapa: str(cell(r, cEtapa)),
+            atividade: str(cell(r, cAtiv)),
+            semana: str(cell(r, cSemana)),
+            data_inicio: parseDate(cell(r, cDtIni)),
+            data_fim: parseDate(cell(r, cDtFim)),
+            equipe: str(cell(r, cEquipe)),
+            equipe_desc: str(cell(r, cEquipeDesc)),
+            encarregado: str(cell(r, cEncarr)),
+            supervisor: str(cell(r, cSuper)),
+            engenheiro: str(cell(r, cEng)),
+            gerente: str(cell(r, cGer)),
+            programado_componente,
+            total_exec_semana: num(cell(r, cExecSem)),
+            total_exec_geral: num(cell(r, cExecGeral)),
+            peso_stagecode: num(cell(r, cPesoStage)),
+            cwp: str(cell(r, cCwp)),
+            disciplina,
+            classe: str(cell(r, cClasse)),
+            tipo: str(cell(r, cTipo)),
+            tag_id_proj: str(cell(r, cTagIdProj)),
+            documento: str(cell(r, cDoc)),
+            pacote: str(cell(r, cPacote)),
+            proposito: str(cell(r, cProposito)),
+            id_primavera: str(cell(r, cIdPrimavera)),
+            unit_valor: num(cell(r, cUnitValor)),
+            unit: str(cell(r, cUnit)),
+            indice_rop: num(cell(r, cIndiceRop)),
+            peso_custcode: num(cell(r, cPesoCust)),
+            indice_atual: num(cell(r, cIndiceAtual)),
+            item_wbs: str(cell(r, cItemWbs)),
+          });
+        }
+
+        if (noComp > 0) warnings.push(`${noComp} linhas sem COMPONENTE (filtradas)`);
+        if (noDisc > 0) warnings.push(`${noDisc} linhas sem DISCIPLINA`);
+        if (zeroProg > 0) warnings.push(`${zeroProg} linhas com PROGRAMADO_COMPONENTE = 0`);
+
         resolve({ rows, warnings });
       } catch (err) { reject(err); }
     };
@@ -736,9 +893,11 @@ export interface ProcessInput {
   sigemRows: ParsedSigemRow[];
   relEventoRows: ParsedRelEventoRow[];
   sconRows: ParsedSconRow[];
+  sconProgRows: ParsedSconProgRow[];
   sigemFile: File | null;
   relEventoFile: File | null;
   sconFile: File | null;
+  sconProgFile: File | null;
   cronogramaResult: CronogramaParseResult | null;
   cronogramaFile: File | null;
   onProgress: (msg: string, pct: number) => void;
