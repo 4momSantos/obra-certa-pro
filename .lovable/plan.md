@@ -1,24 +1,38 @@
 
 
-# Fix Dashboard Build Errors
+## Diagnóstico
 
-## Situation
-The cross-filtering system requested is already fully implemented (DashboardFilterContext, DashboardSlicers, SeriesToggle, all widgets). The only issue is build errors from `react-grid-layout` v2 API incompatibilities in `Dashboard.tsx`.
+O erro **"infinite recursion detected in policy for relation dashboards"** (HTTP 500) ocorre porque as políticas RLS das tabelas `dashboards` e `dashboard_shares` referenciam-se mutuamente:
 
-## Errors
-- `Layouts` type not exported (v2 changed the API)
-- `useContainerWidth` signature changed
-- `onLayoutChange` callback signature mismatch
+- `dashboards` → "Shared users can view" faz `SELECT` em `dashboard_shares`
+- `dashboard_shares` → "Owner manages shares" faz `SELECT` em `dashboards`
 
-## Fix — `src/pages/Dashboard.tsx`
+Isso cria um ciclo infinito quando o Postgres avalia as políticas.
 
-Replace react-grid-layout usage with a simpler approach using `WidthProvider(Responsive)` pattern which is the standard v2 API:
+## Solução
 
-1. Replace imports: use `Responsive` and `WidthProvider` from `react-grid-layout`
-2. Create `ResponsiveGrid = WidthProvider(Responsive)` — this auto-measures container width, eliminating `useContainerWidth` and `containerRef`
-3. Define layouts type inline as `Record<string, Layout[]>` instead of the removed `Layouts` type
-4. Fix `onLayoutChange` callback signature to match v2: `(layout: Layout[], layouts: Record<string, Layout[]>) => void`
-5. Remove unused `useRef` import
+Criar uma função `SECURITY DEFINER` que quebra o ciclo, e reescrever as políticas problemáticas para usá-la.
 
-No other files need changes. All cross-filtering, slicers, KPIs, and widgets are already working correctly.
+### Migration SQL
+
+1. Criar função `is_dashboard_owner(dashboard_id, user_id)` com `SECURITY DEFINER` (bypassa RLS)
+2. Criar função `has_dashboard_share(dashboard_id, user_id)` com `SECURITY DEFINER`
+3. Recriar as políticas de `dashboards`, `dashboard_shares` e `dashboard_widgets` usando essas funções em vez de subqueries cruzadas
+
+### Políticas corrigidas
+
+**dashboards:**
+- "Owner full access": `auth.uid() = owner_id` (sem mudança)
+- "Shared users can view": `has_dashboard_share(id, auth.uid())` (usa função SECURITY DEFINER)
+
+**dashboard_shares:**
+- "Owner manages shares": `is_dashboard_owner(dashboard_id, auth.uid())` (usa função SECURITY DEFINER)
+- "Shared user sees own share": `auth.uid() = shared_with` (sem mudança)
+
+**dashboard_widgets:**
+- "Access via dashboard ownership": `is_dashboard_owner(dashboard_id, auth.uid())`
+- "Shared users can view widgets": `has_dashboard_share(dashboard_id, auth.uid())`
+
+### Arquivos alterados
+Nenhum arquivo de código precisa ser alterado. Apenas uma migration SQL.
 
