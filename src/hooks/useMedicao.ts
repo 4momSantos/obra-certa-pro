@@ -162,7 +162,7 @@ export function useMedicaoData() {
       return {
         item_ppu: p.item_ppu,
         descricao: p.descricao || "",
-        fase, subfase, agrupamento: classif?.agrupamento || "", disciplina,
+        fase, subfase, agrupamento: classif?.agrupamento || "", disciplina, item_gitec: classif?.item_gitec || "",
         valor_total, valor_medido,
         scon_avg_avanco: scon_avg,
         scon_total: Number(scon?.total_componentes) || 0,
