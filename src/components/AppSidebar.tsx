@@ -1,10 +1,12 @@
 import {
-  LayoutDashboard, CalendarRange, Users, FileCheck, BarChart3,
-  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle, Calculator,
+  LayoutDashboard, CalendarRange, Users, FileCheck, BarChart3, TrendingUp,
+  Pipette, SlidersHorizontal, Settings, Building2, Shield, Upload, ClipboardCheck, FileText, AlertTriangle, Calculator, Clock,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAlertCounts } from "@/hooks/useAlerts";
+import { useImportStats } from "@/hooks/useImportStats";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -13,15 +15,16 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 const mainItems = [
+  { title: "Dashboard", url: "/", icon: TrendingUp },
   { title: "Medição", url: "/medicao", icon: BarChart3 },
+  { title: "GITEC", url: "/gitec", icon: ClipboardCheck },
+  { title: "Alertas", url: "/alertas", icon: AlertTriangle },
+  { title: "Simulador", url: "/simulador", icon: Calculator },
   { title: "Dashboards", url: "/dashboards", icon: LayoutDashboard },
+  { title: "Documentos", url: "/documentos", icon: FileText },
   { title: "Cronograma", url: "/cronograma", icon: CalendarRange },
   { title: "ETF Semanal", url: "/etf", icon: Users },
   { title: "Tubulação", url: "/tubulacao", icon: Pipette },
-  { title: "GITEC", url: "/gitec", icon: ClipboardCheck },
-  { title: "Documentos", url: "/documentos", icon: FileText },
-  { title: "Alertas", url: "/alertas", icon: AlertTriangle },
-  { title: "Simulador", url: "/simulador", icon: Calculator },
   { title: "Importar Dados", url: "/import", icon: Upload },
 ];
 
@@ -37,6 +40,7 @@ export function AppSidebar() {
   const { role } = useAuth();
   const location = useLocation();
   const alertCounts = useAlertCounts();
+  const { data: importStats } = useImportStats();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -143,7 +147,29 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
+        {!collapsed && importStats && (
+          <div className="rounded-lg bg-sidebar-accent/50 p-3 space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3 text-sidebar-foreground/50" />
+              <p className="text-[10px] text-sidebar-foreground/60">
+                {importStats.lastImportAt
+                  ? `Dados de ${new Date(importStats.lastImportAt).toLocaleDateString("pt-BR")} ${new Date(importStats.lastImportAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                  : "Sem importações"}
+              </p>
+            </div>
+            {importStats.lastImportAt && (
+              <p className="text-[9px] text-sidebar-foreground/40 font-mono">
+                SIGEM: {importStats.counts.sigem.toLocaleString("pt-BR")} · GITEC: {importStats.counts.gitec.toLocaleString("pt-BR")} · SCON: {importStats.counts.scon.toLocaleString("pt-BR")}
+              </p>
+            )}
+            {importStats.isStale && (
+              <Badge variant="secondary" className="text-[9px] bg-amber-500/20 text-amber-400 border-0">
+                Dados podem estar desatualizados
+              </Badge>
+            )}
+          </div>
+        )}
         {!collapsed && (
           <div className="rounded-lg bg-sidebar-accent/50 p-3">
             <p className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40">

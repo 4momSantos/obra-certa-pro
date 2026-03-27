@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MedicaoExport } from "@/components/medicao/MedicaoExport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMedicaoData, type Semaforo } from "@/hooks/useMedicao";
 import { MedicaoKPIs } from "@/components/medicao/MedicaoKPIs";
@@ -71,9 +72,12 @@ export default function Medicao() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Medição</h1>
-        <p className="text-sm text-muted-foreground">Acompanhamento físico e financeiro — visão por PPU</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Medição</h1>
+          <p className="text-sm text-muted-foreground">Acompanhamento físico e financeiro — visão por PPU</p>
+        </div>
+        <MedicaoExport />
       </div>
 
       {/* KPIs */}

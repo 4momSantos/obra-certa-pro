@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "@/pages/Dashboard";
+import HomeDashboard from "@/pages/HomeDashboard";
 import DashboardList from "@/pages/DashboardList";
 import DashboardEditor from "@/pages/DashboardEditor";
 import DashboardView from "@/pages/DashboardView";
@@ -34,8 +35,8 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const location = useLocation();
-  const isLanding = location.pathname === "/";
   const isAuth = location.pathname === "/auth";
+  const isLanding = location.pathname === "/landing";
 
   if (isLanding) return <LandingPage />;
   if (isAuth) return <Auth />;
@@ -44,6 +45,7 @@ const AppRoutes = () => {
     <ProtectedRoute>
       <Layout>
         <Routes>
+          <Route path="/" element={<HomeDashboard />} />
           <Route path="/dashboards" element={<DashboardList />} />
           <Route path="/dashboards/:id" element={<DashboardEditor />} />
           <Route path="/dashboards/:id/view" element={<DashboardView />} />
