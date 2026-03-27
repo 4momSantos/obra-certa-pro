@@ -1,77 +1,77 @@
 
 
-## Problem
+# Cronograma Financeiro — Database Migration + Integration Plan
 
-The GITEC Excel parser uses **fixed column indices** (r[0], r[1], r[2]...) which don't match the actual Excel file structure. This causes:
-- 5979 rows parsed but KPI values (Aprovados, Pendentes, Valor Total) all showing zero
-- Status, Valor, Fiscal and other fields not being read from the correct columns
+## Summary
 
-The same issue likely affects the Documents and Revisions parsers.
+Create three new database tables (`cronograma_tree`, `cronograma_bm_values`, `curva_s`) with views and RLS policies, then integrate them into the existing import pipeline and Cronograma page.
 
-## Root Cause
+## Step 1 — Database Migration
 
-The Excel files have columns in a different order than what the parser expects. Using fixed indices is fragile.
+Run the user's SQL as a single migration with minor adjustments:
+- Use `owns_import_batch()` function (already exists) in RLS policies for consistency
+- Use `TO authenticated` syntax for read policies instead of `auth.role() = 'authenticated'`
+- Create all 3 tables, 3 views, indexes, and RLS policies
 
-## Solution: Header-based column mapping
+Tables:
+- `cronograma_tree` — EAP hierarchy nodes (Fase/Subfase/Agrupamento)
+- `cronograma_bm_values` — Values per BM period per agrupamento (Previsto/Projetado/Realizado)
+- `curva_s` — Accumulated and monthly S-curve values
 
-Instead of reading columns by index, read the **header row** (row 5 / index 4) and map columns by name using fuzzy matching.
+Views:
+- `vw_cronograma_bm_por_ippu` — BM values aggregated by agrupamento
+- `vw_ultimo_bm_realizado` — Last BM with realized values
+- `vw_cronograma_tree_completo` — Tree with BM totals
 
-### Changes
+## Step 2 — Import Parser for Cronograma
 
-**1. `src/hooks/useImport.ts` — Refactor all 3 parsers to use header-based mapping**
+Add a `parseCronogramaFile()` function in `useImport.ts` that:
+- Reads the CR-5290 Excel file
+- Identifies EAP hierarchy rows (nivel 3/4/5) by indentation or column structure
+- Extracts BM columns (BM-01 through BM-22) for Previsto/Projetado/Realizado
+- Extracts Curva S rows (accumulated and monthly values)
+- Returns `{ tree, bmValues, curvaS, warnings }`
 
-For each parser (`parseGitecFile`, `parseDocumentsFile`, `parseRevisionsFile`):
-- Read the first row of the parsed range as headers (raw[0])
-- Build a column index map by matching header names (case-insensitive, trimmed)
-- Use the map to read each data row instead of fixed indices
-- Add fallback: try partial/fuzzy match for common variations (e.g. "Fiscal Responsável" vs "Fiscal")
+Add a new upload card in `ImportData.tsx` for "Cronograma CR-5290".
 
-Example for GITEC headers to match:
-```
-Agrupamento, TAG, Etapa, Status, Valor, Data de Execução,
-Data Inf. Execução, Data de Aprovação, Executado por,
-Fiscal Responsável, Número Evidências, Comentário
-```
+Extend `useProcessImport` to handle the cronograma source:
+- Create batch with `source: "cronograma"`
+- Insert into `cronograma_tree`, `cronograma_bm_values`, `curva_s`
+- Delete previous cronograma batches before inserting
 
-Column matching logic:
-```typescript
-function findCol(headers: string[], ...candidates: string[]): number {
-  for (const c of candidates) {
-    const idx = headers.findIndex(h => 
-      h.toLowerCase().includes(c.toLowerCase())
-    );
-    if (idx >= 0) return idx;
-  }
-  return -1;
-}
-```
+## Step 3 — Refactor Cronograma Page
 
-Then use like:
-```typescript
-const headers = raw[0].map(h => str(h));
-const colAgrup = findCol(headers, "agrupamento");
-const colTag = findCol(headers, "tag");
-const colStatus = findCol(headers, "status");
-const colValor = findCol(headers, "valor");
-// ... etc
-```
+Replace the current `Cronograma.tsx` (which uses localStorage via `CronogramaContext`) with a database-backed version:
 
-And for each data row: `str(r[colAgrup])` instead of `str(r[0])`.
+- Create `useCronogramaData()` hook that queries:
+  - `cronograma_tree` for the EAP tree
+  - `vw_cronograma_bm_por_ippu` for BM values per period
+  - `curva_s` for the S-curve chart
+  - `vw_ultimo_bm_realizado` for current BM indicator
 
-**2. Add warning if expected columns are not found**
+- Update the page to show:
+  - Tree grid with expandable Fase → Subfase → Agrupamento
+  - BM period columns with Previsto/Projetado/Realizado values
+  - Summary KPIs from tree totals
+  - Empty state: "Importe o cronograma CR-5290 primeiro" + link to /import
 
-If critical columns (Agrupamento, Status, Valor for GITEC; Documento for docs) are not found in the headers, add a warning like "Coluna 'Valor' não encontrada no cabeçalho".
+## Step 4 — Update Curva S Widget
 
-**3. Same pattern for Documents parser**
+Refactor `CurvaSWidget.tsx` to optionally use data from the `curva_s` table instead of the `CronogramaContext`, so the dashboard shows real imported data when available.
 
-Headers to match: `Documento, Revisão, Incluido em, Título, Status, Nível 2, Nível 3, Tipo de documento, Status Workflow, Dias Corridos`
+## Step 5 — Update Import Stats
 
-**4. Same pattern for Revisions parser**
+Add `cronograma` count to `useImportStats.ts` and the sidebar data indicator.
 
-Headers to match: `Documento, Revisão, Modificado em, Título, Status, 2 Nivel / Nível 2, Texto de Consolidação, Propósito de Emissão`
+## Files Changed
 
-### Files to modify
-- `src/hooks/useImport.ts` — Refactor 3 parser functions to use header-based column mapping
-
-No database changes. No new components.
+| File | Action |
+|------|--------|
+| Migration SQL | Create 3 tables, 3 views, indexes, RLS |
+| `src/hooks/useImport.ts` | Add `parseCronogramaFile`, extend `useProcessImport` |
+| `src/pages/ImportData.tsx` | Add cronograma upload card |
+| `src/hooks/useCronogramaData.ts` | New hook for DB-backed cronograma |
+| `src/pages/Cronograma.tsx` | Refactor to use DB data instead of localStorage |
+| `src/components/dashboard/CurvaSWidget.tsx` | Use DB curva_s data |
+| `src/hooks/useImportStats.ts` | Add cronograma count |
 
