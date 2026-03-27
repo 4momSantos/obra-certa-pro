@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Upload, X } from "lucide-react";
 import { GitecKPIs } from "@/components/gitec/GitecKPIs";
 import { GitecFunnel } from "@/components/gitec/GitecFunnel";
 import { GitecRanking } from "@/components/gitec/GitecRanking";
 import { GitecEventsTable } from "@/components/gitec/GitecEventsTable";
 import { GitecFiltersBar } from "@/components/gitec/GitecFiltersBar";
 import { GitecDetailSheet } from "@/components/gitec/GitecDetailSheet";
+import { FiscaisTab } from "@/components/gitec/FiscaisTab";
+import { AgrupamentosTab } from "@/components/gitec/AgrupamentosTab";
 import {
   useGitecStats, useGitecEvents, useGitecByIPPU, useGitecFiscais,
   defaultFilters, type GitecFilters,
@@ -17,6 +21,7 @@ const GitecPipeline: React.FC = () => {
   const [filters, setFilters] = useState<GitecFilters>(defaultFilters);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [limit, setLimit] = useState(100);
+  const [activeTab, setActiveTab] = useState("pipeline");
 
   const { data: stats, isLoading: loadingStats } = useGitecStats();
   const { data: events, isLoading: loadingEvents } = useGitecEvents(filters, limit);
@@ -24,6 +29,16 @@ const GitecPipeline: React.FC = () => {
   const { data: fiscais } = useGitecFiscais();
 
   const isEmpty = !loadingStats && stats?.total === 0;
+
+  const handleFilterFiscal = (fiscal: string) => {
+    setFilters({ ...defaultFilters, fiscal });
+    setActiveTab("pipeline");
+  };
+
+  const handleFilterIPPU = (ippu: string) => {
+    setFilters({ ...defaultFilters, search: ippu });
+    setActiveTab("pipeline");
+  };
 
   if (isEmpty) {
     return (
@@ -50,19 +65,54 @@ const GitecPipeline: React.FC = () => {
       <GitecKPIs stats={stats} loading={loadingStats} />
       <GitecFunnel stats={stats} />
 
-      <GitecFiltersBar filters={filters} onChange={setFilters} fiscais={fiscais ?? []} />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="fiscais">Fiscais</TabsTrigger>
+          <TabsTrigger value="agrupamentos">Por Agrupamento</TabsTrigger>
+        </TabsList>
 
-      <GitecRanking data={ranking} loading={loadingRanking} onSelect={(ippu) => setFilters({ ...filters, search: ippu })} />
+        <TabsContent value="pipeline" className="space-y-4 mt-4">
+          {/* Active filter badge */}
+          {(filters.fiscal !== "all" || filters.search || filters.status !== "all" || filters.agingRange !== "all") && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {filters.fiscal !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  Fiscal: {filters.fiscal}
+                  <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters({ ...filters, fiscal: "all" })} />
+                </Badge>
+              )}
+              {filters.search && (
+                <Badge variant="secondary" className="gap-1">
+                  Busca: {filters.search}
+                  <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters({ ...filters, search: "" })} />
+                </Badge>
+              )}
+            </div>
+          )}
 
-      <div className="space-y-2">
-        <p className="text-sm font-medium">Eventos {filters.status !== "all" ? `— ${filters.status}` : ""}</p>
-        <GitecEventsTable events={events} loading={loadingEvents} onSelect={setSelectedEvent} />
-        {events && events.length >= limit && (
-          <div className="flex justify-center">
-            <Button variant="outline" size="sm" onClick={() => setLimit(l => l + 100)}>Carregar mais</Button>
+          <GitecFiltersBar filters={filters} onChange={setFilters} fiscais={fiscais ?? []} />
+          <GitecRanking data={ranking} loading={loadingRanking} onSelect={(ippu) => setFilters({ ...filters, search: ippu })} />
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Eventos {filters.status !== "all" ? `— ${filters.status}` : ""}</p>
+            <GitecEventsTable events={events} loading={loadingEvents} onSelect={setSelectedEvent} />
+            {events && events.length >= limit && (
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={() => setLimit(l => l + 100)}>Carregar mais</Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="fiscais" className="mt-4">
+          <FiscaisTab onFilterFiscal={handleFilterFiscal} />
+        </TabsContent>
+
+        <TabsContent value="agrupamentos" className="mt-4">
+          <AgrupamentosTab data={ranking} loading={loadingRanking} onSelect={handleFilterIPPU} />
+        </TabsContent>
+      </Tabs>
 
       <GitecDetailSheet eventId={selectedEvent} open={!!selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
