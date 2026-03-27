@@ -910,9 +910,9 @@ export function useProcessImport() {
   return useMutation({
     mutationFn: async (input: ProcessInput) => {
       if (!user) throw new Error("Não autenticado");
-      const { sigemRows, relEventoRows, sconRows, sigemFile, relEventoFile, sconFile, cronogramaResult, cronogramaFile, onProgress } = input;
+      const { sigemRows, relEventoRows, sconRows, sconProgRows, sigemFile, relEventoFile, sconFile, sconProgFile, cronogramaResult, cronogramaFile, onProgress } = input;
       const cronoRows = cronogramaResult ? cronogramaResult.tree.length + cronogramaResult.bmValues.length + cronogramaResult.curvaS.length : 0;
-      const totalRows = sigemRows.length + relEventoRows.length + sconRows.length + cronoRows;
+      const totalRows = sigemRows.length + relEventoRows.length + sconRows.length + sconProgRows.length + cronoRows;
       let processed = 0;
       const report = (msg: string) => onProgress(msg, Math.round((processed / Math.max(totalRows, 1)) * 100));
       const results: string[] = [];
@@ -920,6 +920,7 @@ export function useProcessImport() {
       // Delete previous batches for these sources
       report("Removendo dados anteriores...");
       const sourcesToDelete = ["sigem", "rel_evento", "scon"];
+      if (sconProgRows.length > 0 && sconProgFile) sourcesToDelete.push("scon_programacao");
       if (cronogramaResult && cronogramaFile) sourcesToDelete.push("cronograma");
       for (const src of sourcesToDelete) {
         const { data: old } = await supabase.from("import_batches").select("id").eq("source", src).eq("user_id", user.id);
@@ -975,6 +976,22 @@ export function useProcessImport() {
         await supabase.from("import_batches").update({ status: "completed", row_count: sconRows.length }).eq("id", batch.id);
         processed += sconRows.length;
         results.push(`${sconRows.length.toLocaleString("pt-BR")} componentes`);
+      }
+
+      // SCON PROGRAMAÇÃO
+      if (sconProgRows.length > 0 && sconProgFile) {
+        report("Criando batch SCON Programação...");
+        const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
+          user_id: user.id, source: "scon_programacao", filename: sconProgFile.name, row_count: sconProgRows.length, status: "processing", errors: [],
+        }).select().single();
+        if (bErr) throw bErr;
+        const mapped = sconProgRows.map(r => ({ ...r, batch_id: batch.id }));
+        await insertInBatches("scon_programacao", mapped, (done, total) => {
+          report(`Gravando SCON Programação — lote ${done} de ${total}...`);
+        });
+        await supabase.from("import_batches").update({ status: "completed", row_count: sconProgRows.length }).eq("id", batch.id);
+        processed += sconProgRows.length;
+        results.push(`${sconProgRows.length.toLocaleString("pt-BR")} programação SCON`);
       }
 
       // CRONOGRAMA
