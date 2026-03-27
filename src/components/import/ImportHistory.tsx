@@ -8,9 +8,16 @@ import { useImportBatches, useDeleteBatch } from "@/hooks/useImport";
 import { format } from "date-fns";
 
 const SOURCE_LABELS: Record<string, string> = {
-  gitec: "GITEC",
-  consulta_geral: "Consulta Geral",
-  consolidacao: "Consolidação",
+  sigem: "SIGEM",
+  rel_evento: "REL_EVENTO",
+  scon: "SCON",
+  ppu_prev: "PPU-PREV",
+  classificacao_ppu: "Classificação PPU",
+  eac: "EAC",
+  criterio_medicao: "Critério Medição",
+  gitec: "GITEC (legado)",
+  consulta_geral: "Consulta Geral (legado)",
+  consolidacao: "Consolidação (legado)",
 };
 
 export const ImportHistory: React.FC = () => {
