@@ -129,8 +129,51 @@ const ImportData: React.FC = () => {
       )}
 
       {cronoResult && (
-        <div className="rounded-lg border border-muted bg-muted/30 p-3 text-sm text-muted-foreground">
-          Cronograma: {cronoResult.tree.length} nós EAP, {cronoResult.bmValues.length} valores BM, {cronoResult.curvaS.length} pontos Curva S
+        <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
+          <p className="text-sm font-medium">Preview do Cronograma:</p>
+          <div className="grid grid-cols-3 gap-3 text-sm text-muted-foreground">
+            <div className="font-mono">
+              <span className="font-semibold text-foreground">{cronoResult.tree.length}</span> nós na árvore
+              <span className="text-xs block">
+                ({cronoResult.tree.filter(t => t.nivel.includes("Fase")).length} fases,{" "}
+                {cronoResult.tree.filter(t => t.nivel.includes("Subfase")).length} subfases,{" "}
+                {cronoResult.tree.filter(t => t.nivel.includes("Agrupamento")).length} agrupamentos)
+              </span>
+            </div>
+            <div className="font-mono">
+              <span className="font-semibold text-foreground">{cronoResult.bmValues.length.toLocaleString("pt-BR")}</span> valores de BM
+              {(() => {
+                const bms = new Set(cronoResult.bmValues.map(b => b.bm_name));
+                return bms.size > 0 ? <span className="text-xs block">{[...bms].sort()[0]} a {[...bms].sort().pop()}</span> : null;
+              })()}
+            </div>
+            <div className="font-mono">
+              <span className="font-semibold text-foreground">{cronoResult.curvaS.length}</span> pontos Curva S
+            </div>
+          </div>
+          {cronoResult.tree.length > 0 && (
+            <div className="rounded border overflow-auto max-h-[200px]">
+              <table className="w-full text-xs">
+                <thead><tr className="bg-muted/50 text-left">
+                  <th className="px-2 py-1 font-semibold">Nível</th>
+                  <th className="px-2 py-1 font-semibold">iPPU</th>
+                  <th className="px-2 py-1 font-semibold">Nome</th>
+                  <th className="px-2 py-1 font-semibold text-right">Valor</th>
+                </tr></thead>
+                <tbody>
+                  {cronoResult.tree.slice(0, 10).map((t, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="px-2 py-1 text-muted-foreground">{t.nivel}</td>
+                      <td className="px-2 py-1 font-mono">{t.ippu || "—"}</td>
+                      <td className="px-2 py-1 truncate max-w-[200px]">{t.nome}</td>
+                      <td className="px-2 py-1 text-right font-mono">{t.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {cronoResult.tree.length > 10 && <p className="text-[10px] text-muted-foreground text-center py-1">... e mais {cronoResult.tree.length - 10}</p>}
+            </div>
+          )}
         </div>
       )}
 

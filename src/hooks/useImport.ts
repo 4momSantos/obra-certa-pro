@@ -454,223 +454,160 @@ export function parseCronogramaFile(file: File): Promise<CronogramaParseResult> 
         const bmValues: ParsedCronoBmRow[] = [];
         const curvaS: ParsedCurvaSRow[] = [];
 
-        // Find the main sheet (first sheet or one containing "cronograma")
-        const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes("cronog")) || wb.SheetNames[0];
-        const ws = wb.Sheets[sheetName];
-        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        // ── EAP Sheet ──
+        const eapSheet = wb.SheetNames.find(s => s === "EAP") || wb.SheetNames[2] || wb.SheetNames[0];
+        const rows: unknown[][] = XLSX.utils.sheet_to_json(wb.Sheets[eapSheet], { header: 1, defval: null });
 
-        if (raw.length < 5) {
-          warnings.push("Planilha muito curta para conter um cronograma");
+        if (rows.length < 7) {
+          warnings.push("Planilha EAP muito curta");
           resolve({ tree, bmValues, curvaS, warnings });
           return;
         }
 
-        // Find header row: look for a row containing "Agrupamento" or "Item PPU"
-        let headerIdx = -1;
-        for (let i = 0; i < Math.min(20, raw.length); i++) {
-          const row = (raw[i] || []).map(c => str(c).toLowerCase());
-          if (row.some(c => c.includes("agrupamento") || c.includes("item ppu") || c.includes("ippu"))) {
-            headerIdx = i;
-            break;
-          }
-        }
+        // Passo 1 — Mapear colunas de BM (dinâmicas)
+        // BMs estão na linha 3 (index 2), tipos na linha 6 (index 5)
+        // Começam a partir da coluna 19 (index 19)
+        interface BmCol { col: number; type: string }
+        interface BmEntry { name: string; number: number; cols: BmCol[] }
+        const bmMap: BmEntry[] = [];
 
-        if (headerIdx < 0) {
-          // Try to find BM columns directly
-          for (let i = 0; i < Math.min(20, raw.length); i++) {
-            const row = (raw[i] || []).map(c => str(c));
-            if (row.some(c => /bm[- ]?0?1/i.test(c))) {
-              headerIdx = i;
-              break;
+        for (let c = 19; c < Math.min(90, rows[0]?.length || 0); c++) {
+          const label = rows[2]?.[c];
+          if (label && String(label).startsWith("BM")) {
+            const bm: BmEntry = {
+              name: String(label),
+              number: parseInt(String(label).replace("BM-", "")),
+              cols: [],
+            };
+            bm.cols.push({ col: c, type: String(rows[5]?.[c] || "Previsto") });
+            let nc = c + 1;
+            while (nc < c + 4 && nc < (rows[0]?.length || 0)) {
+              const nextLabel = rows[2]?.[nc];
+              if (nextLabel && (String(nextLabel).startsWith("BM") || String(nextLabel) === "TOTAL")) break;
+              const nextType = rows[5]?.[nc];
+              if (nextType) bm.cols.push({ col: nc, type: String(nextType) });
+              nc++;
             }
+            bmMap.push(bm);
+            c = nc - 1;
           }
         }
 
-        if (headerIdx < 0) {
-          warnings.push("Cabeçalho do cronograma não encontrado — procurando 'Agrupamento' ou 'BM-01'");
-          resolve({ tree, bmValues, curvaS, warnings });
-          return;
-        }
+        if (bmMap.length === 0) warnings.push("Nenhuma coluna BM encontrada na aba EAP");
+        else warnings.push(`${bmMap.length} BMs encontrados (${bmMap[0].name} a ${bmMap[bmMap.length - 1].name})`);
 
-        const headers = (raw[headerIdx] || []).map(c => str(c));
-
-        // Find key columns
-        const cNome = findCol(headers, "agrupamento", "nome", "descrição", "descricao");
-        const cIppu = findCol(headers, "item ppu", "ippu", "ppu");
-        const cValor = findCol(headers, "valor", "valor total", "total");
-        const cAcum = findCol(headers, "acumulado", "acum");
-        const cSaldo = findCol(headers, "saldo");
-
-        // Find BM columns: look for BM-01, BM-02, etc.
-        // BM columns come in groups of 3: Previsto, Projetado, Realizado
-        const bmCols: { bmNumber: number; bmName: string; colIdx: number }[] = [];
-        headers.forEach((h, idx) => {
-          const m = h.match(/bm[- ]?(\d+)/i);
-          if (m) {
-            bmCols.push({ bmNumber: parseInt(m[1]), bmName: `BM-${String(parseInt(m[1])).padStart(2, "0")}`, colIdx: idx });
-          }
-        });
-
-        // Detect the structure: each BM might have sub-columns (Previsto/Projetado/Realizado)
-        // or BMs might be in a row with tipo indicator
-        // Most common: BM columns are values, and there's a "tipo" row above or beside
-        
-        // Try detecting tipo from the row above the header
-        const tipoRow = headerIdx > 0 ? (raw[headerIdx - 1] || []).map(c => str(c)) : [];
-        
-        // Group BM columns by BM number
-        const bmGroups = new Map<number, number[]>();
-        bmCols.forEach(bm => {
-          if (!bmGroups.has(bm.bmNumber)) bmGroups.set(bm.bmNumber, []);
-          bmGroups.get(bm.bmNumber)!.push(bm.colIdx);
-        });
-
-        if (bmCols.length === 0) {
-          warnings.push("Nenhuma coluna BM encontrada no cabeçalho");
-        }
-
-        // Parse data rows
+        // Passo 2 — Construir árvore
+        // Dados começam na linha 7 (index 6)
+        // Col 8 (idx 8): nível da estrutura ("3 - Fase", "4 - Subfase", "5 - Agrupamento")
+        // Col 7 (idx 7): iPPU
+        // Col 9 (idx 9): nome
+        // Col 15 (idx 15): valor
+        // Col 17 (idx 17): acumulado
+        // Col 18 (idx 18): saldo
         let currentFase = "";
         let currentSubfase = "";
         let sortOrder = 0;
 
-        for (let i = headerIdx + 1; i < raw.length; i++) {
-          const r = raw[i];
-          if (!r || r.every(c => !c && c !== 0)) continue;
+        for (let r = 6; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row) continue;
+          const nivelStr = String(row[8] || "");
+          if (!nivelStr.includes("-")) continue;
 
-          const nome = str(cell(r, cNome >= 0 ? cNome : 0));
-          const ippu = str(cell(r, cIppu));
-          const valor = num(cell(r, cValor));
+          const iPPU = row[7] != null ? String(row[7]).trim() : "";
+          const nome = str(row[9] || "");
+          if (!nome) continue;
 
-          if (!nome && !ippu && valor === 0) continue;
+          const valor = num(row[15]);
+          const acumulado = num(row[17]);
+          const saldo = num(row[18]);
 
-          // Detect level by indentation or structure
-          // Level 3 = Fase (bold, no ippu, large value)
-          // Level 4 = Subfase (indented, no ippu)
-          // Level 5 = Agrupamento (has ippu)
-          let nivel = "5";
-          if (ippu) {
-            nivel = "5";
-          } else if (!currentFase || (nome && valor > 0 && !ippu)) {
-            // Could be Fase or Subfase - check if it looks like a header row
-            const firstNonEmpty = (r as any[]).findIndex((c, idx) => idx > 0 && c && str(c));
-            if (firstNonEmpty <= 1 || !currentFase) {
-              nivel = "3";
-              currentFase = nome;
-              currentSubfase = "";
-            } else {
-              nivel = "4";
-              currentSubfase = nome;
-            }
+          let nivel = "";
+          if (nivelStr.includes("3 - Fase") || nivelStr.includes("3 -")) {
+            nivel = "3 - Fase";
+            currentFase = nome;
+            currentSubfase = "";
+          } else if (nivelStr.includes("4 - Subfase") || nivelStr.includes("4 -")) {
+            nivel = "4 - Subfase";
+            currentSubfase = nome;
+          } else if (nivelStr.includes("5 - Agrupamento") || nivelStr.includes("5 -")) {
+            nivel = "5 - Agrupamento";
+          } else {
+            continue;
           }
 
-          sortOrder++;
-
-          const treeRow: ParsedCronoTreeRow = {
-            nivel,
-            ippu,
-            nome,
-            valor,
-            acumulado: num(cell(r, cAcum)),
-            saldo: num(cell(r, cSaldo)),
-            fase_nome: nivel === "3" ? nome : currentFase,
-            subfase_nome: nivel === "4" ? nome : nivel === "5" ? currentSubfase : "",
-            sort_order: sortOrder,
-          };
-          tree.push(treeRow);
-
-          // Extract BM values for agrupamentos (nivel 5)
-          if (nivel === "5" && ippu && bmCols.length > 0) {
-            // For each unique BM, read value(s)
-            bmGroups.forEach((cols, bmNum) => {
-              const bmName = `BM-${String(bmNum).padStart(2, "0")}`;
-              if (cols.length >= 3) {
-                // 3 sub-columns: Previsto, Projetado, Realizado
-                bmValues.push({ ippu, bm_name: bmName, bm_number: bmNum, tipo: "Previsto", valor: num(cell(r, cols[0])) });
-                bmValues.push({ ippu, bm_name: bmName, bm_number: bmNum, tipo: "Projetado", valor: num(cell(r, cols[1])) });
-                bmValues.push({ ippu, bm_name: bmName, bm_number: bmNum, tipo: "Realizado", valor: num(cell(r, cols[2])) });
-              } else if (cols.length === 1) {
-                // Single column — detect tipo from tipoRow
-                const tipo = tipoRow[cols[0]] || "Realizado";
-                bmValues.push({ ippu, bm_name: bmName, bm_number: bmNum, tipo: str(tipo) || "Realizado", valor: num(cell(r, cols[0])) });
+          // Extrair valores por BM
+          const rowBmValues: ParsedCronoBmRow[] = [];
+          bmMap.forEach(bm => {
+            bm.cols.forEach(sc => {
+              const v = num(row[sc.col]);
+              if (v !== 0) {
+                rowBmValues.push({
+                  ippu: iPPU,
+                  bm_name: bm.name,
+                  bm_number: bm.number,
+                  tipo: sc.type,
+                  valor: v,
+                });
               }
             });
-          }
+          });
+
+          tree.push({
+            nivel,
+            ippu: iPPU,
+            nome: nome.substring(0, 200),
+            valor,
+            acumulado,
+            saldo,
+            fase_nome: currentFase,
+            subfase_nome: currentSubfase,
+            sort_order: sortOrder++,
+          });
+
+          bmValues.push(...rowBmValues);
         }
 
-        // Look for Curva S sheet
-        const curvaSSheet = wb.SheetNames.find(s =>
-          s.toLowerCase().includes("curva") || s.toLowerCase().includes("s-curve")
-        );
-        if (curvaSSheet) {
-          const csWs = wb.Sheets[curvaSSheet];
-          const csRaw: unknown[][] = XLSX.utils.sheet_to_json(csWs, { header: 1, defval: "" });
-          
-          // Find header row with BM labels
-          let csHeaderIdx = -1;
-          for (let i = 0; i < Math.min(10, csRaw.length); i++) {
-            const row = (csRaw[i] || []).map(c => str(c));
-            if (row.some(c => /bm[- ]?\d+/i.test(c))) {
-              csHeaderIdx = i;
-              break;
+        // ── Curva S Sheet ──
+        const curvaSheet = wb.SheetNames.find(s => s.toLowerCase().includes("curva"));
+        if (curvaSheet) {
+          const csRows: unknown[][] = XLSX.utils.sheet_to_json(wb.Sheets[curvaSheet], { header: 1, defval: null });
+          for (let c = 1; c < 24; c++) {
+            const label = csRows[2]?.[c];
+            if (!label) continue;
+            let labelStr: string;
+            if (typeof label === "string") {
+              labelStr = label;
+            } else if (label instanceof Date) {
+              labelStr = label.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+            } else if (typeof label === "number") {
+              const d = XLSX.SSF.parse_date_code(label);
+              labelStr = d ? `${["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][d.m - 1]}/${String(d.y).slice(-2)}` : String(label);
+            } else {
+              labelStr = String(label);
             }
+
+            curvaS.push({
+              label: labelStr,
+              col_index: c,
+              previsto_acum: num(csRows[3]?.[c]),
+              projetado_acum: num(csRows[4]?.[c]),
+              realizado_acum: num(csRows[5]?.[c]),
+              previsto_mensal: num(csRows[6]?.[c]),
+              projetado_mensal: num(csRows[7]?.[c]),
+              realizado_mensal: num(csRows[8]?.[c]),
+            });
           }
-
-          if (csHeaderIdx >= 0) {
-            const csHeaders = (csRaw[csHeaderIdx] || []).map(c => str(c));
-            
-            // Find tipo rows (Previsto Acum, Projetado Acum, Realizado Acum, etc.)
-            for (let i = csHeaderIdx + 1; i < csRaw.length; i++) {
-              const r = csRaw[i];
-              if (!r) continue;
-              const label = str(r[0]).toLowerCase();
-              if (!label) continue;
-              
-              const isPrevisto = label.includes("previst");
-              const isProjetado = label.includes("projetad");
-              const isRealizado = label.includes("realizad");
-              const isAcum = label.includes("acum");
-              const isMensal = label.includes("mensal") || label.includes("period");
-
-              if (!isPrevisto && !isProjetado && !isRealizado) continue;
-
-              // Read values per BM column
-              csHeaders.forEach((h, colIdx) => {
-                const m = h.match(/bm[- ]?(\d+)/i);
-                if (!m) return;
-                const bmNum = parseInt(m[1]);
-                const val = num(cell(r as unknown[], colIdx));
-                
-                // Find or create curvaS entry
-                let entry = curvaS.find(c => c.col_index === bmNum);
-                if (!entry) {
-                  entry = {
-                    label: `BM-${String(bmNum).padStart(2, "0")}`,
-                    col_index: bmNum,
-                    previsto_acum: 0, projetado_acum: 0, realizado_acum: 0,
-                    previsto_mensal: 0, projetado_mensal: 0, realizado_mensal: 0,
-                  };
-                  curvaS.push(entry);
-                }
-
-                if (isPrevisto && isAcum) entry.previsto_acum = val;
-                else if (isPrevisto && isMensal) entry.previsto_mensal = val;
-                else if (isPrevisto) entry.previsto_acum = val;
-                else if (isProjetado && isAcum) entry.projetado_acum = val;
-                else if (isProjetado && isMensal) entry.projetado_mensal = val;
-                else if (isProjetado) entry.projetado_acum = val;
-                else if (isRealizado && isAcum) entry.realizado_acum = val;
-                else if (isRealizado && isMensal) entry.realizado_mensal = val;
-                else if (isRealizado) entry.realizado_acum = val;
-              });
-            }
-            curvaS.sort((a, b) => a.col_index - b.col_index);
-          }
+        } else {
+          warnings.push("Aba 'Curva S' não encontrada");
         }
 
-        if (tree.length === 0) warnings.push("Nenhum nó da árvore EAP encontrado");
-        
-        warnings.push(`Cronograma: ${tree.length} nós, ${bmValues.length} valores BM, ${curvaS.length} pontos Curva S`);
+        const fases = tree.filter(t => t.nivel.includes("Fase")).length;
+        const subfases = tree.filter(t => t.nivel.includes("Subfase")).length;
+        const agrups = tree.filter(t => t.nivel.includes("Agrupamento")).length;
+        warnings.push(`${tree.length} nós na árvore (${fases} fases, ${subfases} subfases, ${agrups} agrupamentos)`);
+        warnings.push(`${bmValues.length} valores de BM`);
+        warnings.push(`${curvaS.length} pontos da Curva S`);
 
         resolve({ tree, bmValues, curvaS, warnings });
       } catch (err) { reject(err); }
