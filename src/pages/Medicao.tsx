@@ -10,7 +10,7 @@ import { MedicaoFunnel } from "@/components/medicao/MedicaoFunnel";
 import { SemaforoCards } from "@/components/medicao/SemaforoCards";
 import { MedicaoFilters } from "@/components/medicao/MedicaoFilters";
 import { MedicaoTable } from "@/components/medicao/MedicaoTable";
-import { MedicaoDetailSheet } from "@/components/medicao/MedicaoDetailSheet";
+import { PPUDetailSheet } from "@/components/medicao/PPUDetailSheet";
 import type { MedicaoPPU } from "@/hooks/useMedicao";
 
 export default function Medicao() {
@@ -121,7 +121,7 @@ export default function Medicao() {
       )}
 
       {/* Detail Sheet */}
-      <MedicaoDetailSheet item={selected} onClose={() => setSelected(null)} />
+      <PPUDetailSheet item={selected} onClose={() => setSelected(null)} />
     </motion.div>
   );
 }
