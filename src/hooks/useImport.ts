@@ -273,31 +273,50 @@ export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warn
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: "" });
         const warnings: string[] = [];
+        const headers = (raw[0] || []).map(h => str(h));
+
+        const cItemCrit = findCol(headers, "item criterio", "item critério", "item_criterio");
+        const cRelEsp = findCol(headers, "relatorio esperado", "relatório esperado", "relatorio_esperado");
+        const cStaSigem = findCol(headers, "status sigem", "status_sigem");
+        const cStaGitec = findCol(headers, "status gitec", "status_gitec");
+        const cObra = findCol(headers, "obra", "obra_desc");
+        const cClasse = findCol(headers, "classe");
+        const cDisc = findCol(headers, "disciplina");
+        const cTipo = findCol(headers, "tipo");
+        const cItemWbs = findCol(headers, "item wbs", "item_wbs", "wbs");
+        const cTag = findCol(headers, "tag");
+        const cTagDesc = findCol(headers, "tag desc", "tag_desc", "descrição tag");
+        const cQtdEtapa = findCol(headers, "qtde etapa", "qtde_etapa", "qtd etapa");
+        const cQtdExec = findCol(headers, "qtde etapa exec", "exec acum", "qtde_etapa_exec_acum");
+        const cAvanco = findCol(headers, "avanço ponderado", "avanco ponderado", "avanco_ponderado", "avanço");
+        const cTagIdProj = findCol(headers, "tag id proj", "tag_id_proj");
+
+        if (cTag < 0) warnings.push("Coluna 'TAG' não encontrada no cabeçalho SCON");
 
         let noTag = 0;
         const rows: ParsedSconRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const tag = str(r[9]);
-          const item_wbs = str(r[8]);
+          const tag = str(cell(r, cTag));
+          const item_wbs = str(cell(r, cItemWbs));
           if (!tag && !item_wbs) { noTag++; continue; }
           rows.push({
-            item_criterio: str(r[0]),
-            relatorio_esperado: str(r[1]),
-            status_sigem: str(r[2]),
-            status_gitec: str(r[3]),
-            obra_desc: str(r[4]),
-            classe: str(r[5]),
-            disciplina: str(r[6]),
-            tipo: str(r[7]),
+            item_criterio: str(cell(r, cItemCrit)),
+            relatorio_esperado: str(cell(r, cRelEsp)),
+            status_sigem: str(cell(r, cStaSigem)),
+            status_gitec: str(cell(r, cStaGitec)),
+            obra_desc: str(cell(r, cObra)),
+            classe: str(cell(r, cClasse)),
+            disciplina: str(cell(r, cDisc)),
+            tipo: str(cell(r, cTipo)),
             item_wbs,
             tag,
-            tag_desc: str(r[10]),
-            qtde_etapa: num(r[11]),
-            qtde_etapa_exec_acum: num(r[12]),
-            avanco_ponderado: num(r[13]),
-            tag_id_proj: str(r[14]),
+            tag_desc: str(cell(r, cTagDesc)),
+            qtde_etapa: num(cell(r, cQtdEtapa)),
+            qtde_etapa_exec_acum: num(cell(r, cQtdExec)),
+            avanco_ponderado: num(cell(r, cAvanco)),
+            tag_id_proj: str(cell(r, cTagIdProj)),
           });
         }
         if (noTag > 0) warnings.push(`${noTag} linhas sem TAG nem ItemWBS (ignoradas)`);
