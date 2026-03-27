@@ -971,6 +971,125 @@ export type Database = {
           },
         ]
       }
+      scon_programacao: {
+        Row: {
+          atividade: string | null
+          batch_id: string
+          classe: string | null
+          componente: string | null
+          created_at: string | null
+          cwp: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          disciplina: string | null
+          documento: string | null
+          encarregado: string | null
+          engenheiro: string | null
+          equipe: string | null
+          equipe_desc: string | null
+          etapa: string | null
+          gerente: string | null
+          id: string
+          id_primavera: string | null
+          indice_atual: number | null
+          indice_rop: number | null
+          item_wbs: string | null
+          pacote: string | null
+          peso_custcode: number | null
+          peso_stagecode: number | null
+          programado_componente: number | null
+          proposito: string | null
+          semana: string | null
+          supervisor: string | null
+          tag_id_proj: string | null
+          tipo: string | null
+          total_exec_geral: number | null
+          total_exec_semana: number | null
+          unit: string | null
+          unit_valor: number | null
+        }
+        Insert: {
+          atividade?: string | null
+          batch_id: string
+          classe?: string | null
+          componente?: string | null
+          created_at?: string | null
+          cwp?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          disciplina?: string | null
+          documento?: string | null
+          encarregado?: string | null
+          engenheiro?: string | null
+          equipe?: string | null
+          equipe_desc?: string | null
+          etapa?: string | null
+          gerente?: string | null
+          id?: string
+          id_primavera?: string | null
+          indice_atual?: number | null
+          indice_rop?: number | null
+          item_wbs?: string | null
+          pacote?: string | null
+          peso_custcode?: number | null
+          peso_stagecode?: number | null
+          programado_componente?: number | null
+          proposito?: string | null
+          semana?: string | null
+          supervisor?: string | null
+          tag_id_proj?: string | null
+          tipo?: string | null
+          total_exec_geral?: number | null
+          total_exec_semana?: number | null
+          unit?: string | null
+          unit_valor?: number | null
+        }
+        Update: {
+          atividade?: string | null
+          batch_id?: string
+          classe?: string | null
+          componente?: string | null
+          created_at?: string | null
+          cwp?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          disciplina?: string | null
+          documento?: string | null
+          encarregado?: string | null
+          engenheiro?: string | null
+          equipe?: string | null
+          equipe_desc?: string | null
+          etapa?: string | null
+          gerente?: string | null
+          id?: string
+          id_primavera?: string | null
+          indice_atual?: number | null
+          indice_rop?: number | null
+          item_wbs?: string | null
+          pacote?: string | null
+          peso_custcode?: number | null
+          peso_stagecode?: number | null
+          programado_componente?: number | null
+          proposito?: string | null
+          semana?: string | null
+          supervisor?: string | null
+          tag_id_proj?: string | null
+          tipo?: string | null
+          total_exec_geral?: number | null
+          total_exec_semana?: number | null
+          unit?: string | null
+          unit_valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scon_programacao_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sigem_documents: {
         Row: {
           batch_id: string
@@ -1174,6 +1293,29 @@ export type Database = {
           },
         ]
       }
+      vw_disciplinas: {
+        Row: {
+          concluidos: number | null
+          disciplina: string | null
+          total_componentes: number | null
+          total_linhas: number | null
+          total_ppu: number | null
+        }
+        Relationships: []
+      }
+      vw_equipes: {
+        Row: {
+          comps_por_semana: number | null
+          disciplinas: string[] | null
+          encarregados: string[] | null
+          equipe: string | null
+          supervisores: string[] | null
+          total_componentes: number | null
+          total_linhas: number | null
+          total_semanas: number | null
+        }
+        Relationships: []
+      }
       vw_fiscais: {
         Row: {
           aprovados: number | null
@@ -1198,6 +1340,29 @@ export type Database = {
           valor_ponderado_concluido: number | null
           valor_ponderado_total: number | null
           valor_total: number | null
+        }
+        Relationships: []
+      }
+      vw_scon_componentes: {
+        Row: {
+          avanco: number | null
+          classe: string | null
+          componente: string | null
+          cwp: string | null
+          disciplina: string | null
+          documento: string | null
+          encarregado: string | null
+          engenheiro: string | null
+          gerente: string | null
+          indice_rop: number | null
+          item_wbs: string | null
+          peso_custcode: number | null
+          supervisor: string | null
+          tag_id_proj: string | null
+          tipo: string | null
+          total_etapas: number | null
+          total_semanas: number | null
+          unit_valor: number | null
         }
         Relationships: []
       }
