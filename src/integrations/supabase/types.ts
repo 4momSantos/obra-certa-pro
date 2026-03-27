@@ -974,6 +974,57 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_fiscais: {
+        Row: {
+          aprovados: number | null
+          fiscal_responsavel: string | null
+          pendentes: number | null
+          total: number | null
+          valor_aprovado: number | null
+          valor_pendente: number | null
+        }
+        Relationships: []
+      }
+      vw_gitec_por_ppu: {
+        Row: {
+          eventos_concluidos: number | null
+          eventos_pendentes: number | null
+          item_ppu: string | null
+          status_aprovado: number | null
+          status_pendente: number | null
+          total_eventos: number | null
+          valor_aprovado: number | null
+          valor_pendente: number | null
+          valor_ponderado_concluido: number | null
+          valor_ponderado_total: number | null
+          valor_total: number | null
+        }
+        Relationships: []
+      }
+      vw_scon_por_ppu: {
+        Row: {
+          avg_avanco: number | null
+          concluidos: number | null
+          em_andamento: number | null
+          item_wbs: string | null
+          nao_iniciados: number | null
+          qtde_executada: number | null
+          qtde_programada: number | null
+          total_componentes: number | null
+        }
+        Relationships: []
+      }
+      vw_sigem_por_ppu: {
+        Row: {
+          docs_comentarios: number | null
+          docs_ok: number | null
+          docs_recusados: number | null
+          docs_workflow: number | null
+          ppu: string | null
+          total_docs: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
