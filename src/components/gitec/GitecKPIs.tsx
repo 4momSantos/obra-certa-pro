@@ -13,11 +13,11 @@ interface Props {
 
 const kpis = (s: GitecStats) => [
   { label: "Total Eventos", value: s.total.toLocaleString("pt-BR"), sub: "" },
-  { label: "Aprovado", value: fmt(s.valAprovado), sub: `${s.aprovados} eventos` },
-  { label: "Pend. Verificação", value: fmt(s.valPendVerif), sub: `${s.pendVerif} eventos` },
-  { label: "Pend. Aprovação", value: fmt(s.valPendAprov), sub: `${s.pendAprov} eventos` },
-  { label: "Aging Médio", value: `${s.agingMedio}d`, sub: "pendentes" },
-  { label: "Aging Máximo", value: `${s.agingMaximo}d`, sub: "pendentes" },
+  { label: "Concluídos", value: s.concluidos.toLocaleString("pt-BR"), sub: fmt(s.valConcluidos) },
+  { label: "Pendentes", value: s.pendentes.toLocaleString("pt-BR"), sub: fmt(s.valPendentes) },
+  { label: "Aprovados", value: fmt(s.valAprovado), sub: `${s.aprovados} eventos` },
+  { label: "Pend. Verif. / Aprov.", value: `${s.pendVerif} / ${s.pendAprov}`, sub: `${fmt(s.valPendVerif)} / ${fmt(s.valPendAprov)}` },
+  { label: "Aging Médio / Máx", value: `${s.agingMedio}d / ${s.agingMaximo}d`, sub: "pendentes" },
 ];
 
 export const GitecKPIs: React.FC<Props> = ({ stats, loading }) => {

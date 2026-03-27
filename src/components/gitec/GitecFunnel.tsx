@@ -7,37 +7,33 @@ const fmt = (v: number) =>
 export const GitecFunnel: React.FC<{ stats: GitecStats | undefined }> = ({ stats }) => {
   if (!stats || stats.total === 0) return null;
 
-  const total = stats.valAprovado + stats.valPendVerif + stats.valPendAprov;
-  if (total === 0) return null;
+  const stages = [
+    { label: "Concluído", value: stats.valConcluidos, count: stats.concluidos, cls: "bg-primary text-primary-foreground" },
+    { label: "Aprovado", value: stats.valAprovado, count: stats.aprovados, cls: "bg-emerald-500 text-white" },
+    { label: "Pend. Verificação", value: stats.valPendVerif, count: stats.pendVerif, cls: "bg-secondary text-secondary-foreground" },
+    { label: "Pend. Aprovação", value: stats.valPendAprov, count: stats.pendAprov, cls: "bg-accent text-accent-foreground" },
+  ];
 
-  const pAprov = (stats.valAprovado / total) * 100;
-  const pVerif = (stats.valPendVerif / total) * 100;
-  const pAprovacao = (stats.valPendAprov / total) * 100;
+  const total = stages.reduce((s, st) => s + st.value, 0);
+  if (total === 0) return null;
 
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">Funil de Aprovação</p>
       <div className="flex h-8 rounded-lg overflow-hidden">
-        {pAprov > 0 && (
-          <div className="bg-primary flex items-center justify-center text-xs font-medium text-primary-foreground" style={{ width: `${pAprov}%` }}>
-            {pAprov > 8 && `${pAprov.toFixed(0)}%`}
-          </div>
-        )}
-        {pVerif > 0 && (
-          <div className="bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground" style={{ width: `${pVerif}%` }}>
-            {pVerif > 8 && `${pVerif.toFixed(0)}%`}
-          </div>
-        )}
-        {pAprovacao > 0 && (
-          <div className="bg-accent flex items-center justify-center text-xs font-medium text-accent-foreground" style={{ width: `${pAprovacao}%` }}>
-            {pAprovacao > 8 && `${pAprovacao.toFixed(0)}%`}
-          </div>
-        )}
+        {stages.filter(s => s.value > 0).map(s => {
+          const pct = (s.value / total) * 100;
+          return (
+            <div key={s.label} className={`${s.cls} flex items-center justify-center text-xs font-medium`} style={{ width: `${pct}%` }}>
+              {pct > 10 && `${pct.toFixed(0)}%`}
+            </div>
+          );
+        })}
       </div>
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>✓ Aprovado: {fmt(stats.valAprovado)}</span>
-        <span>⏳ Pend. Verif.: {fmt(stats.valPendVerif)}</span>
-        <span>⏳ Pend. Aprov.: {fmt(stats.valPendAprov)}</span>
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        {stages.map(s => (
+          <span key={s.label}>{s.label}: {fmt(s.value)} ({s.count})</span>
+        ))}
       </div>
     </div>
   );
