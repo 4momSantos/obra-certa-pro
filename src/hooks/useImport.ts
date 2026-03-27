@@ -185,42 +185,74 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 2, defval: "" });
         const warnings: string[] = [];
+        const headers = (raw[0] || []).map(h => str(h));
+
+        const cItemPpu = findCol(headers, "item ppu", "item_ppu", "ippu");
+        const cRelSta = findCol(headers, "rel status", "rel_status", "status rel");
+        const cRelStaItem = findCol(headers, "rel status item", "rel_status_item", "status item");
+        const cTagAgrup = findCol(headers, "tag agrup", "tag_agrup");
+        const cQtdPond = findCol(headers, "quantidade ponderada", "qtd ponderada", "qtd_pond");
+        const cEstrutura = findCol(headers, "estrutura");
+        const cFase = findCol(headers, "fase");
+        const cSubfase = findCol(headers, "subfase");
+        const cAgrup = findCol(headers, "agrupamento");
+        const cCarac = findCol(headers, "caracteristica", "característica");
+        const cTag = findCol(headers, "tag");
+        const cQtd = findCol(headers, "qtd");
+        const cUm = findCol(headers, "um", "unidade");
+        const cEtapa = findCol(headers, "etapa");
+        const cPesoFis = findCol(headers, "peso fisico", "peso físico", "peso_fisico");
+        const cPesoFin = findCol(headers, "peso financeiro", "peso_financeiro");
+        const cDataExec = findCol(headers, "data de execução", "data execução", "data_execucao", "data execucao");
+        const cDataInf = findCol(headers, "data inf", "data_inf_execucao", "data inf. exec");
+        const cExecPor = findCol(headers, "executado por", "executado_por");
+        const cNecEvid = findCol(headers, "necessita evidencia", "necessita evidência", "necessita_evidencias");
+        const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero_evidencias", "evidência");
+        const cDataAprov = findCol(headers, "data de aprovação", "data aprovação", "data_aprovacao");
+        const cFiscal = findCol(headers, "fiscal responsável", "fiscal responsavel", "fiscal_responsavel", "fiscal");
+        const cStatus = findCol(headers, "status");
+        const cValor = findCol(headers, "valor");
+        const cComent = findCol(headers, "comentário", "comentario");
+
+        if (cTag < 0) warnings.push("Coluna 'TAG' não encontrada no cabeçalho REL_EVENTO");
+        if (cStatus < 0) warnings.push("Coluna 'Status' não encontrada no cabeçalho REL_EVENTO");
+        if (cValor < 0) warnings.push("Coluna 'Valor' não encontrada no cabeçalho REL_EVENTO");
 
         let noKey = 0;
         const rows: ParsedRelEventoRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const item_ppu = str(r[0]);
-          const tag = str(r[10]);
+          const item_ppu = str(cell(r, cItemPpu));
+          const tag = str(cell(r, cTag));
           if (!item_ppu && !tag) { noKey++; continue; }
           rows.push({
             item_ppu,
-            rel_status: str(r[1]),
-            rel_status_item: str(r[2]),
-            tag_agrup: str(r[3]),
-            quantidade_ponderada: num(r[4]),
-            estrutura: str(r[5]),
-            fase: str(r[6]),
-            subfase: str(r[7]),
-            agrupamento: str(r[8]),
-            caracteristica: str(r[9]),
+            rel_status: str(cell(r, cRelSta)),
+            rel_status_item: str(cell(r, cRelStaItem)),
+            tag_agrup: str(cell(r, cTagAgrup)),
+            quantidade_ponderada: num(cell(r, cQtdPond)),
+            estrutura: str(cell(r, cEstrutura)),
+            fase: str(cell(r, cFase)),
+            subfase: str(cell(r, cSubfase)),
+            agrupamento: str(cell(r, cAgrup)),
+            caracteristica: str(cell(r, cCarac)),
             tag,
-            qtd: num(r[11]),
-            um: str(r[12]),
-            etapa: str(r[13]),
-            peso_fisico: num(r[14]),
-            peso_financeiro: num(r[15]),
-            data_execucao: dateVal(r[16]),
-            data_inf_execucao: dateVal(r[17]),
-            executado_por: str(r[18]),
-            necessita_evidencias: str(r[19]),
-            numero_evidencias: str(r[20]),
-            data_aprovacao: dateVal(r[21]),
-            fiscal_responsavel: str(r[22]),
-            status: str(r[23]),
-            valor: num(r[24]),
-            comentario: str(r[25]),
+            qtd: num(cell(r, cQtd)),
+            um: str(cell(r, cUm)),
+            etapa: str(cell(r, cEtapa)),
+            peso_fisico: num(cell(r, cPesoFis)),
+            peso_financeiro: num(cell(r, cPesoFin)),
+            data_execucao: dateVal(cell(r, cDataExec)),
+            data_inf_execucao: dateVal(cell(r, cDataInf)),
+            executado_por: str(cell(r, cExecPor)),
+            necessita_evidencias: str(cell(r, cNecEvid)),
+            numero_evidencias: str(cell(r, cNumEvid)),
+            data_aprovacao: dateVal(cell(r, cDataAprov)),
+            fiscal_responsavel: str(cell(r, cFiscal)),
+            status: str(cell(r, cStatus)),
+            valor: num(cell(r, cValor)),
+            comentario: str(cell(r, cComent)),
           });
         }
         if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU nem TAG (ignoradas)`);
