@@ -131,7 +131,7 @@ const GitecPipeline: React.FC = () => {
             scon_avg_avanco: 0,
             scon_total: 0,
             scon_concluidos: 0,
-            scon_em_andamento: 0,
+            scon_andamento: 0,
             scon_nao_iniciados: 0,
             scon_valor_estimado: 0,
             sigem_total: 0,
