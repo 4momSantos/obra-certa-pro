@@ -32,6 +32,8 @@ import Configuracao from "@/pages/Configuracao";
 import Equipes from "@/pages/Equipes";
 import Disciplinas from "@/pages/Disciplinas";
 import Cobertura from "@/pages/Cobertura";
+import CurvaS from "@/pages/CurvaS";
+import DetalhamentoBM from "@/pages/DetalhamentoBM";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,8 @@ const AppRoutes = () => {
           <Route path="/tv" element={<TVMode />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cronograma" element={<Cronograma />} />
+          <Route path="/curva-s" element={<CurvaS />} />
+          <Route path="/bm" element={<DetalhamentoBM />} />
           <Route path="/etf" element={<ETF />} />
           <Route path="/medicao" element={<Medicao />} />
           <Route path="/tubulacao" element={<Tubulacao />} />
