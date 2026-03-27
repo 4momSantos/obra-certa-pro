@@ -7,9 +7,10 @@ import { ImportPreview } from "@/components/import/ImportPreview";
 import { ImportHistory } from "@/components/import/ImportHistory";
 import {
   parseSigemFile, parseRelEventoFile, parseSconFile, parseCronogramaFile,
+  parseSconProgramacaoFile,
   useExistingCounts, useProcessImport,
   type ParsedSigemRow, type ParsedRelEventoRow, type ParsedSconRow,
-  type CronogramaParseResult,
+  type ParsedSconProgRow, type CronogramaParseResult,
 } from "@/hooks/useImport";
 
 const ImportData: React.FC = () => {
@@ -19,11 +20,13 @@ const ImportData: React.FC = () => {
   const [sigemFile, setSigemFile] = useState<File | null>(null);
   const [relFile, setRelFile] = useState<File | null>(null);
   const [sconFile, setSconFile] = useState<File | null>(null);
+  const [sconProgFile, setSconProgFile] = useState<File | null>(null);
   const [cronoFile, setCronoFile] = useState<File | null>(null);
 
   const [sigemRows, setSigemRows] = useState<ParsedSigemRow[]>([]);
   const [relRows, setRelRows] = useState<ParsedRelEventoRow[]>([]);
   const [sconRows, setSconRows] = useState<ParsedSconRow[]>([]);
+  const [sconProgRows, setSconProgRows] = useState<ParsedSconProgRow[]>([]);
   const [cronoResult, setCronoResult] = useState<CronogramaParseResult | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [parsing, setParsing] = useState(false);
@@ -67,6 +70,18 @@ const ImportData: React.FC = () => {
     setParsing(false);
   }, []);
 
+  const handleSconProg = useCallback(async (f: File | null) => {
+    setSconProgFile(f);
+    if (!f) { setSconProgRows([]); return; }
+    setParsing(true);
+    try {
+      const { rows, warnings: w } = await parseSconProgramacaoFile(f);
+      setSconProgRows(rows);
+      setWarnings(prev => [...prev.filter(p => !p.includes("SCON Programação") && !p.includes("COMPONENTE") && !p.includes("DISCIPLINA") && !p.includes("PROGRAMADO")), ...w]);
+    } catch { setWarnings(prev => [...prev, "Erro ao ler arquivo SCON Programação"]); }
+    setParsing(false);
+  }, []);
+
   const handleCrono = useCallback(async (f: File | null) => {
     setCronoFile(f);
     if (!f) { setCronoResult(null); return; }
@@ -81,18 +96,19 @@ const ImportData: React.FC = () => {
 
   const allLoaded = !!sigemFile && !!relFile && !!sconFile;
   const cronoRows = cronoResult ? cronoResult.tree.length + cronoResult.bmValues.length + cronoResult.curvaS.length : 0;
-  const totalRows = sigemRows.length + relRows.length + sconRows.length + cronoRows;
+  const totalRows = sigemRows.length + relRows.length + sconRows.length + sconProgRows.length + cronoRows;
 
   const doProcess = () => {
     processImport.mutate({
       sigemRows, relEventoRows: relRows, sconRows,
+      sconProgRows, sconProgFile,
       sigemFile, relEventoFile: relFile, sconFile,
       cronogramaResult: cronoResult, cronogramaFile: cronoFile,
       onProgress: (msg, pct) => { setProgressMsg(msg); setProgressPct(pct); },
     }, {
       onSuccess: () => {
-        setSigemFile(null); setRelFile(null); setSconFile(null); setCronoFile(null);
-        setSigemRows([]); setRelRows([]); setSconRows([]); setCronoResult(null);
+        setSigemFile(null); setRelFile(null); setSconFile(null); setSconProgFile(null); setCronoFile(null);
+        setSigemRows([]); setRelRows([]); setSconRows([]); setSconProgRows([]); setCronoResult(null);
         setWarnings([]);
         setProgressMsg(""); setProgressPct(0);
       },
@@ -108,10 +124,14 @@ const ImportData: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <UploadCard label="SIGEM" description="~22k documentos (.xlsx)" required file={sigemFile} onFile={handleSigem} />
         <UploadCard label="REL_EVENTO" description="~6k eventos GITEC (.xlsx)" required file={relFile} onFile={handleRel} />
-        <UploadCard label="SCON" description="~1.5k componentes (.xlsx)" required file={sconFile} onFile={handleScon} />
+        <UploadCard label="SCON (Resumido)" description="~1.5k componentes (.xlsx)" required file={sconFile} onFile={handleScon} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <UploadCard label="SCON Programação (Completo)" description="Detalhamento semanal — pode ter 10.000+ linhas (.xlsx)" file={sconProgFile} onFile={handleSconProg} />
         <UploadCard label="Cronograma CR-5290" description="Cronograma financeiro (.xlsx)" file={cronoFile} onFile={handleCrono} />
       </div>
 
@@ -177,7 +197,7 @@ const ImportData: React.FC = () => {
         </div>
       )}
 
-      <ImportPreview sigem={sigemRows} relEvento={relRows} scon={sconRows} warnings={warnings} />
+      <ImportPreview sigem={sigemRows} relEvento={relRows} scon={sconRows} sconProg={sconProgRows} warnings={warnings} />
 
       {!processImport.isPending && (
         <div className="space-y-2">
@@ -185,10 +205,10 @@ const ImportData: React.FC = () => {
             size="lg"
             className="w-full"
             onClick={doProcess}
-            disabled={(!allLoaded && !cronoFile) || totalRows === 0}
+            disabled={(!allLoaded && !cronoFile && !sconProgFile) || totalRows === 0}
           >
             <Upload className="h-5 w-5 mr-2" />
-            {allLoaded || cronoFile
+            {allLoaded || cronoFile || sconProgFile
               ? `▶ Processar Tudo (${totalRows.toLocaleString("pt-BR")} registros)`
               : `Carregue os 3 arquivos (${[sigemFile, relFile, sconFile].filter(Boolean).length}/3)`
             }
