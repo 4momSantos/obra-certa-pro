@@ -185,7 +185,7 @@ export function useGitecByFiscal() {
   });
 }
 
-
+export interface GitecIPPURow {
   ippu: string;
   total_eventos: number;
   aprovados: number;
