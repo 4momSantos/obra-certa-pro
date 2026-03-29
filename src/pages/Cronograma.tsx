@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCronogramaTree, useCurvaS, useUltimoBm, useCronogramaBm } from "@/hooks/useCronogramaData";
 import { CronogramaTreeGrid } from "@/components/cronograma/CronogramaTreeGrid";
 import { CurvaSCharts } from "@/components/cronograma/CurvaSCharts";
 import { CronogramaDetailSheet } from "@/components/cronograma/CronogramaDetailSheet";
+import { ComparativoTab } from "@/components/cronograma/ComparativoTab";
+import { ForecastTab } from "@/components/cronograma/ForecastTab";
 import { formatCompact } from "@/lib/format";
 import { Link } from "react-router-dom";
 import type { CronoTreeNode } from "@/hooks/useCronogramaData";
@@ -160,23 +163,47 @@ export default function Cronograma() {
         </div>
       </div>
 
-      {/* Tree Grid */}
-      <CronogramaTreeGrid
-        tree={tree}
-        expanded={expanded}
-        onToggle={(key) => setExpanded(prev => {
-          const next = new Set(prev);
-          next.has(key) ? next.delete(key) : next.add(key);
-          return next;
-        })}
-        search={search}
-        bmFilter={bmFilter && bmFilter !== "all" ? parseInt(bmFilter) : null}
-        bmFilterValues={bmFilterValues}
-        onSelectNode={setSelectedNode}
-      />
+      {/* Tabs */}
+      <Tabs defaultValue="tree" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="tree">Tree Grid</TabsTrigger>
+          <TabsTrigger value="curvas">Curva S</TabsTrigger>
+          <TabsTrigger value="comparativo">Comparativo</TabsTrigger>
+          <TabsTrigger value="forecast">Forecast</TabsTrigger>
+        </TabsList>
 
-      {/* Curva S Charts */}
-      {curvaS && curvaS.length > 0 && <CurvaSCharts data={curvaS} />}
+        <TabsContent value="tree" className="space-y-4">
+          <CronogramaTreeGrid
+            tree={tree}
+            expanded={expanded}
+            onToggle={(key) => setExpanded(prev => {
+              const next = new Set(prev);
+              next.has(key) ? next.delete(key) : next.add(key);
+              return next;
+            })}
+            search={search}
+            bmFilter={bmFilter && bmFilter !== "all" ? parseInt(bmFilter) : null}
+            bmFilterValues={bmFilterValues}
+            onSelectNode={setSelectedNode}
+          />
+        </TabsContent>
+
+        <TabsContent value="curvas">
+          {curvaS && curvaS.length > 0 ? (
+            <CurvaSCharts data={curvaS} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-12">Nenhum dado de Curva S disponível</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="comparativo">
+          <ComparativoTab />
+        </TabsContent>
+
+        <TabsContent value="forecast">
+          <ForecastTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Detail Sheet */}
       <CronogramaDetailSheet
