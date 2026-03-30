@@ -334,14 +334,13 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         const warnings: string[] = [];
 
-        // Detecção dinâmica da linha de cabeçalho
+        // Detecção dinâmica da linha de cabeçalho — exigir 5+ colunas conhecidas
+        const knownCols = ["estrutura", "fase", "agrupamento", "tag", "etapa", "status", "valor"];
         let headerIdx = 0;
         for (let i = 0; i < Math.min(raw.length, 20); i++) {
-          const rowStr = (raw[i] || []).map(h => str(h).toLowerCase()).join("|");
-          if (rowStr.includes("estrutura") && rowStr.includes("etapa")) {
-            headerIdx = i;
-            break;
-          }
+          const rowHeaders = (raw[i] || []).map(h => normalizeHeader(str(h)));
+          const matches = knownCols.filter(kc => rowHeaders.some(rh => rh === kc));
+          if (matches.length >= 5) { headerIdx = i; break; }
         }
         const headers = (raw[headerIdx] || []).map(h => str(h));
         warnings.push(`REL_EVENTO: cabeçalho na linha ${headerIdx + 1}: ${headers.slice(0, 15).join(" | ")}`);
