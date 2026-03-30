@@ -121,6 +121,7 @@ function parseCriterio(raw: unknown[][]): { rows: Record<string, unknown>[]; war
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const nivel = str(r[4]);
     if (!nivel.includes("7 - Etapa") && !nivel.includes("7 -Etapa") && !nivel.toLowerCase().includes("etapa")) continue;
     rows.push({
