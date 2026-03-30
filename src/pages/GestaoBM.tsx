@@ -43,8 +43,8 @@ export default function GestaoBM() {
         statusFilter={statusFilter}
         onRowClick={(ppu) => setDetailPpu(ppu)}
       />
+      <BmFiscalAnalysis bmName={effectiveBm} />
 
-      <BmPpuDetailSheet
         open={!!detailPpu}
         onClose={() => setDetailPpu(null)}
         itemPpu={detailPpu ?? ""}
