@@ -28,7 +28,14 @@ function dateStr(v: unknown): string | null {
   if (!s) return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  return s.slice(0, 10);
+  const iso = s.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  return null;
+}
+
+const PIVOT_NOISE = /^(Globais|Rótulos de Linha|Total Geral|\(blank\)|Grand Total)$/i;
+function isPivotRow(r: unknown[]): boolean {
+  return r.slice(0, 5).some(v => PIVOT_NOISE.test(str(v)));
 }
 
 // ── Config definitions ──
@@ -49,6 +56,7 @@ function parsePPU(raw: unknown[][]): { rows: Record<string, unknown>[]; warnings
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const item_ppu = str(r[3]);
     if (!item_ppu) continue;
     const flag = str(r[0]).toLowerCase();
@@ -72,6 +80,7 @@ function parseClassificacao(raw: unknown[][]): { rows: Record<string, unknown>[]
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const item_ppu = str(r[0]);
     if (!item_ppu) continue;
     rows.push({
@@ -89,6 +98,7 @@ function parseEAC(raw: unknown[][]): { rows: Record<string, unknown>[]; warnings
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const ppu = str(r[1]);
     if (!ppu) continue;
     rows.push({
@@ -111,6 +121,7 @@ function parseCriterio(raw: unknown[][]): { rows: Record<string, unknown>[]; war
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const nivel = str(r[4]);
     if (!nivel.includes("7 - Etapa") && !nivel.includes("7 -Etapa") && !nivel.toLowerCase().includes("etapa")) continue;
     rows.push({
