@@ -5,6 +5,7 @@ import { GitecPipelineFunnel } from "@/components/gestao-bm/GitecPipelineFunnel"
 import { BmPpuTable } from "@/components/gestao-bm/BmPpuTable";
 import { BmCharts } from "@/components/gestao-bm/BmCharts";
 import { BmPpuDetailSheet } from "@/components/gestao-bm/BmPpuDetailSheet";
+import { BmFiscalAnalysis } from "@/components/gestao-bm/BmFiscalAnalysis";
 import { allBMs } from "@/lib/bm-utils";
 
 export default function GestaoBM() {
