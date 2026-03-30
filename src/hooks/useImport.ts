@@ -367,9 +367,12 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const cValor = findCol(headers, "valor");
         const cComent = findCol(headers, "comentário", "comentario");
 
-        if (cTag < 0) warnings.push("Coluna 'TAG' não encontrada no cabeçalho REL_EVENTO");
-        if (cStatus < 0) warnings.push("Coluna 'Status' não encontrada no cabeçalho REL_EVENTO");
-        if (cValor < 0) warnings.push("Coluna 'Valor' não encontrada no cabeçalho REL_EVENTO");
+        // Debug de mapeamento de colunas
+        const colMap: Record<string, number> = { cEstrutura, cFase, cSubfase, cAgrup, cCarac, cTag, cQtd, cUm, cEtapa, cPesoFis, cPesoFin, cDataExec, cDataInf, cExecPor, cNecEvid, cNumEvid, cDataAprov, cFiscal, cStatus, cValor, cComent };
+        const foundCols = Object.entries(colMap).filter(([,v]) => v >= 0).map(([k,v]) => `${k}=${v}`);
+        const notFoundCols = Object.entries(colMap).filter(([,v]) => v < 0).map(([k]) => k);
+        warnings.push(`Colunas mapeadas (${foundCols.length}): ${foundCols.join(", ")}`);
+        if (notFoundCols.length) warnings.push(`⚠ Colunas NÃO encontradas: ${notFoundCols.join(", ")}`);
 
         let noKey = 0;
         let pivotSkipped = 0;
