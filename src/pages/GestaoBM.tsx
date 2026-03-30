@@ -3,6 +3,7 @@ import { BmSelector } from "@/components/gestao-bm/BmSelector";
 import { BmKPIs } from "@/components/gestao-bm/BmKPIs";
 import { GitecPipelineFunnel } from "@/components/gestao-bm/GitecPipelineFunnel";
 import { BmPpuTable } from "@/components/gestao-bm/BmPpuTable";
+import { BmCharts } from "@/components/gestao-bm/BmCharts";
 import { BmPpuDetailSheet } from "@/components/gestao-bm/BmPpuDetailSheet";
 import { allBMs } from "@/lib/bm-utils";
 
@@ -35,6 +36,7 @@ export default function GestaoBM() {
         activeStatus={statusFilter}
         onFilterStatus={setStatusFilter}
       />
+      <BmCharts bmName={effectiveBm} />
       <BmPpuTable
         bmName={effectiveBm}
         statusFilter={statusFilter}
