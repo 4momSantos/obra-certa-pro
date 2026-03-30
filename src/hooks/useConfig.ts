@@ -17,19 +17,35 @@ function num(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+function toIsoDate(y: number, m: number, d: number): string | null {
+  if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return null;
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 function dateStr(v: unknown): string | null {
   if (v == null || v === "") return null;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    return v.toISOString().slice(0, 10);
+  }
   if (typeof v === "number") {
     const d = XLSX.SSF.parse_date_code(v);
-    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+    if (d) return toIsoDate(d.y, d.m, d.d);
   }
   const s = String(v).trim();
   if (!s) return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  if (m) return toIsoDate(Number(m[3]), Number(m[2]), Number(m[1]));
   const iso = s.slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    const [y, mo, d] = iso.split("-").map(Number);
+    return toIsoDate(y, mo, d);
+  }
   return null;
 }
 
