@@ -1,63 +1,93 @@
 
 
-# Corrigir Relacionamento SIGEM-PPU via Evidências GITEC
+# Corrigir Parser REL_EVENTO para Estrutura Real do Arquivo
 
 ## Problema
 
-O arquivo SIGEM não possui coluna de PPU. O aviso "Coluna PPU não encontrada" é esperado. A relação entre documentos SIGEM e itens PPU é indireta: o campo `gitec_events.evidencias` contém números de documentos SIGEM separados por `;`, e cada evento GITEC tem um `item_ppu`. A view `vw_sigem_por_ppu` atual agrupa por `sigem_documents.ppu` (sempre vazio), retornando zero resultados.
+O parser atual tem 3 problemas graves:
 
-## Mudanças
+1. **`range: 2` errado**: O arquivo tem 4 linhas de cabeçalho/filtros antes dos headers reais (linha 5). O parser lê a linha 3 ("Data de Execução: Não selecionado...") como headers, então nenhum `findCol` funciona e todos os campos ficam mapeados para posições erradas.
 
-### 1. Remover aviso falso no parser SIGEM (`src/hooks/useImport.ts`)
+2. **Colunas inexistentes**: O parser busca `item_ppu`, `rel_status`, `rel_status_item`, `tag_agrup`, `quantidade_ponderada` -- nenhuma existe no arquivo. O `item_ppu` deve ser derivado do campo `Agrupamento` (ex: `B_1.1_Mobilização...` → `B-1.1`).
 
-- Remover a busca pela coluna PPU (`findCol(headers, "ppu", ...)`) e o warning "Coluna PPU não encontrada"
-- Manter o campo `ppu` no objeto parseado, mas com valor vazio (sem alerta)
-- Adicionar aviso diagnóstico mostrando os primeiros 15 cabeçalhos encontrados no arquivo para facilitar debug futuro
+3. **Sem filtro de pivot table**: Linhas "Rótulos de Linha" e "Total Geral" passam direto e tentam ser gravadas como datas, causando o erro SQL.
 
-### 2. Recriar `vw_sigem_por_ppu` via GITEC (migração SQL)
+## Colunas reais do arquivo (21 colunas, linha 5)
 
-Substituir a view atual que depende da coluna `ppu` vazia por uma que faz o JOIN através das evidências GITEC:
-
-```sql
-CREATE OR REPLACE VIEW vw_sigem_por_ppu AS
-SELECT
-  ge.item_ppu AS ppu,
-  COUNT(DISTINCT sd.id) AS total_docs,
-  COUNT(DISTINCT sd.id) FILTER (
-    WHERE sd.status_correto IN ('Sem Comentários', 'Para Construção')
-  ) AS docs_ok,
-  COUNT(DISTINCT sd.id) FILTER (
-    WHERE sd.status_correto = 'Recusado'
-  ) AS docs_recusados,
-  COUNT(DISTINCT sd.id) FILTER (
-    WHERE sd.status_correto = 'Em Workflow'
-  ) AS docs_workflow,
-  COUNT(DISTINCT sd.id) FILTER (
-    WHERE sd.status_correto = 'Com Comentários'
-  ) AS docs_comentarios
-FROM gitec_events ge
-CROSS JOIN LATERAL unnest(
-  string_to_array(ge.evidencias, ';')
-) AS ev(doc_num)
-JOIN sigem_documents sd
-  ON trim(ev.doc_num) = sd.documento
-WHERE ge.item_ppu IS NOT NULL
-  AND ge.item_ppu != ''
-  AND ge.evidencias IS NOT NULL
-  AND ge.evidencias != ''
-GROUP BY ge.item_ppu;
+```text
+Estrutura | Fase | Sub fase | Agrupamento | Característica | TAG | Qtd | UM | Etapa |
+Peso Físico | Peso Financeiro | Data de Execução | Data Inf. Execução | Executado por |
+Necessita Evidências | Número Evidências | Data de Aprovação | Fiscal Responsável |
+Status | Valor | Comentário
 ```
 
-Isso usa `unnest(string_to_array(...))` para explodir o campo `evidencias` em linhas individuais e fazer o JOIN com `sigem_documents.documento`. A coluna de saída continua chamando `ppu` para manter compatibilidade com `useMedicao.ts`.
+## Mudanças em `src/hooks/useImport.ts`
 
-### 3. Nenhuma mudança nos consumidores
+### 1. Detecção dinâmica da linha de cabeçalho
 
-A view mantém as mesmas colunas (`ppu`, `total_docs`, `docs_ok`, `docs_recusados`, `docs_workflow`, `docs_comentarios`), então `useMedicao.ts`, `MedicaoExport.tsx` e `HomeDashboard.tsx` continuam funcionando sem alteração.
+Substituir `range: 2` fixo por busca dinâmica: varrer as primeiras 20 linhas até encontrar uma que contenha "Estrutura" ou "Etapa" ou "TAG" simultaneamente.
 
-## Arquivos Alterados
+```typescript
+const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+// Encontrar linha de cabeçalho dinamicamente
+let headerIdx = 0;
+for (let i = 0; i < Math.min(raw.length, 20); i++) {
+  const rowStr = (raw[i] || []).map(h => str(h).toLowerCase()).join("|");
+  if (rowStr.includes("estrutura") && rowStr.includes("etapa")) {
+    headerIdx = i;
+    break;
+  }
+}
+const headers = (raw[headerIdx] || []).map(h => str(h));
+```
+
+### 2. Derivar `item_ppu` do Agrupamento
+
+O campo Agrupamento tem formato `B_1.1_Nome do Agrupamento`. Extrair o iPPU:
+
+```typescript
+function extractIppuFromAgrupamento(agrup: string): string {
+  if (!agrup) return "";
+  // "B_1.1_Mobilização..." → "B-1.1"
+  const m = agrup.match(/^([A-Z])_(\d+(?:\.\d+)*)_/);
+  return m ? `${m[1]}-${m[2]}` : "";
+}
+```
+
+Usar no loop: `item_ppu: extractIppuFromAgrupamento(str(cell(r, cAgrup)))`.
+
+### 3. Filtrar linhas de pivot table
+
+Após `if (!r || r.length === 0) continue;`, adicionar:
+
+```typescript
+const firstVal = str(r[0] || "").toLowerCase();
+if (firstVal.includes("rótulos de") || firstVal.includes("rotulos de") ||
+    firstVal.includes("total geral") || firstVal.includes("grand total") ||
+    firstVal.includes("(blank)") || firstVal.includes("(em branco)")) {
+  continue;
+}
+```
+
+### 4. Adicionar candidatos de nome para "Sub fase"
+
+O arquivo usa "Sub fase" (com espaço). Adicionar ao `findCol`:
+
+```typescript
+const cSubfase = findCol(headers, "subfase", "sub fase", "sub_fase");
+```
+
+### 5. Relaxar filtro de chave
+
+Atualmente: `if (!item_ppu && !tag) { noKey++; continue; }`. Mudar para aceitar linhas que tenham pelo menos Agrupamento OU TAG:
+
+```typescript
+if (!item_ppu && !tag && !agrupamento) { noKey++; continue; }
+```
+
+## Arquivo alterado
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/hooks/useImport.ts` | Remover busca de coluna PPU e aviso falso |
-| Nova migração SQL | Recriar `vw_sigem_por_ppu` com JOIN via `gitec_events.evidencias` |
+| `src/hooks/useImport.ts` | `parseRelEventoFile`: header dinâmico, iPPU derivado, filtro pivot, candidatos "sub fase" |
 
