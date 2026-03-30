@@ -33,6 +33,11 @@ function dateStr(v: unknown): string | null {
   return null;
 }
 
+const PIVOT_NOISE = /^(Globais|Rótulos de Linha|Total Geral|\(blank\)|Grand Total)$/i;
+function isPivotRow(r: unknown[]): boolean {
+  return r.slice(0, 5).some(v => PIVOT_NOISE.test(str(v)));
+}
+
 // ── Config definitions ──
 
 export interface ConfigCardDef {
