@@ -1,37 +1,63 @@
 
 
-# Fix "invalid input syntax for type json" Error
+# Corrigir Relacionamento SIGEM-PPU via Evidências GITEC
 
-## Root Cause
+## Problema
 
-The `import_batches` table has an `errors` column of type `jsonb`. While the default is `'[]'::jsonb`, PostgREST may have issues when the column isn't explicitly set. Additionally, some Excel cell values may contain characters that break JSON serialization in the HTTP request body sent to PostgREST.
+O arquivo SIGEM não possui coluna de PPU. O aviso "Coluna PPU não encontrada" é esperado. A relação entre documentos SIGEM e itens PPU é indireta: o campo `gitec_events.evidencias` contém números de documentos SIGEM separados por `;`, e cada evento GITEC tem um `item_ppu`. A view `vw_sigem_por_ppu` atual agrupa por `sigem_documents.ppu` (sempre vazio), retornando zero resultados.
 
-## Changes
+## Mudanças
 
-### 1. Explicitly set `errors: []` on batch creation (`src/hooks/useImport.ts`)
+### 1. Remover aviso falso no parser SIGEM (`src/hooks/useImport.ts`)
 
-All four `import_batches.insert()` calls (SIGEM, REL_EVENTO, SCON, Cronograma ~lines 747, 764, 780, 798) currently omit the `errors` field. Add `errors: []` to each insert to avoid relying on the database default.
+- Remover a busca pela coluna PPU (`findCol(headers, "ppu", ...)`) e o warning "Coluna PPU não encontrada"
+- Manter o campo `ppu` no objeto parseado, mas com valor vazio (sem alerta)
+- Adicionar aviso diagnóstico mostrando os primeiros 15 cabeçalhos encontrados no arquivo para facilitar debug futuro
 
-### 2. Add JSON-safe validation before insert (`src/hooks/useImport.ts`)
+### 2. Recriar `vw_sigem_por_ppu` via GITEC (migração SQL)
 
-Add a `ensureJsonSafe()` wrapper around each row before it reaches `insertInBatches`. This function will:
-- Call `JSON.stringify()` on each row to validate it's serializable
-- If it throws, iterate fields to find and sanitize the problematic value
-- Replace any non-serializable values with empty strings
+Substituir a view atual que depende da coluna `ppu` vazia por uma que faz o JOIN através das evidências GITEC:
 
-### 3. Improve `sanitizeForInsert` to handle edge cases (`src/hooks/useImport.ts`)
+```sql
+CREATE OR REPLACE VIEW vw_sigem_por_ppu AS
+SELECT
+  ge.item_ppu AS ppu,
+  COUNT(DISTINCT sd.id) AS total_docs,
+  COUNT(DISTINCT sd.id) FILTER (
+    WHERE sd.status_correto IN ('Sem Comentários', 'Para Construção')
+  ) AS docs_ok,
+  COUNT(DISTINCT sd.id) FILTER (
+    WHERE sd.status_correto = 'Recusado'
+  ) AS docs_recusados,
+  COUNT(DISTINCT sd.id) FILTER (
+    WHERE sd.status_correto = 'Em Workflow'
+  ) AS docs_workflow,
+  COUNT(DISTINCT sd.id) FILTER (
+    WHERE sd.status_correto = 'Com Comentários'
+  ) AS docs_comentarios
+FROM gitec_events ge
+CROSS JOIN LATERAL unnest(
+  string_to_array(ge.evidencias, ';')
+) AS ev(doc_num)
+JOIN sigem_documents sd
+  ON trim(ev.doc_num) = sd.documento
+WHERE ge.item_ppu IS NOT NULL
+  AND ge.item_ppu != ''
+  AND ge.evidencias IS NOT NULL
+  AND ge.evidencias != ''
+GROUP BY ge.item_ppu;
+```
 
-- Handle `Date` objects more defensively (check for Invalid Date)
-- Handle `BigInt`, `Symbol`, `undefined` explicitly
-- For objects, wrap `JSON.stringify` in try-catch and fall back to `"{}"`
+Isso usa `unnest(string_to_array(...))` para explodir o campo `evidencias` em linhas individuais e fazer o JOIN com `sigem_documents.documento`. A coluna de saída continua chamando `ppu` para manter compatibilidade com `useMedicao.ts`.
 
-### 4. Add diagnostic logging on error (`src/hooks/useImport.ts`)
+### 3. Nenhuma mudança nos consumidores
 
-In the `insertInBatches` row-by-row fallback, log the exact row data via `console.error` before throwing, so the user can report which field causes the issue.
+A view mantém as mesmas colunas (`ppu`, `total_docs`, `docs_ok`, `docs_recusados`, `docs_workflow`, `docs_comentarios`), então `useMedicao.ts`, `MedicaoExport.tsx` e `HomeDashboard.tsx` continuam funcionando sem alteração.
 
-## Files Changed
+## Arquivos Alterados
 
-| File | Change |
-|------|--------|
-| `src/hooks/useImport.ts` | Add `errors: []` to batch inserts, add JSON validation, improve sanitizer |
+| Arquivo | Mudança |
+|---------|---------|
+| `src/hooks/useImport.ts` | Remover busca de coluna PPU e aviso falso |
+| Nova migração SQL | Recriar `vw_sigem_por_ppu` com JOIN via `gitec_events.evidencias` |
 
