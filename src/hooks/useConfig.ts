@@ -297,6 +297,9 @@ export function useConfigUpload() {
     onSuccess: (count, input) => {
       qc.invalidateQueries({ queryKey: ["config-counts"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
+      qc.invalidateQueries({ queryKey: ["medicao-data"] });
+      qc.invalidateQueries({ queryKey: ["cronograma"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success(`${count.toLocaleString("pt-BR")} registros carregados em ${input.card.label}`);
     },
     onError: (err: Error) => {
