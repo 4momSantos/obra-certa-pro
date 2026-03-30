@@ -419,6 +419,10 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             valor: num(cell(r, cValor)),
             comentario: str(cell(r, cComent)),
           });
+          if (rows.length === 1) {
+            const r0 = rows[0];
+            console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, item_ppu: r0.item_ppu, agrupamento: r0.agrupamento });
+          }
         }
         if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU, TAG nem Agrupamento (ignoradas)`);
         if (pivotSkipped > 0) warnings.push(`${pivotSkipped} linhas de resumo/pivot ignoradas`);
