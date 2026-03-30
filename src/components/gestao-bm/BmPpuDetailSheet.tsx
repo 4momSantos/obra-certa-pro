@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Check, Clock } from "lucide-react";
+import { TagCriterioSection } from "./TagCriterioSection";
 
 const fmtBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
@@ -290,7 +291,12 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
 
             <Separator />
 
-            {/* E — Histórico */}
+            {/* E — Tags & Critérios */}
+            <TagCriterioSection itemPpu={itemPpu} />
+
+            <Separator />
+
+            {/* F — Histórico */}
             <Section title="Histórico por BM" loading={histLoading}>
               {(history ?? []).length === 0 ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">Sem histórico disponível.</p>
