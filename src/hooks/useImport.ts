@@ -334,14 +334,13 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         const warnings: string[] = [];
 
-        // Detecção dinâmica da linha de cabeçalho
+        // Detecção dinâmica da linha de cabeçalho — exigir 5+ colunas conhecidas
+        const knownCols = ["estrutura", "fase", "agrupamento", "tag", "etapa", "status", "valor"];
         let headerIdx = 0;
         for (let i = 0; i < Math.min(raw.length, 20); i++) {
-          const rowStr = (raw[i] || []).map(h => str(h).toLowerCase()).join("|");
-          if (rowStr.includes("estrutura") && rowStr.includes("etapa")) {
-            headerIdx = i;
-            break;
-          }
+          const rowHeaders = (raw[i] || []).map(h => normalizeHeader(str(h)));
+          const matches = knownCols.filter(kc => rowHeaders.some(rh => rh === kc));
+          if (matches.length >= 5) { headerIdx = i; break; }
         }
         const headers = (raw[headerIdx] || []).map(h => str(h));
         warnings.push(`REL_EVENTO: cabeçalho na linha ${headerIdx + 1}: ${headers.slice(0, 15).join(" | ")}`);
@@ -368,9 +367,12 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const cValor = findCol(headers, "valor");
         const cComent = findCol(headers, "comentário", "comentario");
 
-        if (cTag < 0) warnings.push("Coluna 'TAG' não encontrada no cabeçalho REL_EVENTO");
-        if (cStatus < 0) warnings.push("Coluna 'Status' não encontrada no cabeçalho REL_EVENTO");
-        if (cValor < 0) warnings.push("Coluna 'Valor' não encontrada no cabeçalho REL_EVENTO");
+        // Debug de mapeamento de colunas
+        const colMap: Record<string, number> = { cEstrutura, cFase, cSubfase, cAgrup, cCarac, cTag, cQtd, cUm, cEtapa, cPesoFis, cPesoFin, cDataExec, cDataInf, cExecPor, cNecEvid, cNumEvid, cDataAprov, cFiscal, cStatus, cValor, cComent };
+        const foundCols = Object.entries(colMap).filter(([,v]) => v >= 0).map(([k,v]) => `${k}=${v}`);
+        const notFoundCols = Object.entries(colMap).filter(([,v]) => v < 0).map(([k]) => k);
+        warnings.push(`Colunas mapeadas (${foundCols.length}): ${foundCols.join(", ")}`);
+        if (notFoundCols.length) warnings.push(`⚠ Colunas NÃO encontradas: ${notFoundCols.join(", ")}`);
 
         let noKey = 0;
         let pivotSkipped = 0;
@@ -417,6 +419,10 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             valor: num(cell(r, cValor)),
             comentario: str(cell(r, cComent)),
           });
+          if (rows.length === 1) {
+            const r0 = rows[0];
+            console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, item_ppu: r0.item_ppu, agrupamento: r0.agrupamento });
+          }
         }
         if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU, TAG nem Agrupamento (ignoradas)`);
         if (pivotSkipped > 0) warnings.push(`${pivotSkipped} linhas de resumo/pivot ignoradas`);
