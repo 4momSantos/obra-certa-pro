@@ -45,6 +45,7 @@ export default function GestaoBM() {
       />
       <BmFiscalAnalysis bmName={effectiveBm} />
 
+      <BmPpuDetailSheet
         open={!!detailPpu}
         onClose={() => setDetailPpu(null)}
         itemPpu={detailPpu ?? ""}
