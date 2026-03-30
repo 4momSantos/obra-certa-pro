@@ -3,14 +3,15 @@ import { BmSelector } from "@/components/gestao-bm/BmSelector";
 import { BmKPIs } from "@/components/gestao-bm/BmKPIs";
 import { GitecPipelineFunnel } from "@/components/gestao-bm/GitecPipelineFunnel";
 import { BmPpuTable } from "@/components/gestao-bm/BmPpuTable";
+import { BmPpuDetailSheet } from "@/components/gestao-bm/BmPpuDetailSheet";
 import { allBMs } from "@/lib/bm-utils";
 
 export default function GestaoBM() {
   const bms = allBMs();
   const [selectedBm, setSelectedBm] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
-  // effectiveBm defaults to current (handled by selector)
   const effectiveBm = selectedBm ?? bms[0]?.name ?? "BM-01";
 
   const handleSelectBm = (bm: string) => {
@@ -28,18 +29,23 @@ export default function GestaoBM() {
       </div>
 
       <BmSelector selected={selectedBm} onSelect={handleSelectBm} />
-
       <BmKPIs bmName={effectiveBm} />
-
       <GitecPipelineFunnel
         bmName={effectiveBm}
         activeStatus={statusFilter}
         onFilterStatus={setStatusFilter}
       />
-
       <BmPpuTable
         bmName={effectiveBm}
         statusFilter={statusFilter}
+        onRowClick={(ppu) => setDetailPpu(ppu)}
+      />
+
+      <BmPpuDetailSheet
+        open={!!detailPpu}
+        onClose={() => setDetailPpu(null)}
+        itemPpu={detailPpu ?? ""}
+        bmName={effectiveBm}
       />
     </div>
   );
