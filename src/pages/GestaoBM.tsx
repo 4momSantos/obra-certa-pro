@@ -36,6 +36,7 @@ export default function GestaoBM() {
         activeStatus={statusFilter}
         onFilterStatus={setStatusFilter}
       />
+      <BmCharts bmName={effectiveBm} />
       <BmPpuTable
         bmName={effectiveBm}
         statusFilter={statusFilter}
