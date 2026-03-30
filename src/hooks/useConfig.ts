@@ -80,6 +80,7 @@ function parseClassificacao(raw: unknown[][]): { rows: Record<string, unknown>[]
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const item_ppu = str(r[0]);
     if (!item_ppu) continue;
     rows.push({
