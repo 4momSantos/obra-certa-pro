@@ -64,8 +64,15 @@ export default function Medicao() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <Upload className="h-16 w-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">Importe os dados SIGEM, REL_EVENTO e SCON primeiro</p>
-        <Button asChild><Link to="/import">Ir para Importação</Link></Button>
+        <p className="text-lg font-medium text-foreground">Dados de medição não encontrados</p>
+        <p className="text-sm text-muted-foreground max-w-md text-center">
+          A tabela <code className="bg-muted px-1 rounded text-xs">ppu_items</code> está vazia.
+          Importe os dados mestres (PPU-PREV) na página de Configuração primeiro.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild><Link to="/configuracao">Configuração</Link></Button>
+          <Button asChild><Link to="/import">Importar Operacional</Link></Button>
+        </div>
       </div>
     );
   }

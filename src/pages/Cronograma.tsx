@@ -84,7 +84,11 @@ export default function Cronograma() {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center h-64 gap-4">
         <FileUp className="h-12 w-12 text-muted-foreground" />
-        <p className="text-muted-foreground text-sm">Importe o Cronograma Financeiro (CR-5290)</p>
+        <p className="text-lg font-medium">Cronograma sem dados</p>
+        <p className="text-sm text-muted-foreground max-w-md text-center">
+          A tabela <code className="bg-muted px-1 rounded text-xs">cronograma_tree</code> está vazia.
+          Importe o Cronograma Financeiro (CR-5290) na página de importação.
+        </p>
         <Button asChild><Link to="/import">Ir para Importação</Link></Button>
       </motion.div>
     );
