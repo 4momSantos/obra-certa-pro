@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      anotacoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          referencia: string | null
+          texto: string | null
+          tipo: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          referencia?: string | null
+          texto?: string | null
+          tipo?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          referencia?: string | null
+          texto?: string | null
+          tipo?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       classificacao_ppu: {
         Row: {
           agrupamento: string | null
@@ -1146,6 +1173,350 @@ export type Database = {
           },
         ]
       }
+      splan_cronograma_financeiro: {
+        Row: {
+          boletim: string
+          codigo_eap: string | null
+          id: string
+          item_ppu: string | null
+          mes_referencia: string | null
+          synced_at: string | null
+          valor_baseline: number | null
+          valor_desafio: number | null
+          valor_projetado: number | null
+        }
+        Insert: {
+          boletim: string
+          codigo_eap?: string | null
+          id?: string
+          item_ppu?: string | null
+          mes_referencia?: string | null
+          synced_at?: string | null
+          valor_baseline?: number | null
+          valor_desafio?: number | null
+          valor_projetado?: number | null
+        }
+        Update: {
+          boletim?: string
+          codigo_eap?: string | null
+          id?: string
+          item_ppu?: string | null
+          mes_referencia?: string | null
+          synced_at?: string | null
+          valor_baseline?: number | null
+          valor_desafio?: number | null
+          valor_projetado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "splan_cronograma_financeiro_codigo_eap_fkey"
+            columns: ["codigo_eap"]
+            isOneToOne: false
+            referencedRelation: "splan_eap"
+            referencedColumns: ["codigo_eap"]
+          },
+        ]
+      }
+      splan_curva_s: {
+        Row: {
+          boletim: string
+          col_index: number | null
+          id: string
+          previsto_acum: number | null
+          previsto_mensal: number | null
+          projetado_acum: number | null
+          projetado_mensal: number | null
+          realizado_acum: number | null
+          realizado_mensal: number | null
+          synced_at: string | null
+        }
+        Insert: {
+          boletim: string
+          col_index?: number | null
+          id?: string
+          previsto_acum?: number | null
+          previsto_mensal?: number | null
+          projetado_acum?: number | null
+          projetado_mensal?: number | null
+          realizado_acum?: number | null
+          realizado_mensal?: number | null
+          synced_at?: string | null
+        }
+        Update: {
+          boletim?: string
+          col_index?: number | null
+          id?: string
+          previsto_acum?: number | null
+          previsto_mensal?: number | null
+          projetado_acum?: number | null
+          projetado_mensal?: number | null
+          realizado_acum?: number | null
+          realizado_mensal?: number | null
+          synced_at?: string | null
+        }
+        Relationships: []
+      }
+      splan_eap: {
+        Row: {
+          codigo_eap: string
+          descricao: string | null
+          disciplina: string | null
+          nivel: number | null
+          pai_codigo_eap: string | null
+          synced_at: string | null
+        }
+        Insert: {
+          codigo_eap: string
+          descricao?: string | null
+          disciplina?: string | null
+          nivel?: number | null
+          pai_codigo_eap?: string | null
+          synced_at?: string | null
+        }
+        Update: {
+          codigo_eap?: string
+          descricao?: string | null
+          disciplina?: string | null
+          nivel?: number | null
+          pai_codigo_eap?: string | null
+          synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "splan_eap_pai_codigo_eap_fkey"
+            columns: ["pai_codigo_eap"]
+            isOneToOne: false
+            referencedRelation: "splan_eap"
+            referencedColumns: ["codigo_eap"]
+          },
+        ]
+      }
+      splan_evidencias: {
+        Row: {
+          boletim: string | null
+          data_inclusao: string | null
+          id: string
+          nivel_2: string | null
+          nivel_3: string | null
+          numero_evidencia: string
+          revisao: string | null
+          source_id: string | null
+          status: string | null
+          synced_at: string | null
+          tipo_documento: string | null
+          titulo: string | null
+        }
+        Insert: {
+          boletim?: string | null
+          data_inclusao?: string | null
+          id?: string
+          nivel_2?: string | null
+          nivel_3?: string | null
+          numero_evidencia: string
+          revisao?: string | null
+          source_id?: string | null
+          status?: string | null
+          synced_at?: string | null
+          tipo_documento?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          boletim?: string | null
+          data_inclusao?: string | null
+          id?: string
+          nivel_2?: string | null
+          nivel_3?: string | null
+          numero_evidencia?: string
+          revisao?: string | null
+          source_id?: string | null
+          status?: string | null
+          synced_at?: string | null
+          tipo_documento?: string | null
+          titulo?: string | null
+        }
+        Relationships: []
+      }
+      splan_gitec_eventos: {
+        Row: {
+          agrupamento: string | null
+          boletim: string | null
+          codigo_eap: string | null
+          comentario: string | null
+          data_aprovacao: string | null
+          data_execucao: string | null
+          data_inf_execucao: string | null
+          etapa: string | null
+          executado_por: string | null
+          fiscal_responsavel: string | null
+          id: string
+          item_ppu: string | null
+          numero_evidencias: string | null
+          source_id: string | null
+          status: string
+          synced_at: string | null
+          tag: string | null
+          valor: number | null
+        }
+        Insert: {
+          agrupamento?: string | null
+          boletim?: string | null
+          codigo_eap?: string | null
+          comentario?: string | null
+          data_aprovacao?: string | null
+          data_execucao?: string | null
+          data_inf_execucao?: string | null
+          etapa?: string | null
+          executado_por?: string | null
+          fiscal_responsavel?: string | null
+          id?: string
+          item_ppu?: string | null
+          numero_evidencias?: string | null
+          source_id?: string | null
+          status: string
+          synced_at?: string | null
+          tag?: string | null
+          valor?: number | null
+        }
+        Update: {
+          agrupamento?: string | null
+          boletim?: string | null
+          codigo_eap?: string | null
+          comentario?: string | null
+          data_aprovacao?: string | null
+          data_execucao?: string | null
+          data_inf_execucao?: string | null
+          etapa?: string | null
+          executado_por?: string | null
+          fiscal_responsavel?: string | null
+          id?: string
+          item_ppu?: string | null
+          numero_evidencias?: string | null
+          source_id?: string | null
+          status?: string
+          synced_at?: string | null
+          tag?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "splan_gitec_eventos_codigo_eap_fkey"
+            columns: ["codigo_eap"]
+            isOneToOne: false
+            referencedRelation: "splan_eap"
+            referencedColumns: ["codigo_eap"]
+          },
+        ]
+      }
+      splan_medicao_mensal: {
+        Row: {
+          boletim: string
+          id: string
+          item_ppu: string | null
+          synced_at: string | null
+          valor_executado: number | null
+          valor_gitec: number | null
+          valor_previsto: number | null
+          valor_sigem: number | null
+        }
+        Insert: {
+          boletim: string
+          id?: string
+          item_ppu?: string | null
+          synced_at?: string | null
+          valor_executado?: number | null
+          valor_gitec?: number | null
+          valor_previsto?: number | null
+          valor_sigem?: number | null
+        }
+        Update: {
+          boletim?: string
+          id?: string
+          item_ppu?: string | null
+          synced_at?: string | null
+          valor_executado?: number | null
+          valor_gitec?: number | null
+          valor_previsto?: number | null
+          valor_sigem?: number | null
+        }
+        Relationships: []
+      }
+      splan_ppu_items: {
+        Row: {
+          agrupamento: string | null
+          codigo_eap: string | null
+          descricao: string | null
+          disciplina: string | null
+          fase: string | null
+          id: string
+          item_ppu: string
+          subfase: string | null
+          synced_at: string | null
+          unidade: string | null
+          valor_contratual: number | null
+        }
+        Insert: {
+          agrupamento?: string | null
+          codigo_eap?: string | null
+          descricao?: string | null
+          disciplina?: string | null
+          fase?: string | null
+          id?: string
+          item_ppu: string
+          subfase?: string | null
+          synced_at?: string | null
+          unidade?: string | null
+          valor_contratual?: number | null
+        }
+        Update: {
+          agrupamento?: string | null
+          codigo_eap?: string | null
+          descricao?: string | null
+          disciplina?: string | null
+          fase?: string | null
+          id?: string
+          item_ppu?: string
+          subfase?: string | null
+          synced_at?: string | null
+          unidade?: string | null
+          valor_contratual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "splan_ppu_items_codigo_eap_fkey"
+            columns: ["codigo_eap"]
+            isOneToOne: false
+            referencedRelation: "splan_eap"
+            referencedColumns: ["codigo_eap"]
+          },
+        ]
+      }
+      sync_log: {
+        Row: {
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          operacao: string
+          registros: number | null
+          tabela: string
+        }
+        Insert: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          operacao: string
+          registros?: number | null
+          tabela: string
+        }
+        Update: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          operacao?: string
+          registros?: number | null
+          tabela?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1251,6 +1622,31 @@ export type Database = {
           val_pend_aprov: number | null
           val_pend_verif: number | null
           val_total: number | null
+        }
+        Relationships: []
+      }
+      vw_bm_resumo: {
+        Row: {
+          boletim: string | null
+          evidencias_aprovadas: number | null
+          evidencias_pendentes: number | null
+          evidencias_total: number | null
+          gitec_aprovados: number | null
+          gitec_eventos_total: number | null
+          gitec_pend_aprovacao: number | null
+          gitec_pend_verificacao: number | null
+          gitec_recusados: number | null
+          gitec_valor_aprovado: number | null
+          gitec_valor_pend_aprov: number | null
+          gitec_valor_pend_verif: number | null
+          mes_referencia: string | null
+          total_baseline: number | null
+          total_desafio: number | null
+          total_executado: number | null
+          total_gitec: number | null
+          total_previsto: number | null
+          total_projetado: number | null
+          total_sigem: number | null
         }
         Relationships: []
       }
