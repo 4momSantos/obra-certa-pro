@@ -311,6 +311,19 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
   });
 }
 
+function extractIppuFromAgrupamento(agrup: string): string {
+  if (!agrup) return "";
+  const m = agrup.match(/^([A-Z])_(\d+(?:\.\d+)*)_/);
+  return m ? `${m[1]}-${m[2]}` : "";
+}
+
+function isPivotArtifact(val: string): boolean {
+  const low = val.toLowerCase();
+  return low.includes("rótulos de") || low.includes("rotulos de") ||
+    low.includes("total geral") || low.includes("grand total") ||
+    low.includes("(blank)") || low.includes("(em branco)");
+}
+
 export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoRow[]; warnings: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -318,18 +331,24 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
       try {
         const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 2, defval: "" });
+        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         const warnings: string[] = [];
-        const headers = (raw[0] || []).map(h => str(h));
 
-        const cItemPpu = findCol(headers, "item ppu", "item_ppu", "ippu");
-        const cRelSta = findCol(headers, "rel status", "rel_status", "status rel");
-        const cRelStaItem = findCol(headers, "rel status item", "rel_status_item", "status item");
-        const cTagAgrup = findCol(headers, "tag agrup", "tag_agrup");
-        const cQtdPond = findCol(headers, "quantidade ponderada", "qtd ponderada", "qtd_pond");
+        // Detecção dinâmica da linha de cabeçalho
+        let headerIdx = 0;
+        for (let i = 0; i < Math.min(raw.length, 20); i++) {
+          const rowStr = (raw[i] || []).map(h => str(h).toLowerCase()).join("|");
+          if (rowStr.includes("estrutura") && rowStr.includes("etapa")) {
+            headerIdx = i;
+            break;
+          }
+        }
+        const headers = (raw[headerIdx] || []).map(h => str(h));
+        warnings.push(`REL_EVENTO: cabeçalho na linha ${headerIdx + 1}: ${headers.slice(0, 15).join(" | ")}`);
+
         const cEstrutura = findCol(headers, "estrutura");
         const cFase = findCol(headers, "fase");
-        const cSubfase = findCol(headers, "subfase");
+        const cSubfase = findCol(headers, "subfase", "sub fase", "sub_fase");
         const cAgrup = findCol(headers, "agrupamento");
         const cCarac = findCol(headers, "caracteristica", "característica");
         const cTag = findCol(headers, "tag");
@@ -339,10 +358,10 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const cPesoFis = findCol(headers, "peso fisico", "peso físico", "peso_fisico");
         const cPesoFin = findCol(headers, "peso financeiro", "peso_financeiro");
         const cDataExec = findCol(headers, "data de execução", "data execução", "data_execucao", "data execucao");
-        const cDataInf = findCol(headers, "data inf", "data_inf_execucao", "data inf. exec");
+        const cDataInf = findCol(headers, "data inf", "data_inf_execucao", "data inf. exec", "data inf. execução");
         const cExecPor = findCol(headers, "executado por", "executado_por");
-        const cNecEvid = findCol(headers, "necessita evidencia", "necessita evidência", "necessita_evidencias");
-        const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero_evidencias", "evidência");
+        const cNecEvid = findCol(headers, "necessita evidencia", "necessita evidência", "necessita_evidencias", "necessita evidências");
+        const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero_evidencias", "evidência", "número evidências");
         const cDataAprov = findCol(headers, "data de aprovação", "data aprovação", "data_aprovacao");
         const cFiscal = findCol(headers, "fiscal responsável", "fiscal responsavel", "fiscal_responsavel", "fiscal");
         const cStatus = findCol(headers, "status", "status evento");
@@ -354,23 +373,32 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         if (cValor < 0) warnings.push("Coluna 'Valor' não encontrada no cabeçalho REL_EVENTO");
 
         let noKey = 0;
+        let pivotSkipped = 0;
         const rows: ParsedRelEventoRow[] = [];
-        for (let i = 1; i < raw.length; i++) {
+        for (let i = headerIdx + 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
-          const item_ppu = str(cell(r, cItemPpu));
+
+          // Filtrar artefatos de tabela dinâmica
+          const firstVal = str(r[0] || "");
+          if (isPivotArtifact(firstVal)) { pivotSkipped++; continue; }
+
+          const agrupamento = str(cell(r, cAgrup));
           const tag = str(cell(r, cTag));
-          if (!item_ppu && !tag) { noKey++; continue; }
+          const item_ppu = extractIppuFromAgrupamento(agrupamento);
+
+          if (!item_ppu && !tag && !agrupamento) { noKey++; continue; }
+
           rows.push({
             item_ppu,
-            rel_status: str(cell(r, cRelSta)),
-            rel_status_item: str(cell(r, cRelStaItem)),
-            tag_agrup: str(cell(r, cTagAgrup)),
-            quantidade_ponderada: num(cell(r, cQtdPond)),
+            rel_status: "",
+            rel_status_item: "",
+            tag_agrup: "",
+            quantidade_ponderada: 0,
             estrutura: str(cell(r, cEstrutura)),
             fase: str(cell(r, cFase)),
             subfase: str(cell(r, cSubfase)),
-            agrupamento: str(cell(r, cAgrup)),
+            agrupamento,
             caracteristica: str(cell(r, cCarac)),
             tag,
             qtd: num(cell(r, cQtd)),
@@ -390,7 +418,8 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             comentario: str(cell(r, cComent)),
           });
         }
-        if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU nem TAG (ignoradas)`);
+        if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU, TAG nem Agrupamento (ignoradas)`);
+        if (pivotSkipped > 0) warnings.push(`${pivotSkipped} linhas de resumo/pivot ignoradas`);
         resolve({ rows, warnings });
       } catch (err) { reject(err); }
     };
