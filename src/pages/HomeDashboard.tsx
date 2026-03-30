@@ -48,9 +48,15 @@ export default function HomeDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Upload className="h-16 w-16 text-muted-foreground/30" />
-        <p className="text-lg font-medium">Importe seus dados para começar</p>
-        <p className="text-sm text-muted-foreground">Carregue SIGEM, REL_EVENTO e SCON para ver o dashboard consolidado.</p>
-        <Button asChild><Link to="/import"><Upload className="h-4 w-4 mr-2" /> Importar Dados</Link></Button>
+        <p className="text-lg font-medium">Dados de medição não encontrados</p>
+        <p className="text-sm text-muted-foreground max-w-md text-center">
+          As tabelas <code className="bg-muted px-1 rounded text-xs">ppu_items</code> e <code className="bg-muted px-1 rounded text-xs">classificacao_ppu</code> estão vazias.
+          Importe os dados mestres (PPU-PREV) em Configuração, ou dados operacionais (SIGEM, GITEC, SCON) em Importar.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild><Link to="/configuracao">Configuração</Link></Button>
+          <Button asChild><Link to="/import"><Upload className="h-4 w-4 mr-2" /> Importar Dados</Link></Button>
+        </div>
       </div>
     );
   }
