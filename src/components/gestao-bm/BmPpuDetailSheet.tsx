@@ -291,7 +291,12 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
 
             <Separator />
 
-            {/* E — Histórico */}
+            {/* E — Tags & Critérios */}
+            <TagCriterioSection itemPpu={itemPpu} />
+
+            <Separator />
+
+            {/* F — Histórico */}
             <Section title="Histórico por BM" loading={histLoading}>
               {(history ?? []).length === 0 ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">Sem histórico disponível.</p>
