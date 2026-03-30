@@ -274,13 +274,12 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
         const cSta = findCol(headers, "status", "status documento");
         const cUp = findCol(headers, "up");
         const cStaCorr = findCol(headers, "status correto", "status_correto");
-        const cPpu = findCol(headers, "ppu", "item ppu", "item_ppu", "ippu");
         const cStaGitec = findCol(headers, "status gitec", "status_gitec");
         const cDocRev = findCol(headers, "documento_revisao", "documento revisão", "doc_rev");
 
         if (cDoc < 0) warnings.push("Coluna 'Documento' não encontrada no cabeçalho SIGEM");
         if (cStaCorr < 0) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
-        if (cPpu < 0) warnings.push("Coluna PPU não encontrada");
+        warnings.push(`Cabeçalhos SIGEM detectados: ${headers.slice(0, 15).join(", ")}`);
 
         let noDoc = 0;
         const rows: ParsedSigemRow[] = [];
