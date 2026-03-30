@@ -297,7 +297,7 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
             status,
             up: str(cell(r, cUp)),
             status_correto: cStaCorr >= 0 ? (str(cell(r, cStaCorr)) || status) : status,
-            ppu: cPpu >= 0 ? str(cell(r, cPpu)) : "",
+            ppu: "",
             status_gitec: str(cell(r, cStaGitec)),
             documento_revisao: str(cell(r, cDocRev)),
           });
