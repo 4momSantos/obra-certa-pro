@@ -98,6 +98,7 @@ function parseEAC(raw: unknown[][]): { rows: Record<string, unknown>[]; warnings
   for (let i = 1; i < raw.length; i++) {
     const r = raw[i];
     if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
     const ppu = str(r[1]);
     if (!ppu) continue;
     rows.push({
