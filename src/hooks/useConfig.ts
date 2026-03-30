@@ -275,24 +275,33 @@ export function useConfigUpload() {
           filename: file.name,
           row_count: rows.length,
           status: "processing",
+          errors: [],
         })
         .select()
         .single();
       if (bErr) throw bErr;
 
-      const mapped = rows.map(r => ({ ...r, batch_id: batch.id }));
-      await insertInBatches(card.table, mapped, (done, total) => {
-        const pct = 10 + Math.round((done / total) * 85);
-        onProgress(`Gravando lote ${done} de ${total}...`, pct);
-      });
+      try {
+        const mapped = rows.map(r => ({ ...r, batch_id: batch.id }));
+        await insertInBatches(card.table, mapped, (done, total) => {
+          const pct = 10 + Math.round((done / total) * 85);
+          onProgress(`Gravando lote ${done} de ${total}...`, pct);
+        });
 
-      await supabase
-        .from("import_batches")
-        .update({ status: "completed", row_count: rows.length })
-        .eq("id", batch.id);
+        await supabase
+          .from("import_batches")
+          .update({ status: "completed", row_count: rows.length })
+          .eq("id", batch.id);
 
-      onProgress("Concluído!", 100);
-      return rows.length;
+        onProgress("Concluído!", 100);
+        return rows.length;
+      } catch (err: any) {
+        await supabase
+          .from("import_batches")
+          .update({ status: "error", errors: [{ message: err?.message || "Erro desconhecido" }] })
+          .eq("id", batch.id);
+        throw err;
+      }
     },
     onSuccess: (count, input) => {
       qc.invalidateQueries({ queryKey: ["config-counts"] });

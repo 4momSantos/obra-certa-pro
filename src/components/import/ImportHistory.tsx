@@ -3,7 +3,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChevronDown, Trash2, AlertCircle } from "lucide-react";
 import { useImportBatches, useDeleteBatch } from "@/hooks/useImport";
 import { format } from "date-fns";
 
@@ -18,7 +19,20 @@ const SOURCE_LABELS: Record<string, string> = {
   gitec: "GITEC (legado)",
   consulta_geral: "Consulta Geral (legado)",
   consolidacao: "Consolidação (legado)",
+  scon_programacao: "SCON Programação",
+  cronograma: "Cronograma",
 };
+
+function getErrorMessage(errors: unknown): string | null {
+  if (!errors) return null;
+  if (Array.isArray(errors) && errors.length > 0) {
+    const first = errors[0];
+    if (typeof first === "string") return first;
+    if (typeof first === "object" && first !== null && "message" in first) return String((first as any).message);
+  }
+  if (typeof errors === "string") return errors;
+  return null;
+}
 
 export const ImportHistory: React.FC = () => {
   const { data: batches, isLoading } = useImportBatches();
@@ -48,30 +62,48 @@ export const ImportHistory: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {batches.map((b: any) => (
-                <TableRow key={b.id}>
-                  <TableCell className="text-xs">{format(new Date(b.created_at), "dd/MM/yy HH:mm")}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-xs">{SOURCE_LABELS[b.source] ?? b.source}</Badge></TableCell>
-                  <TableCell className="text-xs max-w-[200px] truncate">{b.filename}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{b.row_count?.toLocaleString("pt-BR")}</TableCell>
-                  <TableCell>
-                    <Badge variant={b.status === "completed" ? "default" : b.status === "error" ? "destructive" : "secondary"} className="text-xs">
-                      {b.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => deleteBatch.mutate(b.id)}
-                      disabled={deleteBatch.isPending}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {batches.map((b: any) => {
+                const errorMsg = getErrorMessage(b.errors);
+                return (
+                  <TableRow key={b.id}>
+                    <TableCell className="text-xs">{format(new Date(b.created_at), "dd/MM/yy HH:mm")}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{SOURCE_LABELS[b.source] ?? b.source}</Badge></TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{b.filename}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{b.row_count?.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Badge
+                          variant={b.status === "completed" ? "default" : b.status === "error" ? "destructive" : "secondary"}
+                          className="text-xs"
+                        >
+                          {b.status === "error" ? "erro" : b.status}
+                        </Badge>
+                        {errorMsg && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertCircle className="h-3.5 w-3.5 text-destructive cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                              {errorMsg}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => deleteBatch.mutate(b.id)}
+                        disabled={deleteBatch.isPending}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

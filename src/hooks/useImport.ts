@@ -963,67 +963,56 @@ export function useProcessImport() {
         }
       }
 
-      // SIGEM
-      if (sigemRows.length > 0 && sigemFile) {
-        report("Criando batch SIGEM...");
+      // Helper to safely process a source with error handling
+      async function processSource(
+        source: string,
+        table: string,
+        rows: any[],
+        file: File,
+        label: string,
+      ) {
+        report(`Criando batch ${label}...`);
         const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "sigem", filename: sigemFile.name, row_count: sigemRows.length, status: "processing", errors: [],
+          user_id: user!.id, source, filename: file.name, row_count: rows.length, status: "processing", errors: [],
         }).select().single();
         if (bErr) throw bErr;
-        const mapped = sigemRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("sigem_documents", mapped, (done, total) => {
-          processed = done * 500;
-          report(`Gravando SIGEM — lote ${done} de ${total}...`);
-        });
-        await supabase.from("import_batches").update({ status: "completed", row_count: sigemRows.length }).eq("id", batch.id);
+        try {
+          const mapped = rows.map(r => ({ ...r, batch_id: batch.id }));
+          await insertInBatches(table, mapped, (done, total) => {
+            report(`Gravando ${label} — lote ${done} de ${total}...`);
+          });
+          await supabase.from("import_batches").update({ status: "completed", row_count: rows.length }).eq("id", batch.id);
+          return batch.id;
+        } catch (err: any) {
+          await supabase.from("import_batches").update({ status: "error", errors: [{ message: err?.message || "Erro desconhecido" }] }).eq("id", batch.id);
+          throw err;
+        }
+      }
+
+      // SIGEM
+      if (sigemRows.length > 0 && sigemFile) {
+        await processSource("sigem", "sigem_documents", sigemRows, sigemFile, "SIGEM");
         processed = sigemRows.length;
         results.push(`${sigemRows.length.toLocaleString("pt-BR")} docs SIGEM`);
       }
 
       // REL_EVENTO
       if (relEventoRows.length > 0 && relEventoFile) {
-        report("Criando batch REL_EVENTO...");
-        const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "rel_evento", filename: relEventoFile.name, row_count: relEventoRows.length, status: "processing", errors: [],
-        }).select().single();
-        if (bErr) throw bErr;
-        const mapped = relEventoRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("rel_eventos", mapped, (done, total) => {
-          report(`Gravando REL_EVENTO — lote ${done} de ${total}...`);
-        });
-        await supabase.from("import_batches").update({ status: "completed", row_count: relEventoRows.length }).eq("id", batch.id);
+        await processSource("rel_evento", "rel_eventos", relEventoRows, relEventoFile, "REL_EVENTO");
         processed += relEventoRows.length;
         results.push(`${relEventoRows.length.toLocaleString("pt-BR")} eventos`);
       }
 
       // SCON
       if (sconRows.length > 0 && sconFile) {
-        report("Criando batch SCON...");
-        const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "scon", filename: sconFile.name, row_count: sconRows.length, status: "processing", errors: [],
-        }).select().single();
-        if (bErr) throw bErr;
-        const mapped = sconRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("scon_components", mapped, (done, total) => {
-          report(`Gravando SCON — lote ${done} de ${total}...`);
-        });
-        await supabase.from("import_batches").update({ status: "completed", row_count: sconRows.length }).eq("id", batch.id);
+        await processSource("scon", "scon_components", sconRows, sconFile, "SCON");
         processed += sconRows.length;
         results.push(`${sconRows.length.toLocaleString("pt-BR")} componentes`);
       }
 
       // SCON PROGRAMAÇÃO
       if (sconProgRows.length > 0 && sconProgFile) {
-        report("Criando batch SCON Programação...");
-        const { data: batch, error: bErr } = await supabase.from("import_batches").insert({
-          user_id: user.id, source: "scon_programacao", filename: sconProgFile.name, row_count: sconProgRows.length, status: "processing", errors: [],
-        }).select().single();
-        if (bErr) throw bErr;
-        const mapped = sconProgRows.map(r => ({ ...r, batch_id: batch.id }));
-        await insertInBatches("scon_programacao", mapped, (done, total) => {
-          report(`Gravando SCON Programação — lote ${done} de ${total}...`);
-        });
-        await supabase.from("import_batches").update({ status: "completed", row_count: sconProgRows.length }).eq("id", batch.id);
+        await processSource("scon_programacao", "scon_programacao", sconProgRows, sconProgFile, "SCON Programação");
         processed += sconProgRows.length;
         results.push(`${sconProgRows.length.toLocaleString("pt-BR")} programação SCON`);
       }
@@ -1038,31 +1027,31 @@ export function useProcessImport() {
         }).select().single();
         if (bErr) throw bErr;
 
-        // Insert tree nodes
-        if (tree.length > 0) {
-          const mappedTree = tree.map(r => ({ ...r, batch_id: batch.id }));
-          await insertInBatches("cronograma_tree", mappedTree, (done, total) => {
-            report(`Gravando árvore EAP — lote ${done} de ${total}...`);
-          });
+        try {
+          if (tree.length > 0) {
+            const mappedTree = tree.map(r => ({ ...r, batch_id: batch.id }));
+            await insertInBatches("cronograma_tree", mappedTree, (done, total) => {
+              report(`Gravando árvore EAP — lote ${done} de ${total}...`);
+            });
+          }
+          if (bmValues.length > 0) {
+            const mappedBm = bmValues.map(r => ({ ...r, batch_id: batch.id }));
+            await insertInBatches("cronograma_bm_values", mappedBm, (done, total) => {
+              report(`Gravando valores BM — lote ${done} de ${total}...`);
+            });
+          }
+          if (curvaS.length > 0) {
+            const mappedCs = curvaS.map(r => ({ ...r, batch_id: batch.id }));
+            await insertInBatches("curva_s", mappedCs, (done, total) => {
+              report(`Gravando Curva S — lote ${done} de ${total}...`);
+            });
+          }
+          await supabase.from("import_batches").update({ status: "completed", row_count: totalCronoRows }).eq("id", batch.id);
+        } catch (err: any) {
+          await supabase.from("import_batches").update({ status: "error", errors: [{ message: err?.message || "Erro desconhecido" }] }).eq("id", batch.id);
+          throw err;
         }
 
-        // Insert BM values (without tree_id for now — linking by ippu)
-        if (bmValues.length > 0) {
-          const mappedBm = bmValues.map(r => ({ ...r, batch_id: batch.id }));
-          await insertInBatches("cronograma_bm_values", mappedBm, (done, total) => {
-            report(`Gravando valores BM — lote ${done} de ${total}...`);
-          });
-        }
-
-        // Insert Curva S
-        if (curvaS.length > 0) {
-          const mappedCs = curvaS.map(r => ({ ...r, batch_id: batch.id }));
-          await insertInBatches("curva_s", mappedCs, (done, total) => {
-            report(`Gravando Curva S — lote ${done} de ${total}...`);
-          });
-        }
-
-        await supabase.from("import_batches").update({ status: "completed", row_count: totalCronoRows }).eq("id", batch.id);
         processed += totalCronoRows;
         results.push(`${tree.length} nós EAP + ${bmValues.length} valores BM`);
       }
