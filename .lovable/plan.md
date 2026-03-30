@@ -1,73 +1,50 @@
 
+Objetivo
+Corrigir o “processando para sempre” no histórico de imports e impedir novos batches órfãos.
 
-# Plano: Detail Sheet com Tags, Rel. Eventos e Critérios de Medição
+Diagnóstico (confirmado no código + banco)
+- Não é timeout de função backend/worker: esses uploads são feitos no cliente (hooks `useConfigUpload` e `useProcessImport`) com inserts diretos no banco.
+- O status começa como `"processing"` na criação do batch.
+- Se ocorrer erro no meio (ex.: data inválida), o fluxo lança exceção e sai sem atualizar batch para `"error"`.
+- Resultado: ficam registros antigos `"processing"` com `0` linhas gravadas (exatamente o padrão que aparece no seu histórico).
 
-## Objetivo
+Plano de implementação
+1) Robustez de status no upload de Configuração (`src/hooks/useConfig.ts`)
+- Envolver mutation em `try/catch`.
+- Guardar `batchId` assim que criar o batch.
+- Em sucesso: manter `status = "completed"`.
+- Em erro: atualizar o mesmo batch para `status = "error"` e salvar mensagem em `errors` (JSON), evitando travamento visual eterno.
 
-Ao clicar em uma linha da tabela PPU na Gestão BM, o painel lateral (BmPpuDetailSheet) deve mostrar uma visão hierárquica:
+2) Robustez de status no upload operacional (`src/hooks/useImport.ts`)
+- Aplicar a mesma estratégia por fonte (SIGEM, REL_EVENTO, SCON, etc.).
+- Em qualquer falha da fonte atual: marcar aquele batch como `"error"` com detalhe do erro.
+- Preservar comportamento atual de abortar o restante, mas sem deixar batch órfão em `"processing"`.
 
-```text
-TAG-001
-├── Rel. Evento #1 (etapa: "Soldagem", status: "Aprovado", valor: R$ 50k)
-│   └── Critério: "Solda de Topo" — peso 2.5% ✅ cumprido
-├── Rel. Evento #2 (etapa: "Pintura", status: "Pend. Verificação")
-│   └── Critério: "Pintura Final" — peso 1.8% ⏳ pendente
-TAG-002
-└── Rel. Evento #3 ...
-```
+3) Normalização de batches já travados (migração SQL)
+- Criar migração para converter batches antigos `"processing"` para `"error"` quando estiverem claramente abandonados (ex.: mais de X minutos/horas).
+- Mensagem padrão em `errors`: “Upload interrompido antes da finalização”.
+- Isso limpa o histórico sem apagar rastreabilidade.
 
-## Dados disponíveis
+4) UX no histórico (`src/components/import/ImportHistory.tsx`)
+- Exibir badge de erro com destaque.
+- Mostrar detalhe resumido do `errors` (tooltip/linha secundária).
+- (Opcional) botão rápido para excluir batches com status `"error"`/travados.
 
-- **`rel_eventos`** (`item_ppu`, `tag`, `etapa`, `status`, `valor`, `data_execucao`, `fiscal_responsavel`) — eventos GITEC por PPU com TAG
-- **`criterio_medicao`** (`item_ppu`, `nome`, `nivel_estrutura`, `peso_fisico_fin`, `dicionario_etapa`) — critérios de medição por PPU
-- A ligação entre rel_evento e critério se faz pelo campo `etapa` do rel_evento cruzando com `nome` do critério (ambos no mesmo `item_ppu`)
+5) Ajuste paralelo recomendado (console warning)
+- Corrigir warning de `ref` em `Badge` (usar `React.forwardRef`) para eliminar ruído de debug na tela de import.
 
-## Implementação
+Validação (aceite)
+- Falha forçada de upload deve terminar com batch `"error"` (nunca mais `"processing"` infinito).
+- Upload válido deve terminar `"completed"`.
+- Batches antigos travados devem aparecer como `"error"` após migração.
+- Histórico deve permitir entender rapidamente “o que falhou e por quê”.
 
-### 1. Expandir `BmPpuDetailSheet.tsx` — Adicionar seção "Tags & Critérios"
-
-Após a seção de "Eventos GITEC" existente, adicionar uma nova seção que:
-
-1. **Busca `rel_eventos`** filtrado por `item_ppu` (todos os BMs, não só o atual)
-2. **Busca `criterio_medicao`** filtrado por `item_ppu`
-3. **Agrupa rel_eventos por TAG** usando `useMemo`
-4. **Cruza etapas**: para cada evento, localiza o critério correspondente pelo campo `etapa` ↔ `nome`
-5. **Renderiza como Accordion/Collapsible**: cada TAG é um item expansível, dentro dele a lista de eventos com badge de status, e para cada evento o critério vinculado com peso e indicador visual (check verde se "Concluída"/"Aprovado", relógio amber se pendente)
-
-### 2. Queries adicionais no Sheet
-
-Usar o hook `usePPUDetail` já existente (que busca `rel_eventos` e `criterio_medicao` por `item_ppu`) em vez de duplicar queries. Importar e chamar:
-
-```typescript
-const { rel, criterio, isLoading: detailLoading } = usePPUDetail(itemPpu, null);
-```
-
-### 3. Lógica de agrupamento e cruzamento
-
-```typescript
-const tagGroups = useMemo(() => {
-  const byTag = new Map<string, typeof rel>();
-  rel.forEach(ev => {
-    const tag = ev.tag || "Sem TAG";
-    if (!byTag.has(tag)) byTag.set(tag, []);
-    byTag.get(tag)!.push(ev);
-  });
-  
-  const criterioMap = new Map<string, any>();
-  criterio.forEach(c => criterioMap.set(c.nome?.toLowerCase(), c));
-  
-  return { byTag, criterioMap };
-}, [rel, criterio]);
-```
-
-### 4. UI — Accordion por TAG
-
-Cada TAG expande para mostrar seus eventos. Cada evento mostra:
-- Status badge (colorido por statusColor existente)
-- Etapa, valor, data, fiscal
-- Critério vinculado (se encontrado): nome, peso, dicionário da etapa
-- Indicador visual: ✅ se etapa concluída, ⏳ se pendente
-
-### Arquivos modificados
-- `src/components/gestao-bm/BmPpuDetailSheet.tsx` — adicionar seção com accordion de Tags > Eventos > Critérios, usando `usePPUDetail`
-
+Detalhes técnicos
+- Arquivos alvo:
+  - `src/hooks/useConfig.ts`
+  - `src/hooks/useImport.ts`
+  - `src/components/import/ImportHistory.tsx`
+  - `src/components/ui/badge.tsx` (warning de ref)
+  - `supabase/migrations/*` (reclassificação de status antigo)
+- Segurança/RLS:
+  - Sem mudança de políticas; só updates em `import_batches` do próprio usuário (já coberto por policy atual).
