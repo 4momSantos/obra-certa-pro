@@ -34,6 +34,7 @@ import Disciplinas from "@/pages/Disciplinas";
 import Cobertura from "@/pages/Cobertura";
 import CurvaS from "@/pages/CurvaS";
 import DetalhamentoBM from "@/pages/DetalhamentoBM";
+import GestaoBM from "@/pages/GestaoBM";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const AppRoutes = () => {
           <Route path="/bm" element={<DetalhamentoBM />} />
           <Route path="/etf" element={<ETF />} />
           <Route path="/medicao" element={<Medicao />} />
+          <Route path="/gestao-bm" element={<GestaoBM />} />
           <Route path="/tubulacao" element={<Tubulacao />} />
           <Route path="/import" element={<ImportData />} />
           <Route path="/gitec" element={<GitecPipeline />} />
