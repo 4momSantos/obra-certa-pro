@@ -37,8 +37,8 @@ export function MedicaoTable({ items, total, page, totalPages, onPageChange, onS
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border overflow-auto">
-        <Table>
+      <div className="rounded-lg border overflow-x-auto -mx-4 sm:mx-0">
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-8"></TableHead>
