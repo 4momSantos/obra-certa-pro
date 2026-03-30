@@ -964,10 +964,10 @@ export function useProcessImport() {
       }
 
       // Helper to safely process a source with error handling
-      async function processSource<T extends Record<string, unknown>>(
+      async function processSource(
         source: string,
         table: string,
-        rows: T[],
+        rows: any[],
         file: File,
         label: string,
       ) {
