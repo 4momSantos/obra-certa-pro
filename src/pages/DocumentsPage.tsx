@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Upload, FileText } from "lucide-react";
 import { DocumentDetailSheet } from "@/components/documents/DocumentDetailSheet";
@@ -53,7 +52,7 @@ const DocumentsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <FileText className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Documentos</h1>
+          <h1 className="text-2xl font-bold">Documentos SIGEM</h1>
         </div>
         <Button variant="outline" size="sm" asChild>
           <Link to="/import"><Upload className="h-4 w-4 mr-2" /> Importar</Link>
@@ -62,11 +61,11 @@ const DocumentsPage: React.FC = () => {
 
       {/* KPIs */}
       {loadingStats ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => <Card key={i}><CardContent className="p-4"><Skeleton className="h-12" /></CardContent></Card>)}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, i) => <Card key={i}><CardContent className="p-4"><Skeleton className="h-12" /></CardContent></Card>)}
         </div>
       ) : stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <Card><CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total Documentos</p>
             <p className="text-2xl font-bold">{stats.total.toLocaleString("pt-BR")}</p>
@@ -86,10 +85,6 @@ const DocumentsPage: React.FC = () => {
             <p className="text-xs text-muted-foreground">Recusados c/ GITEC</p>
             <p className="text-2xl font-bold">{stats.recusadosComGitec}</p>
             <p className="text-xs text-muted-foreground">{fmt(stats.valorGitecImpactado)} impactado</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Workflow {"> "}30d</p>
-            <p className="text-2xl font-bold">{stats.workflowLongo}</p>
           </CardContent></Card>
         </div>
       )}
@@ -136,8 +131,8 @@ const DocumentsPage: React.FC = () => {
                     <TableHead>Documento</TableHead>
                     <TableHead>Rev.</TableHead>
                     <TableHead>Título</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>Motivo</TableHead>
+                    <TableHead>UP</TableHead>
+                    <TableHead>PPU</TableHead>
                     <TableHead>GITEC</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -147,17 +142,8 @@ const DocumentsPage: React.FC = () => {
                       <TableCell className="font-mono text-xs">{r.documento}</TableCell>
                       <TableCell className="text-xs">{r.revisao}</TableCell>
                       <TableCell className="text-xs max-w-[180px] truncate">{r.titulo || "-"}</TableCell>
-                      <TableCell className="text-xs">{r.nivel2 || "-"}</TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-xs text-muted-foreground cursor-help truncate block">
-                              {r.texto_consolidacao.slice(0, 60)}{r.texto_consolidacao.length > 60 ? "..." : ""}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-sm"><p className="text-xs">{r.texto_consolidacao || "Sem motivo"}</p></TooltipContent>
-                        </Tooltip>
-                      </TableCell>
+                      <TableCell className="text-xs">{r.up || "-"}</TableCell>
+                      <TableCell className="text-xs">{r.ppu || "-"}</TableCell>
                       <TableCell>
                         {r.gitecCount > 0 ? (
                           <Badge variant="default" className="text-[10px]">✓ {r.gitecCount} eventos</Badge>
@@ -188,7 +174,7 @@ const DocumentsPage: React.FC = () => {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            {(statuses ?? []).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {(statuses ?? []).filter(s => s && s.trim() !== "").map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filters.vinculo} onValueChange={(v) => setFilters({ ...filters, vinculo: v })}>
@@ -220,9 +206,8 @@ const DocumentsPage: React.FC = () => {
                     <TableHead>Rev.</TableHead>
                     <TableHead>Título</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>WF</TableHead>
+                    <TableHead>UP</TableHead>
+                    <TableHead>PPU</TableHead>
                     <TableHead>GITEC</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -233,9 +218,8 @@ const DocumentsPage: React.FC = () => {
                       <TableCell className="text-xs">{d.revisao}</TableCell>
                       <TableCell className="text-xs max-w-[200px] truncate">{d.titulo || "-"}</TableCell>
                       <TableCell><Badge variant={statusColor(d.status)} className="text-[10px]">{d.status || "-"}</Badge></TableCell>
-                      <TableCell className="text-xs">{d.tipo || "-"}</TableCell>
-                      <TableCell className="text-xs">{d.nivel2 || "-"}</TableCell>
-                      <TableCell className="text-xs">{d.status_workflow || "-"}</TableCell>
+                      <TableCell className="text-xs">{d.up || "-"}</TableCell>
+                      <TableCell className="text-xs">{d.ppu || "-"}</TableCell>
                       <TableCell>
                         {d.hasGitec ? (
                           <Badge variant="default" className="text-[10px]">✓ {d.gitecCount}</Badge>
