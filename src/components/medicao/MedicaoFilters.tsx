@@ -26,7 +26,7 @@ export function MedicaoFilters(p: Props) {
         </SelectContent>
       </Select>
       <Select value={p.subfase || "__all__"} onValueChange={v => p.onSubfase(v === "__all__" ? "" : v)}>
-        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Subfase" /></SelectTrigger>
+        <SelectTrigger className="w-[130px]"><SelectValue placeholder="Subfase" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todas</SelectItem>
           {p.subfases.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
