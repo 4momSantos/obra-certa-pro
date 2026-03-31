@@ -1,27 +1,25 @@
 
 
-## Estilizar Scrollbars Globalmente
+## Adicionar Hierarquia BM → TAGs → Etapas no Detalhe do Agrupamento
 
-### Problema
-As scrollbars nativas do navegador (cinza padrão do OS) quebram a identidade visual dark/corporativa da aplicação. Aparecem em dezenas de locais: tabelas, sidebar, modais, sheets, etc.
+### Problema atual
+Ao expandir um agrupamento na Visão Consolidada, o usuário vê Etapas → TAGs. Mas falta a informação de **qual BM mediu cada item**, quais TAGs foram medidos em cada BM, e as etapas de cada TAG.
 
-### Solução
-Adicionar estilos globais de scrollbar no `src/index.css` usando pseudo-elementos WebKit + `scrollbar-color` para Firefox. Usar as CSS variables do tema para manter consistência em light/dark mode.
+### Nova hierarquia proposta
 
-### Mudança — Arquivo único: `src/index.css`
+```text
+Agrupamento expandido:
+├─ Resumo: "3 BMs com medição · 12 eventos GITEC"
+├─ BM-07 │ Prev: R$120k │ Real: R$95k │ 5 eventos
+│   ├─ TAG: ACAB-B-12001A │ Etapa: Mobilização │ ✅ Aprovado │ R$8.500
+│   ├─ TAG: ACAB-B-12002A │ Etapa: Demolição   │ ⏳ Pend Verif │ R$12.000
+├─ BM-08 │ Prev: R$80k  │ Real: R$60k │ 3 eventos
+│   ├─ TAG: ACAB-B-12003A │ Etapa: Montagem │ ✅ Aprovado │ R$15.000
+├─ Etapas do Critério (visão atual preservada)
+│   ├─ Etapa 1: Mobilização │ ✅ 8/8
+│   └─ Etapa 2: Demolição │ ◐ 5/8
+```
 
-Adicionar no `@layer base`, dentro do bloco `*`:
+### Fontes de dados
 
-**Scrollbar padrão (todos os elementos)**:
-- Largura fina: `6px`
-- Track: transparente
-- Thumb: `hsl(var(--border))` com `border-radius` arredondado
-- Hover no thumb: `hsl(var(--muted-foreground) / 0.5)`
-- Firefox: `scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent`
-
-**Scrollbar da sidebar** (`.overflow-y-auto` dentro do sidebar):
-- Thumb mais sutil: `hsl(var(--sidebar-border))`
-- Hover: `hsl(var(--sidebar-accent))`
-
-Isso cobre automaticamente todos os `overflow-auto`, `overflow-y-auto`, `ScrollArea`, e tabelas com scroll — sem tocar em nenhum componente individual.
-
+- **`cronograma_bm_values`** (iPPU): valores financeiros por BM (Prev
