@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useCronogramaComponents, useCronogramaBmByIppu, useGitecEventosByIppu, GitecEventRow } from "@/hooks/useCronogramaData";
+import { useCronogramaComponents, useCronogramaBmByIppu, useGitecEventosByIppu, type GitecEventRow } from "@/hooks/useCronogramaData";
 import { useCriterioMedicao, getEtapasByAgrupamento, CriterioMedicaoRow } from "@/hooks/useCriterioMedicao";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
