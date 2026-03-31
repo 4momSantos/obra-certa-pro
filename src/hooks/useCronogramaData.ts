@@ -203,3 +203,47 @@ export function useCronogramaComponents(ippu: string | null) {
     },
   });
 }
+
+export interface GitecEventRow {
+  id: string;
+  tag: string;
+  etapa: string;
+  status: string;
+  valor: number;
+  fiscal: string;
+  data_execucao: string | null;
+  data_aprovacao: string | null;
+  bm_name: string | null;
+}
+
+export function useGitecEventosByIppu(ippu: string | null) {
+  return useQuery({
+    queryKey: ["gitec-eventos-ippu", ippu],
+    enabled: !!ippu,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<GitecEventRow[]> => {
+      if (!ippu) return [];
+      const { data, error } = await supabase
+        .from("gitec_events")
+        .select("id, tag, etapa, status, valor, fiscal, data_execucao, data_aprovacao")
+        .eq("ippu", ippu);
+      if (error) throw error;
+
+      const { dateToBM } = await import("@/lib/bm-utils");
+      return (data || []).map((d: any) => {
+        const dateForBm = d.data_aprovacao || d.data_execucao;
+        return {
+          id: d.id,
+          tag: d.tag || "",
+          etapa: d.etapa || "",
+          status: d.status || "",
+          valor: Number(d.valor) || 0,
+          fiscal: d.fiscal || "",
+          data_execucao: d.data_execucao,
+          data_aprovacao: d.data_aprovacao,
+          bm_name: dateForBm ? dateToBM(dateForBm) : null,
+        };
+      });
+    },
+  });
+}
