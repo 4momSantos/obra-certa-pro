@@ -197,18 +197,18 @@ export function BmConsolidatedTree() {
       </div>
 
       {/* Tree table */}
-      <div className="rounded-md border overflow-auto">
-        <table className="w-full text-sm">
+      <div className="rounded-md border">
+        <table className="w-full text-sm table-fixed">
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr className="border-b">
-              <th className="text-left px-2 md:px-3 py-2 text-xs font-medium text-muted-foreground min-w-0">Nome</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Valor</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Prev. BM</th>
-              <th className="hidden md:table-cell text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Proj. BM</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Real. BM</th>
-              <th className="text-center px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[80px]">SCON %</th>
-              <th className="hidden md:table-cell text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[70px]">Comps</th>
-              <th className="hidden md:table-cell text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[50px]">Sem</th>
+              <th className="text-left px-2 md:px-3 py-2 text-xs font-medium text-muted-foreground">Nome</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Valor</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Prev.</th>
+              <th className="hidden md:table-cell text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[90px]">Proj.</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Real.</th>
+              <th className="text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[55px] md:w-[80px]">SCON</th>
+              <th className="hidden md:table-cell text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[50px]">Comp</th>
+              <th className="hidden md:table-cell text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[40px]">Sem</th>
             </tr>
           </thead>
           <tbody>
@@ -285,18 +285,18 @@ function TreeRows({
         onClick={() => toggle(node.id)}
       >
         <td className="px-2 md:px-3 py-1.5 md:py-2">
-          <div className="flex items-center gap-1 md:gap-1.5 min-w-0" style={{ paddingLeft: indent }}>
+          <div className="flex items-start gap-1 md:gap-1.5 min-w-0" style={{ paddingLeft: indent }}>
             {(node.children.length > 0 || isAgrupamento) && (
               isExpanded
-                ? <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-                : <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                ? <ChevronDown className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                : <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5" />
             )}
             {isAgrupamento && node.ippu && (
               <Badge variant="secondary" className="text-[8px] md:text-[9px] font-mono shrink-0 px-1 py-0">
                 {node.ippu}
               </Badge>
             )}
-            <span className={`truncate ${isFase ? "font-bold text-xs md:text-[13px]" : isSubfase ? "font-semibold text-[11px] md:text-xs" : "text-[10px] md:text-[11px]"}`}>
+            <span className={`break-words hyphens-auto ${isFase ? "font-bold text-xs md:text-[13px]" : isSubfase ? "font-semibold text-[11px] md:text-xs" : "text-[10px] md:text-[11px]"}`}>
               {node.nome}
             </span>
           </div>
