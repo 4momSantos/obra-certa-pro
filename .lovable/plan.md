@@ -1,27 +1,27 @@
 
 
-## Otimizar Página Medição — Eliminar Scroll Horizontal
+## Estilizar Scrollbars Globalmente
 
 ### Problema
-A tabela tem `min-w-[900px]` forçando scroll horizontal. Em telas de ~1048px com sidebar, o conteúdo fica apertado e depende de scroll.
+As scrollbars nativas do navegador (cinza padrão do OS) quebram a identidade visual dark/corporativa da aplicação. Aparecem em dezenas de locais: tabelas, sidebar, modais, sheets, etc.
 
-### Mudanças
+### Solução
+Adicionar estilos globais de scrollbar no `src/index.css` usando pseudo-elementos WebKit + `scrollbar-color` para Firefox. Usar as CSS variables do tema para manter consistência em light/dark mode.
 
-#### `MedicaoTable.tsx`
-- Remover `min-w-[900px]` da Table
-- Esconder colunas secundárias em telas menores:
-  - **Sempre visíveis**: Semáforo dot, Item PPU, Valor Total, SCON%, Medido
-  - **`hidden md:table-cell`**: Descrição, Disciplina, SIGEM, GITEC, Gap
-- Truncar Descrição com `max-w-[120px]` e usar tooltip ou title
-- Reduzir padding das células (`px-2 py-1.5` em vez do padrão)
+### Mudança — Arquivo único: `src/index.css`
 
-#### `MedicaoFilters.tsx`
-- Reduzir `min-w-[200px]` do search para `min-w-[140px]`
-- Selects: `w-[130px]` em vez de `w-[160px]`
-- Já usa `flex-wrap` então vai encaixar melhor
+Adicionar no `@layer base`, dentro do bloco `*`:
 
-#### `MedicaoFunnel.tsx`
-- Legenda: usar `flex-wrap` para não cortar em telas menores
+**Scrollbar padrão (todos os elementos)**:
+- Largura fina: `6px`
+- Track: transparente
+- Thumb: `hsl(var(--border))` com `border-radius` arredondado
+- Hover no thumb: `hsl(var(--muted-foreground) / 0.5)`
+- Firefox: `scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent`
 
-Nenhuma mudança estrutural — apenas classes responsivas para eliminar o overflow.
+**Scrollbar da sidebar** (`.overflow-y-auto` dentro do sidebar):
+- Thumb mais sutil: `hsl(var(--sidebar-border))`
+- Hover: `hsl(var(--sidebar-accent))`
+
+Isso cobre automaticamente todos os `overflow-auto`, `overflow-y-auto`, `ScrollArea`, e tabelas com scroll — sem tocar em nenhum componente individual.
 
