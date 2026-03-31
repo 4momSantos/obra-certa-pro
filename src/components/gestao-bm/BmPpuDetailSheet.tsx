@@ -178,7 +178,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
           <div className="p-4 space-y-5">
             {/* B — Resumo Financeiro */}
             <Section title="Resumo Financeiro" loading={cronoLoading}>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MiniCard label="Previsto" value={fmtBRL(previsto)} color="text-blue-500" />
                 <MiniCard label="Projetado" value={fmtBRL(projetado)} color="text-purple-500" />
                 <MiniCard label="Executado SCON" value={fmtBRL(executado)} color="text-emerald-500" />
