@@ -1,41 +1,27 @@
 
 
-## Inverter Hierarquia: Etapas do Critério → TAGs/Componentes
+## Otimizar Página Medição — Eliminar Scroll Horizontal
 
 ### Problema
-Atualmente o `AgrupamentoDetail` mostra TAGs (do SCON) como nível principal e etapas do critério de medição como sub-itens. O usuário quer o inverso: **Etapas do critério de medição primeiro**, e dentro de cada etapa, os componentes SCON que pertencem àquela etapa.
+A tabela tem `min-w-[900px]` forçando scroll horizontal. Em telas de ~1048px com sidebar, o conteúdo fica apertado e depende de scroll.
 
-### Nova hierarquia
+### Mudanças
 
-```text
-Agrupamento expandido:
-├─ Resumo: "3 etapas · 12 TAGs"
-├─ Etapa 1: "Mobilização..." │ Peso: 100 │ ✅ 8/8 concluídos
-│   └─ TAG: PPU-ACAB-B-12001A │ Civil │ 100% │ SC │ Aprov
-│   └─ TAG: PPU-ACAB-B-12002A │ Civil │ 100% │ CC │ Aprov
-├─ Etapa 2: "Demolição..."   │ Peso: 49  │ ◐ 5/8 concluídos
-│   └─ TAG: PPU-ACAB-B-12003A │ Civil │ 80%  │ — │ Pend
-│   └─ TAG: PPU-ACAB-B-12004A │ Civil │ 0%   │ — │ —
-├─ Sem etapa vinculada (4 TAGs)
-│   └─ TAG: ...
-```
+#### `MedicaoTable.tsx`
+- Remover `min-w-[900px]` da Table
+- Esconder colunas secundárias em telas menores:
+  - **Sempre visíveis**: Semáforo dot, Item PPU, Valor Total, SCON%, Medido
+  - **`hidden md:table-cell`**: Descrição, Disciplina, SIGEM, GITEC, Gap
+- Truncar Descrição com `max-w-[120px]` e usar tooltip ou title
+- Reduzir padding das células (`px-2 py-1.5` em vez do padrão)
 
-### Lógica de matching
+#### `MedicaoFilters.tsx`
+- Reduzir `min-w-[200px]` do search para `min-w-[140px]`
+- Selects: `w-[130px]` em vez de `w-[160px]`
+- Já usa `flex-wrap` então vai encaixar melhor
 
-Cada componente SCON tem `item_criterio` (ex: `"3.4.19.1"`). O último segmento (`"1"`) identifica a etapa. Cada etapa do `criterio_medicao` tem `identificador` (ex: `"3.4.19.1"`). O match é direto: `component.item_criterio === etapa.identificador`.
+#### `MedicaoFunnel.tsx`
+- Legenda: usar `flex-wrap` para não cortar em telas menores
 
-Componentes sem `item_criterio` ou sem match vão para um grupo "Sem etapa vinculada".
-
-### Mudança no arquivo
-
-**`src/components/gestao-bm/AgrupamentoDetail.tsx`** — reescrever:
-
-1. Manter os hooks `useCronogramaComponents(ippu)` e `useCriterioMedicao()`
-2. Agrupar componentes SCON por etapa do critério via `item_criterio`
-3. Cada **Etapa** é um card `Collapsible` mostrando: nome, peso, dicionário, status (✅/◐/○ baseado nos componentes dessa etapa)
-4. Dentro de cada etapa expandida: lista de TAGs com tag, disciplina, avanço%, SIGEM, GITEC
-5. Componentes sem etapa vinculada: grupo separado no final
-6. Resumo no topo: "N etapas · M TAGs · X concluídos · Y parciais · Z não iniciados"
-
-Nenhum outro arquivo será alterado.
+Nenhuma mudança estrutural — apenas classes responsivas para eliminar o overflow.
 
