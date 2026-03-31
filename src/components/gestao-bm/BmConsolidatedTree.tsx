@@ -13,6 +13,123 @@ function normalizePpu(v: string) {
   return (v || "").replace(/_/g, "-").trim();
 }
 
+/* ── Tree node with aggregated values ── */
+interface AggTreeNode {
+  id: string;
+  nivel: string;
+  ippu: string;
+  nome: string;
+  valor: number;
+  acumulado: number;
+  saldo: number;
+  total_previsto_bm: number;
+  total_projetado_bm: number;
+  total_realizado_bm: number;
+  scon_avg_avanco?: number;
+  scon_total?: number;
+  semaforo?: "medido" | "executado" | "previsto" | "futuro";
+  children: AggTreeNode[];
+  sort_order: number;
+}
+
+/* ── Build hierarchy from flat nodes and aggregate bottom-up ── */
+function buildAndAggregate(flatNodes: CronoTreeNode[]): AggTreeNode[] {
+  const fases: AggTreeNode[] = [];
+  let currentFase: AggTreeNode | null = null;
+  let currentSubfase: AggTreeNode | null = null;
+
+  const sorted = [...flatNodes].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+  for (const n of sorted) {
+    const node: AggTreeNode = {
+      id: n.id,
+      nivel: n.nivel,
+      ippu: normalizePpu(n.ippu),
+      nome: n.nome || "",
+      valor: n.valor,
+      acumulado: n.acumulado,
+      saldo: n.saldo,
+      // BM totals from view — only meaningful for agrupamentos (level 5)
+      total_previsto_bm: n.total_previsto_bm,
+      total_projetado_bm: n.total_projetado_bm,
+      total_realizado_bm: n.total_realizado_bm,
+      scon_avg_avanco: n.scon_avg_avanco,
+      scon_total: n.scon_total,
+      semaforo: n.semaforo,
+      children: [],
+      sort_order: n.sort_order,
+    };
+
+    if (n.nivel === "3 - Fase") {
+      currentFase = node;
+      currentSubfase = null;
+      fases.push(node);
+    } else if (n.nivel === "4 - Subfase" && currentFase) {
+      currentSubfase = node;
+      currentFase.children.push(node);
+    } else if (n.nivel === "5 - Agrupamento" && currentSubfase) {
+      currentSubfase.children.push(node);
+    }
+  }
+
+  // Aggregate bottom-up: subfases = sum of agrupamentos, fases = sum of subfases
+  for (const fase of fases) {
+    for (const subfase of fase.children) {
+      // Subfase BM totals = sum of its agrupamento children
+      subfase.total_previsto_bm = subfase.children.reduce((s, a) => s + a.total_previsto_bm, 0);
+      subfase.total_projetado_bm = subfase.children.reduce((s, a) => s + a.total_projetado_bm, 0);
+      subfase.total_realizado_bm = subfase.children.reduce((s, a) => s + a.total_realizado_bm, 0);
+    }
+    // Fase BM totals = sum of its subfase children (already aggregated)
+    fase.total_previsto_bm = fase.children.reduce((s, sf) => s + sf.total_previsto_bm, 0);
+    fase.total_projetado_bm = fase.children.reduce((s, sf) => s + sf.total_projetado_bm, 0);
+    fase.total_realizado_bm = fase.children.reduce((s, sf) => s + sf.total_realizado_bm, 0);
+  }
+
+  return fases;
+}
+
+/* ── Filter logic ── */
+function filterTree(
+  tree: AggTreeNode[],
+  query: string
+): { filtered: AggTreeNode[]; autoExpand: Set<string> } {
+  if (!query) return { filtered: tree, autoExpand: new Set() };
+  const q = query.toLowerCase();
+  const autoExpand = new Set<string>();
+  const filtered: AggTreeNode[] = [];
+
+  for (const fase of tree) {
+    const faseMatch = fase.nome.toLowerCase().includes(q) || fase.ippu.toLowerCase().includes(q);
+    const matchedSubfases: AggTreeNode[] = [];
+
+    for (const sf of fase.children) {
+      const sfMatch = sf.nome.toLowerCase().includes(q) || sf.ippu.toLowerCase().includes(q);
+      const matchedAgrups = sf.children.filter(
+        (a) => a.nome.toLowerCase().includes(q) || a.ippu.toLowerCase().includes(q)
+      );
+
+      if (sfMatch || matchedAgrups.length > 0) {
+        matchedSubfases.push({
+          ...sf,
+          children: matchedAgrups.length > 0 ? matchedAgrups : sf.children,
+        });
+        autoExpand.add(fase.id);
+        autoExpand.add(sf.id);
+      }
+    }
+
+    if (faseMatch) {
+      filtered.push(fase);
+      autoExpand.add(fase.id);
+    } else if (matchedSubfases.length > 0) {
+      filtered.push({ ...fase, children: matchedSubfases });
+      autoExpand.add(fase.id);
+    }
+  }
+  return { filtered, autoExpand };
+}
+
 /* ── Semáforo dot ── */
 function SemaforoDot({ s }: { s?: string }) {
   const colors: Record<string, string> = {
@@ -24,74 +141,6 @@ function SemaforoDot({ s }: { s?: string }) {
   return <div className={`h-3 w-3 rounded-full ${colors[s || "futuro"]}`} />;
 }
 
-/* ── Comps dots summary ── */
-function CompsDots({ node }: { node: CronoTreeNode }) {
-  const total = node.scon_total || 0;
-  if (!total) return <span className="text-[10px] text-muted-foreground">—</span>;
-  return <span className="text-[10px] font-mono">{total}</span>;
-}
-
-/* ── Build hierarchy ── */
-interface TreeGroup {
-  fase: CronoTreeNode;
-  subfases: { node: CronoTreeNode; agrupamentos: CronoTreeNode[] }[];
-}
-
-function buildHierarchy(nodes: CronoTreeNode[]): TreeGroup[] {
-  const fases: TreeGroup[] = [];
-  let currentFase: TreeGroup | null = null;
-  let currentSubfase: { node: CronoTreeNode; agrupamentos: CronoTreeNode[] } | null = null;
-
-  for (const n of nodes) {
-    if (n.nivel === "3 - Fase") {
-      currentFase = { fase: n, subfases: [] };
-      fases.push(currentFase);
-      currentSubfase = null;
-    } else if (n.nivel === "4 - Subfase" && currentFase) {
-      currentSubfase = { node: n, agrupamentos: [] };
-      currentFase.subfases.push(currentSubfase);
-    } else if (n.nivel === "5 - Agrupamento" && currentSubfase) {
-      currentSubfase.agrupamentos.push(n);
-    }
-  }
-  return fases;
-}
-
-/* ── Filter logic ── */
-function filterHierarchy(groups: TreeGroup[], query: string): { filtered: TreeGroup[]; autoExpand: Set<string> } {
-  if (!query) return { filtered: groups, autoExpand: new Set() };
-  const q = query.toLowerCase();
-  const autoExpand = new Set<string>();
-  const filtered: TreeGroup[] = [];
-
-  for (const g of groups) {
-    const faseMatch = g.fase.nome.toLowerCase().includes(q) || g.fase.ippu.toLowerCase().includes(q);
-    const matchedSubfases: typeof g.subfases = [];
-
-    for (const sf of g.subfases) {
-      const sfMatch = sf.node.nome.toLowerCase().includes(q) || sf.node.ippu.toLowerCase().includes(q);
-      const matchedAgrups = sf.agrupamentos.filter(
-        (a) => a.nome.toLowerCase().includes(q) || a.ippu.toLowerCase().includes(q)
-      );
-
-      if (sfMatch || matchedAgrups.length > 0) {
-        matchedSubfases.push({ node: sf.node, agrupamentos: matchedAgrups.length > 0 ? matchedAgrups : sf.agrupamentos });
-        autoExpand.add(g.fase.id);
-        autoExpand.add(sf.node.id);
-      }
-    }
-
-    if (faseMatch) {
-      filtered.push(g);
-      autoExpand.add(g.fase.id);
-    } else if (matchedSubfases.length > 0) {
-      filtered.push({ fase: g.fase, subfases: matchedSubfases });
-      autoExpand.add(g.fase.id);
-    }
-  }
-  return { filtered, autoExpand };
-}
-
 /* ── Main Component ── */
 export function BmConsolidatedTree() {
   const { data: treeData, isLoading } = useCronogramaTree();
@@ -99,11 +148,12 @@ export function BmConsolidatedTree() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
-  const hierarchy = useMemo(() => buildHierarchy(treeData || []), [treeData]);
+  // Build hierarchy with bottom-up aggregation
+  const tree = useMemo(() => buildAndAggregate(treeData || []), [treeData]);
 
   const { filtered, autoExpand } = useMemo(
-    () => filterHierarchy(hierarchy, search.trim()),
-    [hierarchy, search]
+    () => filterTree(tree, search.trim()),
+    [tree, search]
   );
 
   const effectiveExpanded = useMemo(() => {
@@ -120,16 +170,13 @@ export function BmConsolidatedTree() {
     });
   }, []);
 
-  // Totals
-  const totals = useMemo(() => {
-    const fases = (treeData || []).filter((n) => n.nivel === "3 - Fase");
-    return {
-      valor: fases.reduce((s, n) => s + n.valor, 0),
-      previsto: fases.reduce((s, n) => s + n.total_previsto_bm, 0),
-      projetado: fases.reduce((s, n) => s + n.total_projetado_bm, 0),
-      realizado: fases.reduce((s, n) => s + n.total_realizado_bm, 0),
-    };
-  }, [treeData]);
+  // Totals from top-level fases (already aggregated)
+  const totals = useMemo(() => ({
+    valor: tree.reduce((s, f) => s + f.valor, 0),
+    previsto: tree.reduce((s, f) => s + f.total_previsto_bm, 0),
+    projetado: tree.reduce((s, f) => s + f.total_projetado_bm, 0),
+    realizado: tree.reduce((s, f) => s + f.total_realizado_bm, 0),
+  }), [tree]);
 
   if (isLoading) {
     return (
@@ -170,21 +217,17 @@ export function BmConsolidatedTree() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((group) => {
-              const faseOpen = effectiveExpanded.has(group.fase.id);
-              return (
-                <FaseRows
-                  key={group.fase.id}
-                  group={group}
-                  faseOpen={faseOpen}
-                  effectiveExpanded={effectiveExpanded}
-                  toggle={toggle}
-                  onComponentClick={setDetailPpu}
-                />
-              );
-            })}
+            {filtered.map((fase) => (
+              <TreeRows
+                key={fase.id}
+                node={fase}
+                depth={0}
+                effectiveExpanded={effectiveExpanded}
+                toggle={toggle}
+                onComponentClick={setDetailPpu}
+              />
+            ))}
           </tbody>
-          {/* Total row */}
           <tfoot className="sticky bottom-0 bg-primary/10 border-t-2 border-primary/30">
             <tr>
               <td className="px-3 py-2 text-xs font-bold text-foreground">TOTAL</td>
@@ -200,7 +243,6 @@ export function BmConsolidatedTree() {
         </table>
       </div>
 
-      {/* Reuse existing detail sheet */}
       <BmPpuDetailSheet
         open={!!detailPpu}
         onClose={() => setDetailPpu(null)}
@@ -211,141 +253,63 @@ export function BmConsolidatedTree() {
   );
 }
 
-/* ── Fase Rows ── */
-function FaseRows({
-  group,
-  faseOpen,
-  effectiveExpanded,
-  toggle,
-  onComponentClick,
-}: {
-  group: TreeGroup;
-  faseOpen: boolean;
-  effectiveExpanded: Set<string>;
-  toggle: (id: string) => void;
-  onComponentClick: (ppu: string) => void;
-}) {
-  const f = group.fase;
-  return (
-    <>
-      <tr
-        className="border-b cursor-pointer hover:bg-accent/30 bg-primary/5 border-l-[3px] border-l-primary"
-        onClick={() => toggle(f.id)}
-      >
-        <td className="px-3 py-2">
-          <div className="flex items-center gap-1.5">
-            {faseOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
-            <span className="font-bold text-[13px]">{f.nome}</span>
-          </div>
-        </td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(f.valor)}</td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(f.total_previsto_bm)}</td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(f.total_projetado_bm)}</td>
-        <td className="text-right px-2 py-2 text-xs text-green-700">{formatCompact(f.total_realizado_bm)}</td>
-        <td />
-        <td />
-        <td />
-      </tr>
-      {faseOpen &&
-        group.subfases.map((sf) => {
-          const sfOpen = effectiveExpanded.has(sf.node.id);
-          return (
-            <SubfaseRows
-              key={sf.node.id}
-              subfase={sf}
-              sfOpen={sfOpen}
-              effectiveExpanded={effectiveExpanded}
-              toggle={toggle}
-              onComponentClick={onComponentClick}
-            />
-          );
-        })}
-    </>
-  );
-}
-
-/* ── Subfase Rows ── */
-function SubfaseRows({
-  subfase,
-  sfOpen,
-  effectiveExpanded,
-  toggle,
-  onComponentClick,
-}: {
-  subfase: { node: CronoTreeNode; agrupamentos: CronoTreeNode[] };
-  sfOpen: boolean;
-  effectiveExpanded: Set<string>;
-  toggle: (id: string) => void;
-  onComponentClick: (ppu: string) => void;
-}) {
-  const n = subfase.node;
-  return (
-    <>
-      <tr
-        className="border-b cursor-pointer hover:bg-accent/30 border-l-2 border-l-teal-500"
-        onClick={() => toggle(n.id)}
-      >
-        <td className="px-3 py-2">
-          <div className="flex items-center gap-1.5 pl-6">
-            {sfOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
-            <span className="font-semibold text-xs">{n.nome}</span>
-          </div>
-        </td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(n.valor)}</td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(n.total_previsto_bm)}</td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(n.total_projetado_bm)}</td>
-        <td className="text-right px-2 py-2 text-xs text-green-700">{formatCompact(n.total_realizado_bm)}</td>
-        <td />
-        <td />
-        <td />
-      </tr>
-      {sfOpen &&
-        subfase.agrupamentos.map((a) => (
-          <AgrupamentoRow
-            key={a.id}
-            node={a}
-            expanded={effectiveExpanded.has(a.id)}
-            toggle={toggle}
-            onComponentClick={onComponentClick}
-          />
-        ))}
-    </>
-  );
-}
-
-/* ── Agrupamento Row ── */
-function AgrupamentoRow({
+/* ── Recursive tree row renderer ── */
+function TreeRows({
   node,
-  expanded,
+  depth,
+  effectiveExpanded,
   toggle,
   onComponentClick,
 }: {
-  node: CronoTreeNode;
-  expanded: boolean;
+  node: AggTreeNode;
+  depth: number;
+  effectiveExpanded: Set<string>;
   toggle: (id: string) => void;
   onComponentClick: (ppu: string) => void;
 }) {
-  const sconPct = node.scon_avg_avanco != null ? Math.min(node.scon_avg_avanco * 100, 100) : null;
+  const isExpanded = effectiveExpanded.has(node.id);
+  const isAgrupamento = node.nivel === "5 - Agrupamento";
+  const isFase = node.nivel === "3 - Fase";
+  const isSubfase = node.nivel === "4 - Subfase";
+
+  const borderClass = isFase
+    ? "bg-primary/5 border-l-[3px] border-l-primary"
+    : isSubfase
+    ? "border-l-2 border-l-teal-500"
+    : "border-l border-l-muted-foreground/20";
+
+  const indent = depth * 24;
+  const sconPct = isAgrupamento && node.scon_avg_avanco != null
+    ? Math.min(node.scon_avg_avanco * 100, 100)
+    : null;
 
   return (
     <>
       <tr
-        className="border-b cursor-pointer hover:bg-accent/30 border-l border-l-muted-foreground/20"
+        className={`border-b cursor-pointer hover:bg-accent/30 ${borderClass}`}
         onClick={() => toggle(node.id)}
       >
         <td className="px-3 py-2">
-          <div className="flex items-center gap-1.5 pl-12">
-            {expanded ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
-            <Badge variant="secondary" className="text-[9px] font-mono shrink-0 px-1 py-0">
-              {node.ippu}
-            </Badge>
-            <span className="text-[11px] truncate">{node.nome}</span>
+          <div className="flex items-center gap-1.5" style={{ paddingLeft: indent }}>
+            {(node.children.length > 0 || isAgrupamento) && (
+              isExpanded
+                ? <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                : <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            )}
+            {isAgrupamento && node.ippu && (
+              <Badge variant="secondary" className="text-[9px] font-mono shrink-0 px-1 py-0">
+                {node.ippu}
+              </Badge>
+            )}
+            <span className={`truncate ${isFase ? "font-bold text-[13px]" : isSubfase ? "font-semibold text-xs" : "text-[11px]"}`}>
+              {node.nome}
+            </span>
           </div>
         </td>
-        <td className="text-right px-2 py-2 text-[11px]">{formatCompact(node.valor)}</td>
-        <td className="text-right px-2 py-2 text-[11px]">{formatCompact(node.total_previsto_bm)}</td>
-        <td className="text-right px-2 py-2 text-[11px]">{formatCompact(node.total_projetado_bm)}</td>
-        <td className="text-right px-2 py-2 text-[11px] text-green-700">{formatCompact(node.total_realizado_bm)}</td>
+        <td className="text-right px-2 py-2 text-xs">{formatCompact(node.valor)}</td>
+        <td className="text-right px-2 py-2 text-xs">{formatCompact(node.total_previsto_bm)}</td>
+        <td className="text-right px-2 py-2 text-xs">{formatCompact(node.total_projetado_bm)}</td>
+        <td className="text-right px-2 py-2 text-xs text-green-700">{formatCompact(node.total_realizado_bm)}</td>
         <td className="px-2 py-2">
           {sconPct != null ? (
             <div className="flex items-center gap-1 justify-center">
@@ -356,13 +320,35 @@ function AgrupamentoRow({
               <span className="text-[10px] w-7 text-right">{sconPct.toFixed(0)}%</span>
             </div>
           ) : (
-            <span className="text-[10px] text-muted-foreground text-center block">—</span>
+            !isFase && !isSubfase && <span className="text-[10px] text-muted-foreground text-center block">—</span>
           )}
         </td>
-        <td className="text-center px-2 py-2"><CompsDots node={node} /></td>
-        <td className="text-center px-2 py-2"><SemaforoDot s={node.semaforo} /></td>
+        <td className="text-center px-2 py-2">
+          {isAgrupamento && node.scon_total ? (
+            <span className="text-[10px] font-mono">{node.scon_total}</span>
+          ) : (
+            !isFase && !isSubfase && <span className="text-[10px] text-muted-foreground">—</span>
+          )}
+        </td>
+        <td className="text-center px-2 py-2">
+          {isAgrupamento && <SemaforoDot s={node.semaforo} />}
+        </td>
       </tr>
-      {expanded && (
+
+      {/* Children */}
+      {isExpanded && node.children.map((child) => (
+        <TreeRows
+          key={child.id}
+          node={child}
+          depth={depth + 1}
+          effectiveExpanded={effectiveExpanded}
+          toggle={toggle}
+          onComponentClick={onComponentClick}
+        />
+      ))}
+
+      {/* Agrupamento detail panel (inline) */}
+      {isExpanded && isAgrupamento && (
         <tr>
           <td colSpan={8} className="p-0">
             <AgrupamentoDetail ippu={node.ippu} onComponentClick={onComponentClick} />
