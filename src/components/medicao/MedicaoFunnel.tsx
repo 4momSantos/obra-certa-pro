@@ -33,7 +33,7 @@ export function MedicaoFunnel({ kpis }: { kpis: MedicaoKPIs }) {
             <Bar dataKey="medido" stackId="a" fill={COLORS[3]} name="Medido" radius={[0,4,4,0]} />
           </BarChart>
         </ResponsiveContainer>
-        <div className="flex gap-4 mt-2 text-xs">
+        <div className="flex flex-wrap gap-4 mt-2 text-xs">
           {[
             { label: "Previsto", value: kpis.previsto, color: COLORS[0] },
             { label: "Executado", value: kpis.executadoScon, color: COLORS[1] },

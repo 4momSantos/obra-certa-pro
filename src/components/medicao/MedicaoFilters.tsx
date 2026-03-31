@@ -33,7 +33,7 @@ export function MedicaoFilters(p: Props) {
         </SelectContent>
       </Select>
       <Select value={p.disciplina || "__all__"} onValueChange={v => p.onDisciplina(v === "__all__" ? "" : v)}>
-        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Disciplina" /></SelectTrigger>
+        <SelectTrigger className="w-[130px]"><SelectValue placeholder="Disciplina" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todas</SelectItem>
           {p.disciplinas.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
