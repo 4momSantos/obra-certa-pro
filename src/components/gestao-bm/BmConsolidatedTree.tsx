@@ -49,7 +49,6 @@ function buildAndAggregate(flatNodes: CronoTreeNode[]): AggTreeNode[] {
       valor: n.valor,
       acumulado: n.acumulado,
       saldo: n.saldo,
-      // BM totals from view — only meaningful for agrupamentos (level 5)
       total_previsto_bm: n.total_previsto_bm,
       total_projetado_bm: n.total_projetado_bm,
       total_realizado_bm: n.total_realizado_bm,
@@ -72,15 +71,13 @@ function buildAndAggregate(flatNodes: CronoTreeNode[]): AggTreeNode[] {
     }
   }
 
-  // Aggregate bottom-up: subfases = sum of agrupamentos, fases = sum of subfases
+  // Aggregate bottom-up
   for (const fase of fases) {
     for (const subfase of fase.children) {
-      // Subfase BM totals = sum of its agrupamento children
       subfase.total_previsto_bm = subfase.children.reduce((s, a) => s + a.total_previsto_bm, 0);
       subfase.total_projetado_bm = subfase.children.reduce((s, a) => s + a.total_projetado_bm, 0);
       subfase.total_realizado_bm = subfase.children.reduce((s, a) => s + a.total_realizado_bm, 0);
     }
-    // Fase BM totals = sum of its subfase children (already aggregated)
     fase.total_previsto_bm = fase.children.reduce((s, sf) => s + sf.total_previsto_bm, 0);
     fase.total_projetado_bm = fase.children.reduce((s, sf) => s + sf.total_projetado_bm, 0);
     fase.total_realizado_bm = fase.children.reduce((s, sf) => s + sf.total_realizado_bm, 0);
@@ -148,7 +145,6 @@ export function BmConsolidatedTree() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
-  // Build hierarchy with bottom-up aggregation
   const tree = useMemo(() => buildAndAggregate(treeData || []), [treeData]);
 
   const { filtered, autoExpand } = useMemo(
@@ -170,7 +166,6 @@ export function BmConsolidatedTree() {
     });
   }, []);
 
-  // Totals from top-level fases (already aggregated)
   const totals = useMemo(() => ({
     valor: tree.reduce((s, f) => s + f.valor, 0),
     previsto: tree.reduce((s, f) => s + f.total_previsto_bm, 0),
@@ -206,14 +201,14 @@ export function BmConsolidatedTree() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr className="border-b">
-              <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground min-w-[280px]">Nome</th>
-              <th className="text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Valor</th>
-              <th className="text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Prev. BM</th>
-              <th className="text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Proj. BM</th>
-              <th className="text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Real. BM</th>
-              <th className="text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[80px]">SCON %</th>
-              <th className="text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[70px]">Comps</th>
-              <th className="text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[50px]">Sem</th>
+              <th className="text-left px-2 md:px-3 py-2 text-xs font-medium text-muted-foreground min-w-0">Nome</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Valor</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Prev. BM</th>
+              <th className="hidden md:table-cell text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Proj. BM</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Real. BM</th>
+              <th className="text-center px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[80px]">SCON %</th>
+              <th className="hidden md:table-cell text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[70px]">Comps</th>
+              <th className="hidden md:table-cell text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[50px]">Sem</th>
             </tr>
           </thead>
           <tbody>
@@ -230,14 +225,14 @@ export function BmConsolidatedTree() {
           </tbody>
           <tfoot className="sticky bottom-0 bg-primary/10 border-t-2 border-primary/30">
             <tr>
-              <td className="px-3 py-2 text-xs font-bold text-foreground">TOTAL</td>
-              <td className="text-right px-2 py-2 text-xs font-bold">{formatCompact(totals.valor)}</td>
-              <td className="text-right px-2 py-2 text-xs font-bold">{formatCompact(totals.previsto)}</td>
-              <td className="text-right px-2 py-2 text-xs font-bold">{formatCompact(totals.projetado)}</td>
-              <td className="text-right px-2 py-2 text-xs font-bold text-green-700">{formatCompact(totals.realizado)}</td>
+              <td className="px-2 md:px-3 py-2 text-xs font-bold text-foreground">TOTAL</td>
+              <td className="text-right px-1 md:px-2 py-2 text-xs font-bold">{formatCompact(totals.valor)}</td>
+              <td className="text-right px-1 md:px-2 py-2 text-xs font-bold">{formatCompact(totals.previsto)}</td>
+              <td className="hidden md:table-cell text-right px-2 py-2 text-xs font-bold">{formatCompact(totals.projetado)}</td>
+              <td className="text-right px-1 md:px-2 py-2 text-xs font-bold text-green-700">{formatCompact(totals.realizado)}</td>
               <td />
-              <td />
-              <td />
+              <td className="hidden md:table-cell" />
+              <td className="hidden md:table-cell" />
             </tr>
           </tfoot>
         </table>
@@ -278,7 +273,7 @@ function TreeRows({
     ? "border-l-2 border-l-teal-500"
     : "border-l border-l-muted-foreground/20";
 
-  const indent = depth * 24;
+  const indent = depth * 20;
   const sconPct = isAgrupamento && node.scon_avg_avanco != null
     ? Math.min(node.scon_avg_avanco * 100, 100)
     : null;
@@ -289,48 +284,48 @@ function TreeRows({
         className={`border-b cursor-pointer hover:bg-accent/30 ${borderClass}`}
         onClick={() => toggle(node.id)}
       >
-        <td className="px-3 py-2">
-          <div className="flex items-center gap-1.5" style={{ paddingLeft: indent }}>
+        <td className="px-2 md:px-3 py-1.5 md:py-2">
+          <div className="flex items-center gap-1 md:gap-1.5 min-w-0" style={{ paddingLeft: indent }}>
             {(node.children.length > 0 || isAgrupamento) && (
               isExpanded
                 ? <ChevronDown className="h-3.5 w-3.5 shrink-0" />
                 : <ChevronRight className="h-3.5 w-3.5 shrink-0" />
             )}
             {isAgrupamento && node.ippu && (
-              <Badge variant="secondary" className="text-[9px] font-mono shrink-0 px-1 py-0">
+              <Badge variant="secondary" className="text-[8px] md:text-[9px] font-mono shrink-0 px-1 py-0">
                 {node.ippu}
               </Badge>
             )}
-            <span className={`truncate ${isFase ? "font-bold text-[13px]" : isSubfase ? "font-semibold text-xs" : "text-[11px]"}`}>
+            <span className={`truncate ${isFase ? "font-bold text-xs md:text-[13px]" : isSubfase ? "font-semibold text-[11px] md:text-xs" : "text-[10px] md:text-[11px]"}`}>
               {node.nome}
             </span>
           </div>
         </td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(node.valor)}</td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(node.total_previsto_bm)}</td>
-        <td className="text-right px-2 py-2 text-xs">{formatCompact(node.total_projetado_bm)}</td>
-        <td className="text-right px-2 py-2 text-xs text-green-700">{formatCompact(node.total_realizado_bm)}</td>
-        <td className="px-2 py-2">
+        <td className="text-right px-1 md:px-2 py-1.5 md:py-2 text-[10px] md:text-xs">{formatCompact(node.valor)}</td>
+        <td className="text-right px-1 md:px-2 py-1.5 md:py-2 text-[10px] md:text-xs">{formatCompact(node.total_previsto_bm)}</td>
+        <td className="hidden md:table-cell text-right px-2 py-2 text-xs">{formatCompact(node.total_projetado_bm)}</td>
+        <td className="text-right px-1 md:px-2 py-1.5 md:py-2 text-[10px] md:text-xs text-green-700">{formatCompact(node.total_realizado_bm)}</td>
+        <td className="px-1 md:px-2 py-1.5 md:py-2">
           {sconPct != null ? (
             <div className="flex items-center gap-1 justify-center">
               <Progress
                 value={sconPct}
-                className={`h-2 w-12 ${sconPct >= 100 ? "[&>div]:bg-green-500" : sconPct > 0 ? "[&>div]:bg-amber-500" : ""}`}
+                className={`h-2 w-8 md:w-12 ${sconPct >= 100 ? "[&>div]:bg-green-500" : sconPct > 0 ? "[&>div]:bg-amber-500" : ""}`}
               />
-              <span className="text-[10px] w-7 text-right">{sconPct.toFixed(0)}%</span>
+              <span className="text-[9px] md:text-[10px] w-6 md:w-7 text-right">{sconPct.toFixed(0)}%</span>
             </div>
           ) : (
             !isFase && !isSubfase && <span className="text-[10px] text-muted-foreground text-center block">—</span>
           )}
         </td>
-        <td className="text-center px-2 py-2">
+        <td className="hidden md:table-cell text-center px-2 py-2">
           {isAgrupamento && node.scon_total ? (
             <span className="text-[10px] font-mono">{node.scon_total}</span>
           ) : (
             !isFase && !isSubfase && <span className="text-[10px] text-muted-foreground">—</span>
           )}
         </td>
-        <td className="text-center px-2 py-2">
+        <td className="hidden md:table-cell text-center px-2 py-2">
           {isAgrupamento && <SemaforoDot s={node.semaforo} />}
         </td>
       </tr>
