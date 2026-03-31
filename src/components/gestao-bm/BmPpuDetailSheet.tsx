@@ -149,7 +149,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="w-full sm:max-w-[520px] p-0 flex flex-col">
+      <SheetContent className="w-full sm:max-w-[680px] p-0 flex flex-col">
         <SheetHeader className="p-4 pb-2">
           <SheetTitle className="text-left space-y-1">
             {ppuLoading ? (
