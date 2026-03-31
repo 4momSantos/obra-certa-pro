@@ -149,7 +149,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="w-full sm:max-w-[520px] p-0 flex flex-col">
+      <SheetContent className="w-full sm:max-w-[680px] p-0 flex flex-col">
         <SheetHeader className="p-4 pb-2">
           <SheetTitle className="text-left space-y-1">
             {ppuLoading ? (
@@ -178,7 +178,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
           <div className="p-4 space-y-5">
             {/* B — Resumo Financeiro */}
             <Section title="Resumo Financeiro" loading={cronoLoading}>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MiniCard label="Previsto" value={fmtBRL(previsto)} color="text-blue-500" />
                 <MiniCard label="Projetado" value={fmtBRL(projetado)} color="text-purple-500" />
                 <MiniCard label="Executado SCON" value={fmtBRL(executado)} color="text-emerald-500" />
@@ -213,7 +213,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
                             <Badge className={cn("text-[10px] border-0", sc.badge)}>{ev.status}</Badge>
                             <span className="font-mono text-sm font-bold">{fmtBRL(ev.valor ?? 0)}</span>
                           </div>
-                          <div className="grid grid-cols-3 gap-1 text-[11px] text-muted-foreground">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                             <span>Tag: <b className="text-foreground">{ev.tag || "—"}</b></span>
                             <span>Etapa: <b className="text-foreground">{ev.etapa || "—"}</b></span>
                             <span>Fiscal: <b className="text-foreground">{ev.fiscal || "—"}</b></span>
@@ -264,7 +264,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
                       {(evidencias ?? []).map((ev) => (
                         <TableRow key={ev.documento}>
                           <TableCell className="text-[10px] font-mono">{ev.documento}</TableCell>
-                          <TableCell className="text-[10px] max-w-[140px] truncate">{ev.titulo || "—"}</TableCell>
+                          <TableCell className="text-[10px] whitespace-normal">{ev.titulo || "—"}</TableCell>
                           <TableCell>
                             <Badge className={cn("text-[9px] border-0",
                               ev.status_correto === "Aprovado" ? "bg-emerald-500/15 text-emerald-600" :
@@ -324,7 +324,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
                             {h.bm_name}
                           </span>
                         </div>
-                        <div className="flex-1 flex gap-3 text-muted-foreground font-mono">
+                        <div className="flex-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground font-mono">
                           <span>Prev: {fmtBRL(h.previsto ?? 0)}</span>
                           <span>Exec: {fmtBRL(h.realizado ?? 0)}</span>
                         </div>
@@ -363,8 +363,8 @@ function MiniCard({ label, value, color }: { label: string; value: string; color
   return (
     <Card className="bg-muted/30">
       <CardContent className="p-2.5">
-        <p className="text-[10px] text-muted-foreground">{label}</p>
-        <p className={cn("text-sm font-bold font-mono", color)}>{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={cn("text-base font-bold font-mono", color)}>{value}</p>
       </CardContent>
     </Card>
   );
