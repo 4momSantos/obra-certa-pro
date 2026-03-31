@@ -197,18 +197,18 @@ export function BmConsolidatedTree() {
       </div>
 
       {/* Tree table */}
-      <div className="rounded-md border overflow-auto">
-        <table className="w-full text-sm">
+      <div className="rounded-md border">
+        <table className="w-full text-sm table-fixed">
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr className="border-b">
-              <th className="text-left px-2 md:px-3 py-2 text-xs font-medium text-muted-foreground min-w-0">Nome</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Valor</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Prev. BM</th>
-              <th className="hidden md:table-cell text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Proj. BM</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[70px] md:w-[100px]">Real. BM</th>
-              <th className="text-center px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[80px]">SCON %</th>
-              <th className="hidden md:table-cell text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[70px]">Comps</th>
-              <th className="hidden md:table-cell text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[50px]">Sem</th>
+              <th className="text-left px-2 md:px-3 py-2 text-xs font-medium text-muted-foreground">Nome</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Valor</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Prev.</th>
+              <th className="hidden md:table-cell text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[90px]">Proj.</th>
+              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Real.</th>
+              <th className="text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[55px] md:w-[80px]">SCON</th>
+              <th className="hidden md:table-cell text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[50px]">Comp</th>
+              <th className="hidden md:table-cell text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[40px]">Sem</th>
             </tr>
           </thead>
           <tbody>
