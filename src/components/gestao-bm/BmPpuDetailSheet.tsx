@@ -213,7 +213,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
                             <Badge className={cn("text-[10px] border-0", sc.badge)}>{ev.status}</Badge>
                             <span className="font-mono text-sm font-bold">{fmtBRL(ev.valor ?? 0)}</span>
                           </div>
-                          <div className="grid grid-cols-3 gap-1 text-[11px] text-muted-foreground">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                             <span>Tag: <b className="text-foreground">{ev.tag || "—"}</b></span>
                             <span>Etapa: <b className="text-foreground">{ev.etapa || "—"}</b></span>
                             <span>Fiscal: <b className="text-foreground">{ev.fiscal || "—"}</b></span>
