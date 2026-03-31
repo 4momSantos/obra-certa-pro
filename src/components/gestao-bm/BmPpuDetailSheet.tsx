@@ -363,8 +363,8 @@ function MiniCard({ label, value, color }: { label: string; value: string; color
   return (
     <Card className="bg-muted/30">
       <CardContent className="p-2.5">
-        <p className="text-[10px] text-muted-foreground">{label}</p>
-        <p className={cn("text-sm font-bold font-mono", color)}>{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={cn("text-base font-bold font-mono", color)}>{value}</p>
       </CardContent>
     </Card>
   );
