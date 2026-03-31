@@ -43,9 +43,9 @@ interface Props {
 }
 
 export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
-  const range = bmRange(bmName);
-  const startStr = range.start.toISOString().split("T")[0];
-  const endStr = range.end.toISOString().split("T")[0];
+  const range = bmName ? bmRange(bmName) : null;
+  const startStr = range && !isNaN(range.start.getTime()) ? range.start.toISOString().split("T")[0] : "";
+  const endStr = range && !isNaN(range.end.getTime()) ? range.end.toISOString().split("T")[0] : "";
 
   // PPU item info
   const { data: ppuInfo, isLoading: ppuLoading } = useQuery({
