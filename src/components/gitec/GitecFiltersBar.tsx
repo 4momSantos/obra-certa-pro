@@ -38,7 +38,7 @@ export const GitecFiltersBar: React.FC<Props> = ({ filters, onChange, fiscais })
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos</SelectItem>
-          {fiscais.map((f) => (
+          {fiscais.filter(f => f && f.trim() !== "").map((f) => (
             <SelectItem key={f} value={f}>{f}</SelectItem>
           ))}
         </SelectContent>
