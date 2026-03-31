@@ -324,7 +324,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
                             {h.bm_name}
                           </span>
                         </div>
-                        <div className="flex-1 flex gap-3 text-muted-foreground font-mono">
+                        <div className="flex-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground font-mono">
                           <span>Prev: {fmtBRL(h.previsto ?? 0)}</span>
                           <span>Exec: {fmtBRL(h.realizado ?? 0)}</span>
                         </div>
