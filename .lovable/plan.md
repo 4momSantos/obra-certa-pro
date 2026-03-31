@@ -1,50 +1,44 @@
 
-Objetivo
-Corrigir o “processando para sempre” no histórico de imports e impedir novos batches órfãos.
 
-Diagnóstico (confirmado no código + banco)
-- Não é timeout de função backend/worker: esses uploads são feitos no cliente (hooks `useConfigUpload` e `useProcessImport`) com inserts diretos no banco.
-- O status começa como `"processing"` na criação do batch.
-- Se ocorrer erro no meio (ex.: data inválida), o fluxo lança exceção e sai sem atualizar batch para `"error"`.
-- Resultado: ficam registros antigos `"processing"` com `0` linhas gravadas (exatamente o padrão que aparece no seu histórico).
+## Problema
 
-Plano de implementação
-1) Robustez de status no upload de Configuração (`src/hooks/useConfig.ts`)
-- Envolver mutation em `try/catch`.
-- Guardar `batchId` assim que criar o batch.
-- Em sucesso: manter `status = "completed"`.
-- Em erro: atualizar o mesmo batch para `status = "error"` e salvar mensagem em `errors` (JSON), evitando travamento visual eterno.
+A página **Documentos SIGEM** (`/documentos`) mostra "Nenhum documento importado" apesar de existirem **23.279 registros** no banco. O badge na sidebar mostra corretamente **3.212** (recusados).
 
-2) Robustez de status no upload operacional (`src/hooks/useImport.ts`)
-- Aplicar a mesma estratégia por fonte (SIGEM, REL_EVENTO, SCON, etc.).
-- Em qualquer falha da fonte atual: marcar aquele batch como `"error"` com detalhe do erro.
-- Preservar comportamento atual de abortar o restante, mas sem deixar batch órfão em `"processing"`.
+**Causa raiz**: O hook `useDocuments.ts` consulta a tabela `documents` (que está **vazia** — 0 registros). Os dados reais estão na tabela `sigem_documents`. São tabelas diferentes com schemas diferentes:
 
-3) Normalização de batches já travados (migração SQL)
-- Criar migração para converter batches antigos `"processing"` para `"error"` quando estiverem claramente abandonados (ex.: mais de X minutos/horas).
-- Mensagem padrão em `errors`: “Upload interrompido antes da finalização”.
-- Isso limpa o histórico sem apagar rastreabilidade.
+| `documents` (vazia) | `sigem_documents` (23.279 rows) |
+|---|---|
+| nivel2, nivel3, tipo, status_workflow, dias_corridos_wf | up, status_correto, ppu, status_gitec, documento_revisao |
 
-4) UX no histórico (`src/components/import/ImportHistory.tsx`)
-- Exibir badge de erro com destaque.
-- Mostrar detalhe resumido do `errors` (tooltip/linha secundária).
-- (Opcional) botão rápido para excluir batches com status `"error"`/travados.
+## Plano
 
-5) Ajuste paralelo recomendado (console warning)
-- Corrigir warning de `ref` em `Badge` (usar `React.forwardRef`) para eliminar ruído de debug na tela de import.
+Reescrever o hook `useDocuments.ts` e ajustar a página e o detail sheet para usar `sigem_documents` em vez de `documents`.
 
-Validação (aceite)
-- Falha forçada de upload deve terminar com batch `"error"` (nunca mais `"processing"` infinito).
-- Upload válido deve terminar `"completed"`.
-- Batches antigos travados devem aparecer como `"error"` após migração.
-- Histórico deve permitir entender rapidamente “o que falhou e por quê”.
+### 1. Reescrever `src/hooks/useDocuments.ts`
 
-Detalhes técnicos
-- Arquivos alvo:
-  - `src/hooks/useConfig.ts`
-  - `src/hooks/useImport.ts`
-  - `src/components/import/ImportHistory.tsx`
-  - `src/components/ui/badge.tsx` (warning de ref)
-  - `supabase/migrations/*` (reclassificação de status antigo)
-- Segurança/RLS:
-  - Sem mudança de políticas; só updates em `import_batches` do próprio usuário (já coberto por policy atual).
+- **`useDocumentStats`**: Consultar `sigem_documents` em vez de `documents`. Usar `status_correto` como campo de status. Remover referência a `document_revisions` e `dias_corridos_wf` (não existem nessa tabela). Calcular recusados com GITEC cruzando `sigem_documents` filtrados por `status_correto = 'Recusado'` com `gitec_events.evidencias`.
+- **`useDocuments` (lista)**: Consultar `sigem_documents`. Mapear colunas: `status_correto` → status, `ppu` → área. Manter enriquecimento com GITEC via `evidencias`.
+- **`useRecusados`**: Consultar `sigem_documents` filtrado por `status_correto = 'Recusado'` em vez de `document_revisions`.
+- **`useDocumentDetail`**: Buscar em `sigem_documents` por documento. Manter busca de GITEC vinculados. Remover referência a `document_revisions`.
+- **`useDocumentStatuses`**: Consultar `sigem_documents` usando `status_correto`.
+- **Interfaces**: Adaptar `DocumentRow` e `DocStats` para os campos disponíveis em `sigem_documents`.
+
+### 2. Ajustar `src/pages/DocumentsPage.tsx`
+
+- Adaptar referências de campos (ex: `nivel2` → `ppu`, `status` → `status_correto`).
+- Remover colunas que não existem em `sigem_documents` (Tipo, WF, Dias WF).
+- Ajustar o funil e KPIs para os novos campos.
+
+### 3. Ajustar `src/components/documents/DocumentDetailSheet.tsx`
+
+- Remover campos inexistentes (tipo, nivel2, status_workflow, dias_corridos_wf).
+- Adicionar campos disponíveis (ppu, status_gitec, up).
+- Adaptar seção de revisões (usar `sigem_documents` filtrados pelo mesmo documento se houver múltiplas revisões, ou remover se não aplicável).
+
+### Detalhes técnicos
+
+- A tabela `sigem_documents` tem colunas: `id, batch_id, documento, revisao, incluido_em, titulo, status, up, status_correto, ppu, status_gitec, documento_revisao, created_at`
+- O campo de status correto é `status_correto` (não `status`)
+- A tabela `document_revisions` está vazia (0 rows) — todas as referências a ela devem ser removidas ou substituídas
+- Nenhuma migração SQL necessária — apenas mudança de tabela nas queries do frontend
+
