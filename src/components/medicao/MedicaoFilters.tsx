@@ -14,12 +14,12 @@ interface Props {
 export function MedicaoFilters(p: Props) {
   return (
     <div className="flex flex-wrap gap-3">
-      <div className="relative flex-1 min-w-[200px]">
+      <div className="relative flex-1 min-w-[140px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar PPU, descrição, disciplina..." className="pl-9" value={p.search} onChange={e => p.onSearch(e.target.value)} />
+        <Input placeholder="Buscar PPU, descrição..." className="pl-9" value={p.search} onChange={e => p.onSearch(e.target.value)} />
       </div>
       <Select value={p.fase || "__all__"} onValueChange={v => p.onFase(v === "__all__" ? "" : v)}>
-        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Fase" /></SelectTrigger>
+        <SelectTrigger className="w-[130px]"><SelectValue placeholder="Fase" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todas</SelectItem>
           {p.fases.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
