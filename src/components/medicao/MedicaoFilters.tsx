@@ -18,7 +18,7 @@ export function MedicaoFilters(p: Props) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Buscar PPU, descrição, disciplina..." className="pl-9" value={p.search} onChange={e => p.onSearch(e.target.value)} />
       </div>
-      <Select value={p.fase} onValueChange={p.onFase}>
+      <Select value={p.fase || "__all__"} onValueChange={v => p.onFase(v === "__all__" ? "" : v)}>
         <SelectTrigger className="w-[160px]"><SelectValue placeholder="Fase" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todas</SelectItem>
