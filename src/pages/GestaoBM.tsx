@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BmSelector } from "@/components/gestao-bm/BmSelector";
 import { BmKPIs } from "@/components/gestao-bm/BmKPIs";
 import { GitecPipelineFunnel } from "@/components/gestao-bm/GitecPipelineFunnel";
@@ -6,6 +7,7 @@ import { BmPpuTable } from "@/components/gestao-bm/BmPpuTable";
 import { BmCharts } from "@/components/gestao-bm/BmCharts";
 import { BmPpuDetailSheet } from "@/components/gestao-bm/BmPpuDetailSheet";
 import { BmFiscalAnalysis } from "@/components/gestao-bm/BmFiscalAnalysis";
+import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { allBMs } from "@/lib/bm-utils";
 
 export default function GestaoBM() {
@@ -30,27 +32,40 @@ export default function GestaoBM() {
         </p>
       </div>
 
-      <BmSelector selected={selectedBm} onSelect={handleSelectBm} />
-      <BmKPIs bmName={effectiveBm} />
-      <GitecPipelineFunnel
-        bmName={effectiveBm}
-        activeStatus={statusFilter}
-        onFilterStatus={setStatusFilter}
-      />
-      <BmCharts bmName={effectiveBm} />
-      <BmPpuTable
-        bmName={effectiveBm}
-        statusFilter={statusFilter}
-        onRowClick={(ppu) => setDetailPpu(ppu)}
-      />
-      <BmFiscalAnalysis bmName={effectiveBm} />
+      <Tabs defaultValue="por-bm" className="w-full">
+        <TabsList>
+          <TabsTrigger value="por-bm">Por BM</TabsTrigger>
+          <TabsTrigger value="consolidado">Visão Consolidada</TabsTrigger>
+        </TabsList>
 
-      <BmPpuDetailSheet
-        open={!!detailPpu}
-        onClose={() => setDetailPpu(null)}
-        itemPpu={detailPpu ?? ""}
-        bmName={effectiveBm}
-      />
+        <TabsContent value="por-bm" className="space-y-6 mt-4">
+          <BmSelector selected={selectedBm} onSelect={handleSelectBm} />
+          <BmKPIs bmName={effectiveBm} />
+          <GitecPipelineFunnel
+            bmName={effectiveBm}
+            activeStatus={statusFilter}
+            onFilterStatus={setStatusFilter}
+          />
+          <BmCharts bmName={effectiveBm} />
+          <BmPpuTable
+            bmName={effectiveBm}
+            statusFilter={statusFilter}
+            onRowClick={(ppu) => setDetailPpu(ppu)}
+          />
+          <BmFiscalAnalysis bmName={effectiveBm} />
+
+          <BmPpuDetailSheet
+            open={!!detailPpu}
+            onClose={() => setDetailPpu(null)}
+            itemPpu={detailPpu ?? ""}
+            bmName={effectiveBm}
+          />
+        </TabsContent>
+
+        <TabsContent value="consolidado" className="mt-4">
+          <BmConsolidatedTree />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
