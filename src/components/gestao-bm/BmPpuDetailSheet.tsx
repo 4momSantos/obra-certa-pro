@@ -264,7 +264,7 @@ export function BmPpuDetailSheet({ open, onClose, itemPpu, bmName }: Props) {
                       {(evidencias ?? []).map((ev) => (
                         <TableRow key={ev.documento}>
                           <TableCell className="text-[10px] font-mono">{ev.documento}</TableCell>
-                          <TableCell className="text-[10px] max-w-[140px] truncate">{ev.titulo || "—"}</TableCell>
+                          <TableCell className="text-[10px] whitespace-normal">{ev.titulo || "—"}</TableCell>
                           <TableCell>
                             <Badge className={cn("text-[9px] border-0",
                               ev.status_correto === "Aprovado" ? "bg-emerald-500/15 text-emerald-600" :
