@@ -37,20 +37,20 @@ export function MedicaoTable({ items, total, page, totalPages, onPageChange, onS
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border overflow-x-auto -mx-4 sm:mx-0">
-        <Table className="min-w-[900px]">
+      <div className="rounded-lg border -mx-4 sm:mx-0">
+        <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-8"></TableHead>
-              <TableHead>Item PPU</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Disciplina</TableHead>
-              <TableHead className="text-right">Valor Total</TableHead>
-              <TableHead className="text-center">SCON %</TableHead>
-              <TableHead className="text-center">SIGEM</TableHead>
-              <TableHead className="text-center">GITEC</TableHead>
-              <TableHead className="text-right">Medido</TableHead>
-              <TableHead className="text-right">Gap</TableHead>
+              <TableHead className="w-8 px-2"></TableHead>
+              <TableHead className="px-2">Item PPU</TableHead>
+              <TableHead className="px-2 hidden md:table-cell">Descrição</TableHead>
+              <TableHead className="px-2 hidden md:table-cell">Disciplina</TableHead>
+              <TableHead className="text-right px-2">Valor Total</TableHead>
+              <TableHead className="text-center px-2">SCON %</TableHead>
+              <TableHead className="text-center px-2 hidden md:table-cell">SIGEM</TableHead>
+              <TableHead className="text-center px-2 hidden md:table-cell">GITEC</TableHead>
+              <TableHead className="text-right px-2">Medido</TableHead>
+              <TableHead className="text-right px-2 hidden md:table-cell">Gap</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -60,14 +60,14 @@ export function MedicaoTable({ items, total, page, totalPages, onPageChange, onS
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => onSelect(item)}
               >
-                <TableCell>
+                <TableCell className="px-2 py-1.5">
                   <span className={`inline-block h-3 w-3 rounded-full ${semaforoColors[item.semaforo]}`} />
                 </TableCell>
-                <TableCell className="font-mono text-xs font-bold whitespace-nowrap">{item.item_ppu}</TableCell>
-                <TableCell className="text-xs max-w-[180px] truncate">{item.descricao || "-"}</TableCell>
-                <TableCell className="text-xs">{item.disciplina || "-"}</TableCell>
-                <TableCell className="text-right font-mono text-xs">{fmtBRL(item.valor_total)}</TableCell>
-                <TableCell className="text-center">
+                <TableCell className="font-mono text-xs font-bold whitespace-nowrap px-2 py-1.5">{item.item_ppu}</TableCell>
+                <TableCell className="text-xs max-w-[120px] truncate px-2 py-1.5 hidden md:table-cell" title={item.descricao || "-"}>{item.descricao || "-"}</TableCell>
+                <TableCell className="text-xs px-2 py-1.5 hidden md:table-cell">{item.disciplina || "-"}</TableCell>
+                <TableCell className="text-right font-mono text-xs px-2 py-1.5">{fmtBRL(item.valor_total)}</TableCell>
+                <TableCell className="text-center px-2 py-1.5">
                   <div className="flex items-center gap-1.5">
                     <Progress
                       value={item.scon_avg_avanco}
@@ -76,7 +76,7 @@ export function MedicaoTable({ items, total, page, totalPages, onPageChange, onS
                     <span className="text-[10px] font-mono w-10 text-right">{item.scon_avg_avanco.toFixed(0)}%</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center px-2 py-1.5 hidden md:table-cell">
                   {item.sigem_total > 0 ? (
                     <div className="flex items-center justify-center gap-1 text-[10px]">
                       <span className="text-emerald-600">{item.sigem_ok}</span>
@@ -85,17 +85,17 @@ export function MedicaoTable({ items, total, page, totalPages, onPageChange, onS
                     </div>
                   ) : <span className="text-muted-foreground text-xs">-</span>}
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center px-2 py-1.5 hidden md:table-cell">
                   {item.gitec_total_eventos > 0 ? (
                     <Badge variant="outline" className="text-[10px] font-mono">
                       {item.gitec_eventos_concluidos}/{item.gitec_total_eventos}
                     </Badge>
                   ) : <span className="text-muted-foreground text-xs">-</span>}
                 </TableCell>
-                <TableCell className="text-right font-mono text-xs">
+                <TableCell className="text-right font-mono text-xs px-2 py-1.5">
                   {item.gitec_valor_aprovado > 0 ? fmtBRL(item.gitec_valor_aprovado) : "-"}
                 </TableCell>
-                <TableCell className={`text-right font-mono text-xs font-medium ${item.gap > 0 ? "text-emerald-600" : item.gap < 0 ? "text-destructive" : ""}`}>
+                <TableCell className={`text-right font-mono text-xs font-medium px-2 py-1.5 hidden md:table-cell ${item.gap > 0 ? "text-emerald-600" : item.gap < 0 ? "text-destructive" : ""}`}>
                   {item.gap !== 0 ? fmtBRL(item.gap) : "-"}
                 </TableCell>
               </TableRow>
