@@ -78,6 +78,31 @@ function HistogramBar({ items }: { items: { label: string; count: number; color:
   );
 }
 
+function MiniAuditTimeline({ ippu }: { ippu: string }) {
+  const { data: logs, isLoading } = useAuditForEntity("previsao", ippu);
+  if (isLoading) return <Skeleton className="h-16" />;
+  if (!logs || logs.length === 0) return <p className="text-xs text-muted-foreground py-2">Nenhum registro de auditoria</p>;
+  return (
+    <div className="space-y-2">
+      {logs.map((log: any) => (
+        <div key={log.id} className="flex items-start gap-2">
+          <Clock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[11px]">
+              <span className="font-medium">{log.user_nome || "Sistema"}</span>
+              {" — "}
+              <span className="text-muted-foreground">{log.acao}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {new Date(log.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface Props {
   item: MedicaoPPU | null;
   onClose: () => void;
