@@ -11,6 +11,7 @@ import type { MedicaoPPU, Semaforo } from "@/hooks/useMedicao";
 import { usePPUDetail } from "@/hooks/usePPUDetail";
 import { ComponentDetailPanel } from "./ComponentDetailPanel";
 import { NotesPanel } from "@/components/shared/NotesPanel";
+import { useAuditForEntity } from "@/hooks/useAudit";
 
 function fmtBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
