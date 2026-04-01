@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageSquare, X } from "lucide-react";
+import { MessageSquare, X, AlertTriangle } from "lucide-react";
 import { formatCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PrevisaoActions } from "./PrevisaoActions";
 
 const STATUS_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   previsto:    { label: "Previsto",    bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
