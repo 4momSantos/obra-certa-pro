@@ -58,7 +58,7 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
     switch (config.type) {
       case "bar":
         return (
-          <div className="h-[300px]">
+          <div className="h-[240px] sm:h-[270px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
@@ -76,7 +76,7 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
 
       case "line":
         return (
-          <div className="h-[300px]">
+          <div className="h-[240px] sm:h-[270px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
@@ -94,7 +94,7 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
 
       case "area":
         return (
-          <div className="h-[300px]">
+          <div className="h-[240px] sm:h-[270px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
@@ -117,7 +117,7 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
           value: data.reduce((sum, row) => sum + (Number(row[key]) || 0), 0),
         }));
         return (
-          <div className="h-[300px]">
+          <div className="h-[240px] sm:h-[270px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -144,8 +144,8 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
 
       case "table":
         return (
-          <div className="overflow-auto max-h-[300px]">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto overflow-y-auto max-h-[250px] sm:max-h-[300px]">
+            <table className="w-full text-xs min-w-[400px]">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border/50">
                   {config.xAxis && (
@@ -176,11 +176,11 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
 
       case "kpi":
         return (
-          <div className="flex flex-col items-center justify-center h-[200px] gap-2">
+          <div className="flex flex-col items-center justify-center h-[160px] sm:h-[200px] gap-2">
             {measureValues.length > 0 ? (
               measureValues.map((m, i) => (
                 <div key={i} className="text-center">
-                  <p className="text-3xl font-extrabold font-mono text-foreground">
+                  <p className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">
                     {m.error ? "Erro" : typeof m.value === "number" ? formatCompact(m.value) : String(m.value)}
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono mt-1">{m.expression}</p>
@@ -205,7 +205,7 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-0 right-0 h-6 w-6 p-0 z-10 opacity-0 hover:opacity-100 transition-opacity"
+            className="absolute top-0 right-0 h-8 w-8 p-0 z-10 opacity-0 hover:opacity-100 transition-opacity"
             onClick={onRemove}
           >
             <X className="h-3 w-3 text-destructive" />
@@ -241,7 +241,7 @@ export function HtmlWidgetRenderer({ config, onRemove }: {
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-0 right-0 h-6 w-6 p-0 z-10 opacity-0 hover:opacity-100 transition-opacity"
+            className="absolute top-0 right-0 h-8 w-8 p-0 z-10 opacity-0 hover:opacity-100 transition-opacity"
             onClick={onRemove}
           >
             <X className="h-3 w-3 text-destructive" />

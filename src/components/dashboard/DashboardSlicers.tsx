@@ -21,14 +21,14 @@ export function DashboardSlicers() {
     filters.selectedPeriod !== null;
 
   return (
-    <div className="glass-card rounded-xl p-4 flex flex-wrap items-center gap-4">
+    <div className="glass-card rounded-xl p-3 sm:p-4 flex flex-wrap items-center gap-2 sm:gap-4">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <Filter className="h-4 w-4" />
         <span>Filtros</span>
       </div>
 
       {/* Period Range Slider */}
-      <div className="flex items-center gap-3 flex-1 min-w-[250px]">
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-[180px] sm:min-w-[250px]">
         <span className="text-xs text-muted-foreground whitespace-nowrap">Períodos:</span>
         <div className="flex-1">
           <Slider
@@ -47,7 +47,7 @@ export function DashboardSlicers() {
 
       {/* Status Filter */}
       <Select value={filters.status} onValueChange={(v) => setStatus(v as typeof filters.status)}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
+        <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

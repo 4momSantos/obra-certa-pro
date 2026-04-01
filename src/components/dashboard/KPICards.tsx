@@ -27,11 +27,11 @@ function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, onClick,
       onClick={onClick}
     >
       <div className={`absolute inset-0 opacity-[0.06] ${gradient}`} />
-      <CardContent className="p-5 relative">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
+      <CardContent className="p-3 sm:p-5 relative">
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1 sm:space-y-1.5 min-w-0">
             <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{title}</p>
-            <p className="text-xl font-bold font-mono tracking-tight text-foreground">{value}</p>
+            <p className="text-lg sm:text-xl font-bold font-mono tracking-tight text-foreground truncate">{value}</p>
             {subtitle && <p className="text-[10px] text-muted-foreground">{subtitle}</p>}
             {trend && (
               <div className="flex items-center gap-1">
@@ -44,7 +44,7 @@ function KPICard({ title, value, subtitle, icon: Icon, gradient, trend, onClick,
               </div>
             )}
           </div>
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${gradient} shadow-lg`}>
+          <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl ${gradient} shadow-lg`}>
             <Icon className="h-4 w-4 text-primary-foreground" />
           </div>
         </div>
@@ -59,7 +59,7 @@ export function KPICards() {
   const lastFechado = state.periods.filter(p => p.fechado).pop();
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
       <KPICard
         title="Valor Contratual"
         value={formatCompact(filteredMetrics.valorContratual)}

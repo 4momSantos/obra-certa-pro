@@ -109,7 +109,7 @@ export default function ETFWizardUpload({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {FILE_SLOTS.map(slot => {
           const isLoaded = slot.key === 'equip' ? equipamentos.length > 0 : !!workbooks[slot.key as keyof WizardWorkbooks];
           const file = files[slot.key];
@@ -135,7 +135,7 @@ export default function ETFWizardUpload({
                 {isLoaded ? (
                   <div className="flex items-center justify-center gap-1.5 mt-2">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-xs text-muted-foreground truncate max-w-[140px]">
+                    <span className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-[180px]">
                       {file?.name || 'Carregado'}
                     </span>
                     {slot.key === 'equip' && (

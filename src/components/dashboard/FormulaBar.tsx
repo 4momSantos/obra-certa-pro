@@ -78,7 +78,7 @@ export function FormulaBar({ onResult }: FormulaBarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="ml-auto h-6 text-[10px] gap-1"
+          className="ml-auto h-8 sm:h-6 text-[10px] gap-1"
           onClick={() => setShowHelp(!showHelp)}
         >
           {showHelp ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -97,10 +97,10 @@ export function FormulaBar({ onResult }: FormulaBarProps) {
             onKeyDown={handleKeyDown}
             onFocus={() => setShowSuggestions(true)}
             placeholder='SUM(periods[realizado])'
-            className="w-full h-16 pl-8 pr-2 py-2 text-xs font-mono bg-muted/30 border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            className="w-full h-14 sm:h-16 pl-8 pr-2 py-2 text-xs font-mono bg-muted/30 border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
           />
         </div>
-        <Button onClick={evaluate} size="sm" className="h-16 px-4 gap-1">
+        <Button onClick={evaluate} size="sm" className="h-14 sm:h-16 px-3 sm:px-4 gap-1">
           <Play className="h-3.5 w-3.5" />
           Executar
         </Button>
@@ -121,7 +121,7 @@ export function FormulaBar({ onResult }: FormulaBarProps) {
             {result.error ? `Erro: ${result.error}` : `= ${result.value}`}
           </span>
           {!result.error && (
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={copyResult}>
+            <Button variant="ghost" size="sm" className="h-8 w-8 sm:h-6 sm:w-6 p-0" onClick={copyResult}>
               <Copy className="h-3 w-3" />
             </Button>
           )}
@@ -152,7 +152,7 @@ export function FormulaBar({ onResult }: FormulaBarProps) {
 
       {/* Help Reference */}
       {showHelp && (
-        <div className="border border-border/30 rounded-lg p-3 bg-muted/20 max-h-60 overflow-auto">
+        <div className="border border-border/30 rounded-lg p-3 bg-muted/20 max-h-48 sm:max-h-60 overflow-auto">
           <p className="text-[10px] font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Funções Disponíveis</p>
           <div className="grid gap-1">
             {daxFunctions.map((fn) => (

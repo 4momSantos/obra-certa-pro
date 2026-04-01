@@ -18,7 +18,7 @@ export function CurvaSWidget() {
 
   return (
     <WidgetWrapper title="Curva S — Avanço Acumulado">
-      <div className="h-[340px]">
+      <div className="h-[260px] sm:h-[300px] lg:h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={filteredCurvaS} onClick={handleClick} style={{ cursor: "pointer" }}>
             <defs>

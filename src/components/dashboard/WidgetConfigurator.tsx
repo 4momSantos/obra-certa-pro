@@ -99,7 +99,7 @@ export function WidgetConfigurator({ onCreateWidget, onClose }: WidgetConfigurat
           <Settings2 className="h-4 w-4 text-accent" />
           <span className="text-sm font-semibold">Novo Visual</span>
         </div>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -107,7 +107,7 @@ export function WidgetConfigurator({ onCreateWidget, onClose }: WidgetConfigurat
       {/* Chart Type Selection */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Tipo de Visualização</p>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {chartTypes.map(({ type, label, icon: Icon }) => (
             <button
               key={type}
@@ -164,7 +164,7 @@ export function WidgetConfigurator({ onCreateWidget, onClose }: WidgetConfigurat
           className="space-y-1"
         >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Eixo X (Categoria)</p>
-          <div className="min-h-[32px] px-3 py-1.5 border-2 border-dashed border-border/50 rounded-lg flex items-center text-xs text-muted-foreground">
+          <div className="min-h-[40px] sm:min-h-[32px] px-3 py-1.5 border-2 border-dashed border-border/50 rounded-lg flex items-center text-xs text-muted-foreground">
             {xAxisField ? (
               <Badge variant="secondary" className="text-[10px] gap-1">
                 {xAxisField.displayName}
@@ -186,7 +186,7 @@ export function WidgetConfigurator({ onCreateWidget, onClose }: WidgetConfigurat
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {chartType === "table" ? "Colunas" : "Valores (Eixo Y)"}
         </p>
-        <div className="min-h-[32px] px-3 py-1.5 border-2 border-dashed border-border/50 rounded-lg flex flex-wrap gap-1.5">
+        <div className="min-h-[40px] sm:min-h-[32px] px-3 py-1.5 border-2 border-dashed border-border/50 rounded-lg flex flex-wrap gap-1.5">
           {selectedFields.length > 0 ? (
             selectedFields.map((f, i) => (
               <Badge key={i} variant="secondary" className="text-[10px] gap-1">

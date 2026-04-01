@@ -80,7 +80,7 @@ export function FieldPicker({ onFieldSelect, onFieldDragStart }: FieldPickerProp
           placeholder="Buscar campo..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-7 px-2 text-xs bg-muted/50 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full h-9 sm:h-7 px-2 text-xs bg-muted/50 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
       <ScrollArea className="flex-1 px-1">

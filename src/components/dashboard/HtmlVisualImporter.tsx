@@ -94,7 +94,7 @@ export function HtmlVisualImporter({ onImport, onClose }: HtmlVisualImporterProp
           <Code2 className="h-4 w-4 text-accent" />
           <span className="text-sm font-semibold">Visual HTML5 Personalizado</span>
         </div>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -120,7 +120,7 @@ export function HtmlVisualImporter({ onImport, onClose }: HtmlVisualImporterProp
       </div>
 
       {activeTab === "templates" ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {htmlTemplates.map((t) => (
             <button
               key={t.name}
@@ -176,7 +176,7 @@ export function HtmlVisualImporter({ onImport, onClose }: HtmlVisualImporterProp
                 value={html}
                 onChange={(e) => setHtml(e.target.value)}
                 placeholder="<div>Seu HTML aqui...</div>"
-                className="w-full h-28 px-3 py-2 text-[11px] font-mono bg-[#1e1e2e] text-[#cdd6f4] border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                className="w-full h-24 sm:h-28 px-3 py-2 text-[11px] font-mono bg-[#1e1e2e] text-[#cdd6f4] border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               />
             )}
           </div>
@@ -189,7 +189,7 @@ export function HtmlVisualImporter({ onImport, onClose }: HtmlVisualImporterProp
                 value={css}
                 onChange={(e) => setCss(e.target.value)}
                 placeholder=".my-class { color: blue; }"
-                className="w-full h-20 px-3 py-2 text-[11px] font-mono bg-[#1e1e2e] text-[#cdd6f4] border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                className="w-full h-16 sm:h-20 px-3 py-2 text-[11px] font-mono bg-[#1e1e2e] text-[#cdd6f4] border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               />
             </div>
           )}

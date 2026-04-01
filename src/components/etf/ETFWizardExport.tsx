@@ -62,7 +62,7 @@ export default function ETFWizardExport({ results, semana, inicio, fim, onBack }
 
   return (
     <div className="space-y-4">
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {exports.map(exp => (
           <Card key={exp.key} className="glass-card">
             <CardContent className="p-5 space-y-3">

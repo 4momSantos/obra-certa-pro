@@ -278,17 +278,17 @@ function DashboardContent() {
       </div>
 
       {/* Main layout: sidebar + content */}
-      <div className="flex gap-4">
+      <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
         {/* Builder Sidebar */}
         {showSidebar && (
           <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
+            initial={{ width: "100%", opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="shrink-0 overflow-hidden"
+            className="shrink-0 overflow-hidden w-full lg:w-[280px]"
           >
-            <div className="w-[280px] glass-card rounded-xl p-3 sticky top-20 max-h-[calc(100vh-6rem)] overflow-auto">
+            <div className="glass-card rounded-xl p-3 lg:sticky lg:top-20 max-h-[50vh] lg:max-h-[calc(100vh-6rem)] overflow-auto">
               {builderPanel === "fields" && (
                 <FieldPicker onFieldSelect={() => {}} />
               )}

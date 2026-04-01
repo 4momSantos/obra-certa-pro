@@ -21,7 +21,7 @@ export function GaugeWidget() {
 
   return (
     <WidgetWrapper title="Avanço Financeiro">
-      <div className="h-[300px] relative">
+      <div className="h-[240px] sm:h-[270px] lg:h-[300px] relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -43,7 +43,7 @@ export function GaugeWidget() {
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingTop: "10%" }}>
           <div className="text-center">
-            <p className="text-3xl font-extrabold font-mono" style={{ color: getColor(displayPct) }}>
+            <p className="text-2xl sm:text-3xl font-extrabold font-mono" style={{ color: getColor(displayPct) }}>
               {formatPercent(percentage)}
             </p>
             <p className="text-[10px] text-muted-foreground mt-1">do contrato</p>

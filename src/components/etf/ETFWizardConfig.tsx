@@ -58,7 +58,7 @@ export default function ETFWizardConfig({ config, wbPonto, onConfigChange, onBac
             <CardTitle className="text-sm">Período</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">Semana</Label>
                 <Input

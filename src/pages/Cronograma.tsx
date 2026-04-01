@@ -91,7 +91,7 @@ export default function Cronograma() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
         {[
           { label: "Baseline", value: metrics.totalBaseline, color: "text-chart-1" },
           { label: "Previsto", value: metrics.totalPrevisto, color: "text-chart-2" },
@@ -102,7 +102,7 @@ export default function Cronograma() {
           <Card key={item.label} className="glass-card">
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{item.label}</p>
-              <p className={`font-mono text-sm font-bold mt-1 ${item.color}`}>
+              <p className={`font-mono text-xs sm:text-sm font-bold mt-1 truncate ${item.color}`}>
                 {formatCurrencyFull(item.value)}
               </p>
             </CardContent>
@@ -113,8 +113,8 @@ export default function Cronograma() {
       {/* Main table */}
       <Card className="glass-card">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto -mx-px">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[100px] font-semibold">Período</TableHead>
@@ -186,7 +186,7 @@ export default function Cronograma() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-8 w-8 sm:h-7 sm:w-7"
                           onClick={() => toggleFechamento(period.id)}
                           title={period.fechado ? "Reabrir período" : "Fechar período"}
                         >

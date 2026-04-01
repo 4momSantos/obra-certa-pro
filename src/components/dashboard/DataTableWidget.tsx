@@ -49,8 +49,8 @@ export function DataTableWidget() {
 
   return (
     <WidgetWrapper title="Tabela de Períodos" noPadding>
-      <div className="overflow-auto max-h-[380px]">
-        <table className="w-full text-xs">
+      <div className="overflow-x-auto overflow-y-auto max-h-[300px] sm:max-h-[380px]">
+        <table className="w-full text-xs min-w-[600px]">
           <thead className="sticky top-0 bg-card z-10">
             <tr className="border-b border-border/50">
               {columns.map((col) => (
@@ -79,13 +79,13 @@ export function DataTableWidget() {
                   } ${filters.selectedPeriod && !isSelected ? "opacity-40" : ""}`}
                   onClick={() => setSelectedPeriod(p.label)}
                 >
-                  <td className="px-3 py-2 font-mono font-medium">{p.label}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.baseline)}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.previsto)}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.projetado)}</td>
-                  <td className="px-3 py-2 font-mono font-medium">{formatCurrency(p.realizado)}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.adiantamento)}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 sm:px-3 py-2 font-mono font-medium">{p.label}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.baseline)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.previsto)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.projetado)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono font-medium">{formatCurrency(p.realizado)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.adiantamento)}</td>
+                  <td className="px-2 sm:px-3 py-2">
                     <Badge variant={p.fechado ? "default" : "secondary"} className="text-[9px]">
                       {p.fechado ? "Fechado" : "Aberto"}
                     </Badge>
