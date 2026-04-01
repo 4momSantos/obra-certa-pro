@@ -164,6 +164,7 @@ export function AppSidebar() {
       items: [
         { label: "Gestão de Usuários", path: "/admin", icon: UserCog },
         { label: "Configurações", path: "/config", icon: Settings },
+        { label: "Histórico de Auditoria", path: "/admin/historico", icon: Clock },
       ],
     },
   ], [alertCounts, recusadosCount, dashCount]);
