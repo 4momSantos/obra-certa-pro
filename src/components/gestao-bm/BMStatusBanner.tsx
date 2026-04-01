@@ -12,6 +12,7 @@ import { formatCompact } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FecharBMDialog } from "./FecharBMDialog";
+import { NotesPanel } from "@/components/shared/NotesPanel";
 
 interface Props {
   bmName: string;
