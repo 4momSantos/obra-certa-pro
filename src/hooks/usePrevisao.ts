@@ -99,6 +99,36 @@ export function useSconMap() {
   });
 }
 
+export function useClassifMap() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["classif-map-prev", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const rows: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("classificacao_ppu")
+          .select("item_ppu, disciplina")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      const map = new Map<string, { disciplina: string }>();
+      rows.forEach((r: any) => {
+        if (r.item_ppu) map.set(r.item_ppu, { disciplina: r.disciplina || "" });
+      });
+      return map;
+    },
+  });
+}
+
 export function useProjetadoBM(bmName: string) {
   const { user } = useAuth();
   return useQuery({
