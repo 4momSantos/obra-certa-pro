@@ -938,6 +938,50 @@ export type Database = {
           },
         ]
       }
+      equipes: {
+        Row: {
+          ativa: boolean | null
+          contrato_id: string
+          created_at: string | null
+          disciplina: string | null
+          id: string
+          lider_id: string | null
+          lider_nome: string | null
+          nome: string
+          tipo: string | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          contrato_id: string
+          created_at?: string | null
+          disciplina?: string | null
+          id?: string
+          lider_id?: string | null
+          lider_nome?: string | null
+          nome: string
+          tipo?: string | null
+        }
+        Update: {
+          ativa?: boolean | null
+          contrato_id?: string
+          created_at?: string | null
+          disciplina?: string | null
+          id?: string
+          lider_id?: string | null
+          lider_nome?: string | null
+          nome?: string
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gitec_events: {
         Row: {
           agrupamento: string
