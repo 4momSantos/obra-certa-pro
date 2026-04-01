@@ -66,6 +66,7 @@ const AppRoutes = () => {
           <Route path="/medicao" element={<Medicao />} />
           <Route path="/previsao" element={<PrevisaoMedicao />} />
           <Route path="/gestao-bm" element={<GestaoBM />} />
+          <Route path="/boletim/:bmName" element={<BoletimMedicao />} />
           <Route path="/tubulacao" element={<Tubulacao />} />
           <Route path="/import" element={<ImportData />} />
           <Route path="/gitec" element={<GitecPipeline />} />

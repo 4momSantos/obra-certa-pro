@@ -102,6 +102,7 @@ export function AppSidebar() {
         { label: "Gestão BM", path: "/gestao-bm", icon: ClipboardCheck },
         { label: "Acompanhamento", path: "/medicao", icon: BarChart3 },
         { label: "Previsão", path: "/previsao", icon: ClipboardList },
+        { label: "Boletim", path: "/boletim/BM-09", icon: FileCheck },
         { label: "Pipeline GITEC", path: "/gitec", icon: Pipette },
         {
           label: "Documentos SIGEM", path: "/documentos", icon: FileText,
