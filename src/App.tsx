@@ -29,6 +29,7 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import AlertsPage from "@/pages/AlertsPage";
 import Simulador from "@/pages/Simulador";
 import PrevisaoMedicao from "@/pages/PrevisaoMedicao";
+import BoletimMedicao from "@/pages/BoletimMedicao";
 import Configuracao from "@/pages/Configuracao";
 import Equipes from "@/pages/Equipes";
 import Disciplinas from "@/pages/Disciplinas";
