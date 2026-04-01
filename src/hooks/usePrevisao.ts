@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -143,6 +143,80 @@ export function useProjetadoBM(bmName: string) {
         .eq("tipo", "Projetado");
       if (error) throw error;
       return (data || []).reduce((s: number, r: any) => s + (Number(r.valor) || 0), 0);
+    },
+  });
+}
+
+export function useUpdatePrevisaoStatus() {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id, ippu, bmName, novoStatus, justificativa,
+    }: {
+      id: string; ippu: string; bmName: string;
+      novoStatus: string; justificativa: string;
+    }) => {
+      const { data: current } = await supabase
+        .from("previsao_medicao").select("status").eq("id", id).single();
+
+      const updateData: any = { status: novoStatus };
+      if (justificativa) updateData.justificativa = justificativa;
+
+      const { error } = await supabase
+        .from("previsao_medicao").update(updateData).eq("id", id);
+      if (error) throw error;
+
+      await supabase.from("previsao_historico").insert({
+        previsao_id: id,
+        bm_name: bmName,
+        ippu,
+        status_anterior: current?.status || "",
+        status_novo: novoStatus,
+        justificativa: justificativa || `Status alterado para ${novoStatus}`,
+        alterado_por: user?.id,
+        alterado_por_nome: profile?.full_name || "",
+      } as any);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["previsao", vars.bmName] });
+      queryClient.invalidateQueries({ queryKey: ["previsao-resumo", vars.bmName] });
+    },
+  });
+}
+
+export function useEditPrevisao() {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id, ippu, bmName, qtd_prevista, valor_previsto, justificativa,
+    }: {
+      id: string; ippu: string; bmName: string;
+      qtd_prevista: number; valor_previsto: number; justificativa: string;
+    }) => {
+      const { error } = await supabase
+        .from("previsao_medicao")
+        .update({ qtd_prevista, valor_previsto, justificativa } as any)
+        .eq("id", id);
+      if (error) throw error;
+
+      await supabase.from("previsao_historico").insert({
+        previsao_id: id,
+        bm_name: bmName,
+        ippu,
+        status_anterior: "",
+        status_novo: "",
+        justificativa: "Valores alterados",
+        alterado_por: user?.id,
+        alterado_por_nome: profile?.full_name || "",
+      } as any);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["previsao", vars.bmName] });
+      queryClient.invalidateQueries({ queryKey: ["previsao-resumo", vars.bmName] });
     },
   });
 }
