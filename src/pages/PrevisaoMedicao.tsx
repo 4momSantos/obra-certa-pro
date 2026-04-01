@@ -95,6 +95,7 @@ export default function PrevisaoMedicao() {
           periodos={periodos}
           selectedPeriodo={selectedPeriodo}
           isFechado={isFechado}
+          onSelectBm={setSelectedBmName}
           onAddClick={() => setAddOpen(true)}
           hasConfirmed={false}
         />
