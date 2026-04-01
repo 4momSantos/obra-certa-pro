@@ -187,7 +187,7 @@ export default function PrevisaoMedicao() {
 
 // ── Header sub-component ───────────────────────────────────────────
 function PageHeader({
-  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick,
+  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, hasConfirmed,
 }: {
   effectiveBm: string;
   periodos: any[] | undefined;
@@ -195,14 +195,32 @@ function PageHeader({
   isFechado: boolean;
   onSelectBm: (v: string) => void;
   onAddClick: () => void;
+  hasConfirmed: boolean;
 }) {
+  const navigate = useNavigate();
+  const gerarBoletim = useGerarBoletim();
+  const { data: existingBoletim } = useBoletim(effectiveBm);
+
+  const handleGerar = () => {
+    gerarBoletim.mutate(
+      { bmName: effectiveBm },
+      {
+        onSuccess: ({ bmName }) => {
+          toast.success("Boletim gerado com sucesso");
+          navigate(`/boletim/${bmName}`);
+        },
+        onError: (err: any) => toast.error("Erro: " + (err.message || "desconhecido")),
+      }
+    );
+  };
+
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">Previsão de Medição — {effectiveBm}</h1>
           {isFechado && (
-            <Badge variant="outline" className="text-[10px] gap-1 border-red-300 text-red-600">
+            <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
               <Lock className="h-3 w-3" /> FECHADO
             </Badge>
           )}
@@ -230,6 +248,18 @@ function PageHeader({
         <Button onClick={onAddClick} size="sm" disabled={isFechado} className="gap-1">
           <Plus className="h-3.5 w-3.5" /> Adicionar Item
         </Button>
+        {existingBoletim ? (
+          <Button size="sm" variant="outline" onClick={() => navigate(`/boletim/${effectiveBm}`)} className="gap-1">
+            <FileCheck className="h-3.5 w-3.5" /> Ver Boletim
+          </Button>
+        ) : (
+          !isFechado && hasConfirmed && (
+            <Button size="sm" variant="outline" onClick={handleGerar} disabled={gerarBoletim.isPending} className="gap-1">
+              {gerarBoletim.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCheck className="h-3.5 w-3.5" />}
+              Gerar Boletim
+            </Button>
+          )
+        )}
       </div>
     </div>
   );
