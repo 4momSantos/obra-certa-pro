@@ -8,6 +8,7 @@ import { BmCharts } from "@/components/gestao-bm/BmCharts";
 import { BmPpuDetailSheet } from "@/components/gestao-bm/BmPpuDetailSheet";
 import { BmFiscalAnalysis } from "@/components/gestao-bm/BmFiscalAnalysis";
 import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
+import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
 import { allBMs } from "@/lib/bm-utils";
 
 export default function GestaoBM() {
@@ -40,6 +41,7 @@ export default function GestaoBM() {
 
         <TabsContent value="por-bm" className="space-y-6 mt-4">
           <BmSelector selected={selectedBm} onSelect={handleSelectBm} />
+          <BMStatusBanner bmName={effectiveBm} />
           <BmKPIs bmName={effectiveBm} />
           <GitecPipelineFunnel
             bmName={effectiveBm}
