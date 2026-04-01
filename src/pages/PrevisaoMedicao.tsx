@@ -166,7 +166,7 @@ export default function PrevisaoMedicao() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
         </div>
       ) : (
-        <PrevisaoTable items={enrichedItems} readonly={isFechado} />
+        <PrevisaoTable items={enrichedItems} readonly={isFechado} bmName={effectiveBm} />
       )}
 
       <AddItemDialog
