@@ -20,6 +20,7 @@ export default function PrevisaoMedicao() {
   const { data: periodos, isLoading: loadingPeriodos } = useBMPeriodos();
   const { data: ppuItems } = usePPUElegiveis();
   const { data: sconMap } = useSconMap();
+  const { data: classifMap } = useClassifMap();
   const [addOpen, setAddOpen] = useState(false);
 
   // Find default BM (aberto or ultimo + 1)
