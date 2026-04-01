@@ -95,8 +95,8 @@ export default function PrevisaoMedicao() {
           periodos={periodos}
           selectedPeriodo={selectedPeriodo}
           isFechado={isFechado}
-          onSelectBm={setSelectedBmName}
           onAddClick={() => setAddOpen(true)}
+          hasConfirmed={false}
         />
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <ClipboardList className="h-16 w-16 text-muted-foreground/30" />
