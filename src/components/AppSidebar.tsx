@@ -215,7 +215,7 @@ export function AppSidebar() {
   };
 
   // ── Visible groups ─────────────────────────────────────────────────────
-  const visibleGroups = groups.filter(g => !g.adminOnly || role === "admin");
+  const visibleGroups = groups.filter(g => !g.adminOnly || role === "admin" || role === "gestor");
 
   // ── Sidebar content ────────────────────────────────────────────────────
   const sidebarContent = (
