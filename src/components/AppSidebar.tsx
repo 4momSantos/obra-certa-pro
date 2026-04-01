@@ -160,7 +160,7 @@ export function AppSidebar() {
       id: "admin",
       label: "ADMIN",
       icon: Settings,
-      adminOnly: false,
+      adminOnly: true,
       items: [
         { label: "Gestão de Usuários", path: "/admin", icon: UserCog },
         { label: "Configurações", path: "/config", icon: Settings },
