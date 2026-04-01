@@ -1,18 +1,25 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ClipboardList, Plus, Lock, FileCheck, Loader2 } from "lucide-react";
+import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useBMPeriodos, usePrevisaoBM, usePrevisaoResumo, usePPUElegiveis, useSconMap, useClassifMap, useProjetadoBM } from "@/hooks/usePrevisao";
+import { useSconExecucaoBM, useItensNaoMedidos } from "@/hooks/useSconExecucao";
 import { PrevisaoKPIs } from "@/components/previsao/PrevisaoKPIs";
 import { PrevisaoResumo } from "@/components/previsao/PrevisaoResumo";
 import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
+import { SconExecucaoTable } from "@/components/previsao/SconExecucaoTable";
+import { PassivosTable } from "@/components/previsao/PassivosTable";
 import { AddItemDialog } from "@/components/previsao/AddItemDialog";
 import { useGerarBoletim, useBoletim } from "@/hooks/useBoletim";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 function formatDateBR(d: string) {
   const dt = new Date(d);
@@ -20,13 +27,14 @@ function formatDateBR(d: string) {
 }
 
 export default function PrevisaoMedicao() {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const { data: periodos, isLoading: loadingPeriodos } = useBMPeriodos();
   const { data: ppuItems } = usePPUElegiveis();
   const { data: sconMap } = useSconMap();
   const { data: classifMap } = useClassifMap();
   const [addOpen, setAddOpen] = useState(false);
 
-  // Find default BM (aberto or ultimo + 1)
   const defaultBm = useMemo(() => {
     if (!periodos) return null;
     const aberto = periodos.find((p: any) => p.status === "aberto");
@@ -48,8 +56,9 @@ export default function PrevisaoMedicao() {
   const { data: previsoes, isLoading: loadingPrevisoes } = usePrevisaoBM(effectiveBm);
   const { data: resumo } = usePrevisaoResumo(effectiveBm);
   const { data: projetado } = useProjetadoBM(effectiveBm);
+  const { data: sconExecucao, isLoading: loadingScon } = useSconExecucaoBM(effectiveBm);
+  const { data: passivos, isLoading: loadingPassivos } = useItensNaoMedidos(effectiveBm);
 
-  // Build enriched items
   const ppuMap = useMemo(() => {
     const m = new Map<string, any>();
     (ppuItems || []).forEach((p: any) => m.set(p.item_ppu, p));
@@ -76,7 +85,6 @@ export default function PrevisaoMedicao() {
     });
   }, [previsoes, ppuMap, sconMap]);
 
-  // KPI calculations
   const itensAtivos = enrichedItems.filter(i => i.status === "previsto" || i.status === "confirmado").length;
   const valorAtivo = enrichedItems.filter(i => i.status === "previsto" || i.status === "confirmado").reduce((s, i) => s + i.valor_previsto, 0);
   const postergados = enrichedItems.filter(i => i.status === "postergado").length;
@@ -86,41 +94,43 @@ export default function PrevisaoMedicao() {
 
   const isLoading = loadingPeriodos || loadingPrevisoes;
 
-  // Empty state
-  if (!isLoading && enrichedItems.length === 0 && !loadingPeriodos) {
-    return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-4 md:p-6">
-        <PageHeader
-          effectiveBm={effectiveBm}
-          periodos={periodos}
-          selectedPeriodo={selectedPeriodo}
-          isFechado={isFechado}
-          onSelectBm={setSelectedBmName}
-          onAddClick={() => setAddOpen(true)}
-          hasConfirmed={false}
-        />
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <ClipboardList className="h-16 w-16 text-muted-foreground/30" />
-          <p className="text-lg font-medium">Nenhuma previsão para {effectiveBm}</p>
-          <p className="text-sm text-muted-foreground">Adicione itens que planeja medir neste boletim.</p>
-          {!isFechado && (
-            <Button onClick={() => setAddOpen(true)} className="gap-1.5">
-              <Plus className="h-4 w-4" /> Adicionar Item
-            </Button>
-          )}
-        </div>
-        <AddItemDialog
-          open={addOpen}
-          onClose={() => setAddOpen(false)}
-          bmName={effectiveBm}
-          ppuItems={ppuItems || []}
-          existingIppus={existingIppus}
-          sconMap={sconMap}
-          classifMap={classifMap}
-        />
-      </motion.div>
-    );
-  }
+  // Bulk add items from SCON or Passivos
+  const handleBulkAdd = async (ippus: string[]) => {
+    if (!user) return;
+    const newIppus = ippus.filter(ippu => !existingIppus.has(ippu));
+    if (newIppus.length === 0) {
+      toast.info("Todos os itens já estão na previsão.");
+      return;
+    }
+
+    const inserts = newIppus.map(ippu => {
+      const ppu = ppuMap.get(ippu);
+      const classif = classifMap?.get(ippu);
+      return {
+        bm_name: effectiveBm,
+        ippu,
+        responsavel_id: user.id,
+        responsavel_nome: profile?.full_name || "",
+        disciplina: classif?.disciplina || ppu?.disc || "",
+        status: "previsto",
+        valor_previsto: ppu?.valor_total || 0,
+        qtd_prevista: ppu?.qtd || 0,
+      };
+    });
+
+    const { error } = await supabase.from("previsao_medicao").insert(inserts as any);
+    if (error) {
+      toast.error("Erro ao adicionar itens: " + error.message);
+      return;
+    }
+    toast.success(`${newIppus.length} itens adicionados à previsão.`);
+    queryClient.invalidateQueries({ queryKey: ["previsao", effectiveBm] });
+    queryClient.invalidateQueries({ queryKey: ["previsao-resumo", effectiveBm] });
+  };
+
+  // Counts for tab badges
+  const sconCount = sconExecucao?.length || 0;
+  const passivosCount = passivos?.length || 0;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-4 md:p-6">
@@ -148,6 +158,9 @@ export default function PrevisaoMedicao() {
           projetado={projetado || 0}
           preenchidos={existingIppus.size}
           totalElegiveis={ppuItems?.length || 0}
+          sconExecutados={sconCount}
+          cobertura={sconCount > 0 ? (existingIppus.size / sconCount) * 100 : 0}
+          passivosCount={passivosCount}
         />
       )}
 
@@ -166,14 +179,70 @@ export default function PrevisaoMedicao() {
         />
       )}
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
-        </div>
-      ) : (
-        <PrevisaoTable items={enrichedItems} readonly={isFechado} bmName={effectiveBm} />
-      )}
+      {/* Tabs */}
+      <Tabs defaultValue="scon" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="scon" className="gap-1.5 text-xs">
+            <Activity className="h-3.5 w-3.5" />
+            Execução SCON
+            {sconCount > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{sconCount}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="previsao" className="gap-1.5 text-xs">
+            <ClipboardList className="h-3.5 w-3.5" />
+            Previsão Atual
+            {enrichedItems.length > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{enrichedItems.length}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="passivos" className="gap-1.5 text-xs">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Passivos
+            {passivosCount > 0 && <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">{passivosCount}</Badge>}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="scon">
+          {loadingScon ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
+            </div>
+          ) : (
+            <SconExecucaoTable
+              items={sconExecucao || []}
+              existingIppus={existingIppus}
+              onAddItems={handleBulkAdd}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="previsao">
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
+            </div>
+          ) : enrichedItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <ClipboardList className="h-12 w-12 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">Nenhuma previsão para {effectiveBm}. Use a aba "Execução SCON" para selecionar itens.</p>
+              {!isFechado && (
+                <Button onClick={() => setAddOpen(true)} size="sm" className="gap-1.5">
+                  <Plus className="h-4 w-4" /> Adicionar Manualmente
+                </Button>
+              )}
+            </div>
+          ) : (
+            <PrevisaoTable items={enrichedItems} readonly={isFechado} bmName={effectiveBm} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="passivos">
+          {loadingPassivos ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
+            </div>
+          ) : (
+            <PassivosTable items={passivos || []} onAddItems={handleBulkAdd} />
+          )}
+        </TabsContent>
+      </Tabs>
 
       <AddItemDialog
         open={addOpen}

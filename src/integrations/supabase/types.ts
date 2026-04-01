@@ -2526,6 +2526,23 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_itens_nao_medidos: {
+        Row: {
+          avanco_ponderado: number | null
+          bm_name_calc: string | null
+          componente: string | null
+          criterio_nome: string | null
+          dicionario_etapa: string | null
+          disciplina: string | null
+          item_criterio: string | null
+          item_wbs: string | null
+          tag: string | null
+          tag_desc: string | null
+          total_exec_geral: number | null
+          unit_valor: number | null
+        }
+        Relationships: []
+      }
       vw_previsao_por_bm: {
         Row: {
           bm_name: string | null
@@ -2573,6 +2590,35 @@ export type Database = {
           tipo: string | null
           total_etapas: number | null
           total_semanas: number | null
+          unit_valor: number | null
+        }
+        Relationships: []
+      }
+      vw_scon_execucao_por_bm: {
+        Row: {
+          avanco_ponderado: number | null
+          bm_name_calc: string | null
+          classe: string | null
+          componente: string | null
+          criterio_nome: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          dicionario_etapa: string | null
+          disciplina: string | null
+          equipe: string | null
+          item_criterio: string | null
+          item_wbs: string | null
+          peso_absoluto: number | null
+          peso_fisico_fin: number | null
+          scon_etapa: string | null
+          scon_prog_id: string | null
+          semana: string | null
+          status_gitec: string | null
+          tag: string | null
+          tag_desc: string | null
+          tipo: string | null
+          total_exec_geral: number | null
+          total_exec_semana: number | null
           unit_valor: number | null
         }
         Relationships: []
