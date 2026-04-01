@@ -200,17 +200,31 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                               item.status === "postergado" ? "text-amber-600 font-semibold" : "text-muted-foreground"
                             )}
                           >
-                            <MessageSquare className="h-3 w-3 shrink-0" />
+                            {item.status === "postergado" ? (
+                              <AlertTriangle className="h-3 w-3 shrink-0" />
+                            ) : (
+                              <MessageSquare className="h-3 w-3 shrink-0" />
+                            )}
                             <span className="truncate">{item.justificativa}</span>
                           </button>
                         ) : (
                           <span className="text-xs text-muted-foreground/50">—</span>
                         )}
                       </TableCell>
+                      {!readonly && (
+                        <TableCell>
+                          <PrevisaoActions item={item} bmName={bmName} readonly={readonly} />
+                        </TableCell>
+                      )}
                     </TableRow>
                     {isExpanded && item.justificativa && (
                       <TableRow key={`${item.id}-just`}>
-                        <TableCell colSpan={9} className="py-2 pl-10 border-l-2 border-amber-400 bg-amber-50/50 dark:bg-amber-950/10">
+                        <TableCell colSpan={readonly ? 9 : 10} className={cn(
+                          "py-2 pl-10 border-l-2",
+                          item.status === "postergado" ? "border-amber-400 bg-amber-50/50 dark:bg-amber-950/10" :
+                          item.status === "cancelado" ? "border-destructive bg-red-50/50 dark:bg-red-950/10" :
+                          "border-muted-foreground/30 bg-muted/30"
+                        )}>
                           <p className="text-xs text-foreground">{item.justificativa}</p>
                         </TableCell>
                       </TableRow>
