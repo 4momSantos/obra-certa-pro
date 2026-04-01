@@ -303,6 +303,72 @@ export type Database = {
         }
         Relationships: []
       }
+      contratos: {
+        Row: {
+          alerta_aging_dias: number | null
+          alerta_dados_desatualizados: number | null
+          alerta_scon_minimo: number | null
+          ativo: boolean | null
+          bm_dia_fim: number | null
+          bm_dia_inicio: number | null
+          bm_mes_referencia: string | null
+          bm_total: number | null
+          codigo: string
+          cor_primaria: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          logo_url: string | null
+          nome: string
+          numero_contrato: string | null
+          unidade: string | null
+          updated_at: string | null
+          valor_contratual: number
+        }
+        Insert: {
+          alerta_aging_dias?: number | null
+          alerta_dados_desatualizados?: number | null
+          alerta_scon_minimo?: number | null
+          ativo?: boolean | null
+          bm_dia_fim?: number | null
+          bm_dia_inicio?: number | null
+          bm_mes_referencia?: string | null
+          bm_total?: number | null
+          codigo: string
+          cor_primaria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          logo_url?: string | null
+          nome: string
+          numero_contrato?: string | null
+          unidade?: string | null
+          updated_at?: string | null
+          valor_contratual: number
+        }
+        Update: {
+          alerta_aging_dias?: number | null
+          alerta_dados_desatualizados?: number | null
+          alerta_scon_minimo?: number | null
+          ativo?: boolean | null
+          bm_dia_fim?: number | null
+          bm_dia_inicio?: number | null
+          bm_mes_referencia?: string | null
+          bm_total?: number | null
+          codigo?: string
+          cor_primaria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          numero_contrato?: string | null
+          unidade?: string | null
+          updated_at?: string | null
+          valor_contratual?: number
+        }
+        Relationships: []
+      }
       criterio_medicao: {
         Row: {
           batch_id: string | null
