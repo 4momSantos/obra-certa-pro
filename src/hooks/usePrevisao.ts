@@ -65,7 +65,7 @@ export function usePPUElegiveis() {
       while (true) {
         const { data, error } = await supabase
           .from("ppu_items")
-          .select("item_ppu, descricao, fase, subfase, agrupamento, disc, valor_total")
+          .select("item_ppu, descricao, fase, subfase, agrupamento, disc, valor_total, preco_unit, qtd")
           .gt("valor_total", 0)
           .range(from, from + PAGE - 1);
         if (error) throw error;
@@ -93,6 +93,36 @@ export function useSconMap() {
       const map = new Map<string, number>();
       (data || []).forEach((r: any) => {
         if (r.item_wbs) map.set(String(r.item_wbs).replace(/_/g, "-"), Number(r.avg_avanco) || 0);
+      });
+      return map;
+    },
+  });
+}
+
+export function useClassifMap() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["classif-map-prev", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const rows: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("classificacao_ppu")
+          .select("item_ppu, disciplina")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      const map = new Map<string, { disciplina: string }>();
+      rows.forEach((r: any) => {
+        if (r.item_ppu) map.set(r.item_ppu, { disciplina: r.disciplina || "" });
       });
       return map;
     },
