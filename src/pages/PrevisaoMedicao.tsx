@@ -11,6 +11,8 @@ import { PrevisaoKPIs } from "@/components/previsao/PrevisaoKPIs";
 import { PrevisaoResumo } from "@/components/previsao/PrevisaoResumo";
 import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
 import { AddItemDialog } from "@/components/previsao/AddItemDialog";
+import { useGerarBoletim, useBoletim } from "@/hooks/useBoletim";
+import { toast } from "sonner";
 
 function formatDateBR(d: string) {
   const dt = new Date(d);
