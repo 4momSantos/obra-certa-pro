@@ -28,6 +28,7 @@ import GitecPipeline from "@/pages/GitecPipeline";
 import DocumentsPage from "@/pages/DocumentsPage";
 import AlertsPage from "@/pages/AlertsPage";
 import Simulador from "@/pages/Simulador";
+import PrevisaoMedicao from "@/pages/PrevisaoMedicao";
 import Configuracao from "@/pages/Configuracao";
 import Equipes from "@/pages/Equipes";
 import Disciplinas from "@/pages/Disciplinas";
