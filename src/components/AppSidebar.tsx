@@ -6,7 +6,7 @@ import { useImportStats } from "@/hooks/useImportStats";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  LayoutDashboard, FolderOpen, Monitor, BarChart3, ClipboardCheck, FileText,
+  LayoutDashboard, FolderOpen, Monitor, BarChart3, ClipboardCheck, ClipboardList, FileText,
   Calculator, AlertTriangle, CalendarRange, TrendingUp, Calendar, ShieldCheck,
   SlidersHorizontal, Users, Layers, Clock, Pipette, Upload, Database,
   UserCog, Settings, ChevronDown, ChevronRight, Building2, Menu, X, LogOut, User,
