@@ -139,6 +139,7 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
               <TableHead className="text-xs text-right w-24">Valor Prev.</TableHead>
               <TableHead className="text-xs w-20">SCON %</TableHead>
               <TableHead className="text-xs w-36">Justificativa</TableHead>
+              <TableHead className="text-xs w-10">Notas</TableHead>
               {!readonly && <TableHead className="text-xs w-12">Ações</TableHead>}
             </TableRow>
           </TableHeader>
