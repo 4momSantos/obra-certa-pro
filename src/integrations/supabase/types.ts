@@ -938,6 +938,44 @@ export type Database = {
           },
         ]
       }
+      equipe_membros: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          disciplinas: string[] | null
+          equipe_id: string
+          funcao: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          disciplinas?: string[] | null
+          equipe_id: string
+          funcao?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          disciplinas?: string[] | null
+          equipe_id?: string
+          funcao?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipe_membros_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipes: {
         Row: {
           ativa: boolean | null
