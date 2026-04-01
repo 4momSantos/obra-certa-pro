@@ -2632,6 +2632,7 @@ export type Database = {
         Args: { b_id: string; u_id: string }
         Returns: boolean
       }
+      user_contrato_ids: { Args: never; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "gestor" | "tecnico"
