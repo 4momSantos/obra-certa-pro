@@ -374,6 +374,13 @@ export function PPUDetailSheet({ item, onClose }: Props) {
                   ) : <p className="text-xs text-muted-foreground">Nenhum critério encontrado para este PPU</p>}
                 </AccordionContent>
               </AccordionItem>
+              {/* Seção 7 — Histórico */}
+              <AccordionItem value="historico">
+                <AccordionTrigger className="text-sm font-semibold">Histórico</AccordionTrigger>
+                <AccordionContent>
+                  <MiniAuditTimeline ippu={item.item_ppu} />
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
           )}
 
