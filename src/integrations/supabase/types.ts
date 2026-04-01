@@ -303,6 +303,47 @@ export type Database = {
         }
         Relationships: []
       }
+      contrato_usuarios: {
+        Row: {
+          ativo: boolean | null
+          contrato_id: string
+          created_at: string | null
+          disciplinas: string[] | null
+          id: string
+          modulos_acesso: string[] | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          contrato_id: string
+          created_at?: string | null
+          disciplinas?: string[] | null
+          id?: string
+          modulos_acesso?: string[] | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          contrato_id?: string
+          created_at?: string | null
+          disciplinas?: string[] | null
+          id?: string
+          modulos_acesso?: string[] | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrato_usuarios_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos: {
         Row: {
           alerta_aging_dias: number | null
