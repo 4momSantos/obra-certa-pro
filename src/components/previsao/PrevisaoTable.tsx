@@ -36,6 +36,7 @@ interface PrevisaoRow {
 interface Props {
   items: PrevisaoRow[];
   readonly: boolean;
+  bmName: string;
 }
 
 export function PrevisaoTable({ items, readonly }: Props) {
