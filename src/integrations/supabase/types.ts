@@ -1159,6 +1159,39 @@ export type Database = {
         }
         Relationships: []
       }
+      permissoes_modulo: {
+        Row: {
+          id: string
+          modulo: string
+          pode_criar: boolean | null
+          pode_editar: boolean | null
+          pode_excluir: boolean | null
+          pode_exportar: boolean | null
+          pode_ver: boolean | null
+          role: string
+        }
+        Insert: {
+          id?: string
+          modulo: string
+          pode_criar?: boolean | null
+          pode_editar?: boolean | null
+          pode_excluir?: boolean | null
+          pode_exportar?: boolean | null
+          pode_ver?: boolean | null
+          role: string
+        }
+        Update: {
+          id?: string
+          modulo?: string
+          pode_criar?: boolean | null
+          pode_editar?: boolean | null
+          pode_excluir?: boolean | null
+          pode_exportar?: boolean | null
+          pode_ver?: boolean | null
+          role?: string
+        }
+        Relationships: []
+      }
       ppu_items: {
         Row: {
           agrupamento: string | null
