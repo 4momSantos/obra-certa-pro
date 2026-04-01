@@ -104,12 +104,14 @@ export default function PrevisaoMedicao() {
             </Button>
           )}
         </div>
-        <AddPrevisaoDialog
+        <AddItemDialog
           open={addOpen}
           onClose={() => setAddOpen(false)}
           bmName={effectiveBm}
           ppuItems={ppuItems || []}
           existingIppus={existingIppus}
+          sconMap={sconMap}
+          classifMap={classifMap}
         />
       </motion.div>
     );
