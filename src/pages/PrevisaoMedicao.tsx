@@ -169,12 +169,14 @@ export default function PrevisaoMedicao() {
         <PrevisaoTable items={enrichedItems} readonly={isFechado} />
       )}
 
-      <AddPrevisaoDialog
+      <AddItemDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
         bmName={effectiveBm}
         ppuItems={ppuItems || []}
         existingIppus={existingIppus}
+        sconMap={sconMap}
+        classifMap={classifMap}
       />
     </motion.div>
   );
