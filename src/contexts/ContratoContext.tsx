@@ -151,7 +151,7 @@ export function ContratoProvider({ children }: { children: React.ReactNode }) {
         .from("permissoes_modulo" as any)
         .select("modulo, pode_ver, pode_editar, pode_criar, pode_excluir, pode_exportar")
         .eq("role", roleNoContrato!);
-      return (data || []) as Array<{
+      return ((data || []) as unknown) as Array<{
         modulo: string;
         pode_ver: boolean;
         pode_editar: boolean;
