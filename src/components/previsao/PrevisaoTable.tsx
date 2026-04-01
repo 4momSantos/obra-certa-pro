@@ -39,7 +39,7 @@ interface Props {
   bmName: string;
 }
 
-export function PrevisaoTable({ items, readonly }: Props) {
+export function PrevisaoTable({ items, readonly, bmName }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [discFilter, setDiscFilter] = useState("all");
