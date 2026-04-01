@@ -29,6 +29,7 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import AlertsPage from "@/pages/AlertsPage";
 import Simulador from "@/pages/Simulador";
 import PrevisaoMedicao from "@/pages/PrevisaoMedicao";
+import BoletimMedicao from "@/pages/BoletimMedicao";
 import Configuracao from "@/pages/Configuracao";
 import Equipes from "@/pages/Equipes";
 import Disciplinas from "@/pages/Disciplinas";
@@ -65,6 +66,7 @@ const AppRoutes = () => {
           <Route path="/medicao" element={<Medicao />} />
           <Route path="/previsao" element={<PrevisaoMedicao />} />
           <Route path="/gestao-bm" element={<GestaoBM />} />
+          <Route path="/boletim/:bmName" element={<BoletimMedicao />} />
           <Route path="/tubulacao" element={<Tubulacao />} />
           <Route path="/import" element={<ImportData />} />
           <Route path="/gitec" element={<GitecPipeline />} />
