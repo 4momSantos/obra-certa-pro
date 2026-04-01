@@ -20,6 +20,7 @@ export type Database = {
           autor_nome: string | null
           categoria: string | null
           contexto: string
+          contrato_id: string | null
           created_at: string | null
           id: string
           referencia: string
@@ -30,6 +31,7 @@ export type Database = {
           autor_nome?: string | null
           categoria?: string | null
           contexto: string
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           referencia: string
@@ -40,16 +42,26 @@ export type Database = {
           autor_nome?: string | null
           categoria?: string | null
           contexto?: string
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           referencia?: string
           texto?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "anotacoes_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_log: {
         Row: {
           acao: string
+          contrato_id: string | null
           created_at: string | null
           detalhes: Json | null
           entidade: string
@@ -60,6 +72,7 @@ export type Database = {
         }
         Insert: {
           acao: string
+          contrato_id?: string | null
           created_at?: string | null
           detalhes?: Json | null
           entidade: string
@@ -70,6 +83,7 @@ export type Database = {
         }
         Update: {
           acao?: string
+          contrato_id?: string | null
           created_at?: string | null
           detalhes?: Json | null
           entidade?: string
@@ -78,12 +92,21 @@ export type Database = {
           user_id?: string | null
           user_nome?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bm_periodos: {
         Row: {
           bm_name: string
           bm_number: number
+          contrato_id: string | null
           created_at: string | null
           data_abertura: string | null
           data_fechamento: string | null
@@ -100,6 +123,7 @@ export type Database = {
         Insert: {
           bm_name: string
           bm_number: number
+          contrato_id?: string | null
           created_at?: string | null
           data_abertura?: string | null
           data_fechamento?: string | null
@@ -116,6 +140,7 @@ export type Database = {
         Update: {
           bm_name?: string
           bm_number?: number
+          contrato_id?: string | null
           created_at?: string | null
           data_abertura?: string | null
           data_fechamento?: string | null
@@ -129,11 +154,20 @@ export type Database = {
           valor_medido?: number | null
           valor_previsto?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bm_periodos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       boletim_itens: {
         Row: {
           boletim_id: string | null
+          contrato_id: string | null
           created_at: string | null
           descricao: string | null
           id: string
@@ -147,6 +181,7 @@ export type Database = {
         }
         Insert: {
           boletim_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           descricao?: string | null
           id?: string
@@ -160,6 +195,7 @@ export type Database = {
         }
         Update: {
           boletim_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           descricao?: string | null
           id?: string
@@ -179,12 +215,20 @@ export type Database = {
             referencedRelation: "boletins_medicao"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "boletim_itens_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       boletins_medicao: {
         Row: {
           aprovado_em: string | null
           bm_name: string
+          contrato_id: string | null
           created_at: string | null
           enviado_em: string | null
           finalizado_em: string | null
@@ -200,6 +244,7 @@ export type Database = {
         Insert: {
           aprovado_em?: string | null
           bm_name: string
+          contrato_id?: string | null
           created_at?: string | null
           enviado_em?: string | null
           finalizado_em?: string | null
@@ -215,6 +260,7 @@ export type Database = {
         Update: {
           aprovado_em?: string | null
           bm_name?: string
+          contrato_id?: string | null
           created_at?: string | null
           enviado_em?: string | null
           finalizado_em?: string | null
@@ -227,12 +273,21 @@ export type Database = {
           status?: string | null
           valor_total?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "boletins_medicao_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       classificacao_ppu: {
         Row: {
           agrupamento: string | null
           batch_id: string | null
+          contrato_id: string | null
           created_at: string | null
           disciplina: string | null
           fase: string | null
@@ -245,6 +300,7 @@ export type Database = {
         Insert: {
           agrupamento?: string | null
           batch_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           disciplina?: string | null
           fase?: string | null
@@ -257,6 +313,7 @@ export type Database = {
         Update: {
           agrupamento?: string | null
           batch_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           disciplina?: string | null
           fase?: string | null
@@ -272,6 +329,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classificacao_ppu_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
@@ -413,6 +477,7 @@ export type Database = {
       criterio_medicao: {
         Row: {
           batch_id: string | null
+          contrato_id: string | null
           created_at: string | null
           dicionario_etapa: string | null
           id: string
@@ -425,6 +490,7 @@ export type Database = {
         }
         Insert: {
           batch_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           dicionario_etapa?: string | null
           id?: string
@@ -437,6 +503,7 @@ export type Database = {
         }
         Update: {
           batch_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           dicionario_etapa?: string | null
           id?: string
@@ -455,6 +522,13 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "criterio_medicao_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cronograma_bm_values: {
@@ -462,6 +536,7 @@ export type Database = {
           batch_id: string
           bm_name: string
           bm_number: number
+          contrato_id: string | null
           created_at: string | null
           id: string
           ippu: string | null
@@ -473,6 +548,7 @@ export type Database = {
           batch_id: string
           bm_name: string
           bm_number: number
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           ippu?: string | null
@@ -484,6 +560,7 @@ export type Database = {
           batch_id?: string
           bm_name?: string
           bm_number?: number
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           ippu?: string | null
@@ -497,6 +574,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_bm_values_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
           {
@@ -519,6 +603,7 @@ export type Database = {
         Row: {
           acumulado: number | null
           batch_id: string
+          contrato_id: string | null
           created_at: string | null
           fase_nome: string | null
           id: string
@@ -533,6 +618,7 @@ export type Database = {
         Insert: {
           acumulado?: number | null
           batch_id: string
+          contrato_id?: string | null
           created_at?: string | null
           fase_nome?: string | null
           id?: string
@@ -547,6 +633,7 @@ export type Database = {
         Update: {
           acumulado?: number | null
           batch_id?: string
+          contrato_id?: string | null
           created_at?: string | null
           fase_nome?: string | null
           id?: string
@@ -566,12 +653,20 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cronograma_tree_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       curva_s: {
         Row: {
           batch_id: string
           col_index: number
+          contrato_id: string | null
           created_at: string | null
           id: string
           label: string
@@ -585,6 +680,7 @@ export type Database = {
         Insert: {
           batch_id: string
           col_index: number
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           label: string
@@ -598,6 +694,7 @@ export type Database = {
         Update: {
           batch_id?: string
           col_index?: number
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           label?: string
@@ -614,6 +711,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curva_s_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
@@ -736,6 +840,7 @@ export type Database = {
       doc_acompanhamento: {
         Row: {
           acao: string | null
+          contrato_id: string | null
           created_at: string | null
           criado_por: string | null
           documento: string
@@ -750,6 +855,7 @@ export type Database = {
         }
         Insert: {
           acao?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           criado_por?: string | null
           documento: string
@@ -764,6 +870,7 @@ export type Database = {
         }
         Update: {
           acao?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           criado_por?: string | null
           documento?: string
@@ -776,7 +883,15 @@ export type Database = {
           status_atual?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "doc_acompanhamento_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_revisions: {
         Row: {
@@ -888,6 +1003,7 @@ export type Database = {
         Row: {
           agrupamento: string | null
           batch_id: string | null
+          contrato_id: string | null
           created_at: string | null
           data_inicio: string | null
           data_termino: string | null
@@ -916,6 +1032,7 @@ export type Database = {
         Insert: {
           agrupamento?: string | null
           batch_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           data_inicio?: string | null
           data_termino?: string | null
@@ -944,6 +1061,7 @@ export type Database = {
         Update: {
           agrupamento?: string | null
           batch_id?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           data_inicio?: string | null
           data_termino?: string | null
@@ -975,6 +1093,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eac_items_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
@@ -1128,6 +1253,7 @@ export type Database = {
       }
       import_batches: {
         Row: {
+          contrato_id: string | null
           created_at: string | null
           errors: Json | null
           filename: string
@@ -1138,6 +1264,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          contrato_id?: string | null
           created_at?: string | null
           errors?: Json | null
           filename: string
@@ -1148,6 +1275,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          contrato_id?: string | null
           created_at?: string | null
           errors?: Json | null
           filename?: string
@@ -1157,7 +1285,15 @@ export type Database = {
           status?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissoes_modulo: {
         Row: {
@@ -1197,6 +1333,7 @@ export type Database = {
           agrupamento: string | null
           batch_id: string | null
           carac: string | null
+          contrato_id: string | null
           created_at: string | null
           criterio_medicao_ref: string | null
           data_fim: string | null
@@ -1223,6 +1360,7 @@ export type Database = {
           agrupamento?: string | null
           batch_id?: string | null
           carac?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           criterio_medicao_ref?: string | null
           data_fim?: string | null
@@ -1249,6 +1387,7 @@ export type Database = {
           agrupamento?: string | null
           batch_id?: string | null
           carac?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           criterio_medicao_ref?: string | null
           data_fim?: string | null
@@ -1279,6 +1418,13 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ppu_items_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       previsao_historico: {
@@ -1286,6 +1432,7 @@ export type Database = {
           alterado_por: string | null
           alterado_por_nome: string | null
           bm_name: string
+          contrato_id: string | null
           created_at: string | null
           id: string
           ippu: string
@@ -1298,6 +1445,7 @@ export type Database = {
           alterado_por?: string | null
           alterado_por_nome?: string | null
           bm_name: string
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           ippu: string
@@ -1310,6 +1458,7 @@ export type Database = {
           alterado_por?: string | null
           alterado_por_nome?: string | null
           bm_name?: string
+          contrato_id?: string | null
           created_at?: string | null
           id?: string
           ippu?: string
@@ -1319,6 +1468,13 @@ export type Database = {
           status_novo?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "previsao_historico_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "previsao_historico_previsao_id_fkey"
             columns: ["previsao_id"]
@@ -1331,6 +1487,7 @@ export type Database = {
       previsao_medicao: {
         Row: {
           bm_name: string
+          contrato_id: string | null
           created_at: string | null
           disciplina: string | null
           id: string
@@ -1347,6 +1504,7 @@ export type Database = {
         }
         Insert: {
           bm_name: string
+          contrato_id?: string | null
           created_at?: string | null
           disciplina?: string | null
           id?: string
@@ -1363,6 +1521,7 @@ export type Database = {
         }
         Update: {
           bm_name?: string
+          contrato_id?: string | null
           created_at?: string | null
           disciplina?: string | null
           id?: string
@@ -1377,7 +1536,15 @@ export type Database = {
           valor_previsto?: number | null
           valor_realizado?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "previsao_medicao_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1409,6 +1576,7 @@ export type Database = {
           batch_id: string
           caracteristica: string | null
           comentario: string | null
+          contrato_id: string | null
           created_at: string | null
           data_aprovacao: string | null
           data_execucao: string | null
@@ -1440,6 +1608,7 @@ export type Database = {
           batch_id: string
           caracteristica?: string | null
           comentario?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           data_aprovacao?: string | null
           data_execucao?: string | null
@@ -1471,6 +1640,7 @@ export type Database = {
           batch_id?: string
           caracteristica?: string | null
           comentario?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           data_aprovacao?: string | null
           data_execucao?: string | null
@@ -1505,6 +1675,13 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "rel_eventos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       scon_components: {
@@ -1512,6 +1689,7 @@ export type Database = {
           avanco_ponderado: number | null
           batch_id: string
           classe: string | null
+          contrato_id: string | null
           created_at: string | null
           disciplina: string | null
           id: string
@@ -1532,6 +1710,7 @@ export type Database = {
           avanco_ponderado?: number | null
           batch_id: string
           classe?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           disciplina?: string | null
           id?: string
@@ -1552,6 +1731,7 @@ export type Database = {
           avanco_ponderado?: number | null
           batch_id?: string
           classe?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           disciplina?: string | null
           id?: string
@@ -1576,6 +1756,13 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scon_components_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       scon_programacao: {
@@ -1584,6 +1771,7 @@ export type Database = {
           batch_id: string
           classe: string | null
           componente: string | null
+          contrato_id: string | null
           created_at: string | null
           cwp: string | null
           data_fim: string | null
@@ -1620,6 +1808,7 @@ export type Database = {
           batch_id: string
           classe?: string | null
           componente?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           cwp?: string | null
           data_fim?: string | null
@@ -1656,6 +1845,7 @@ export type Database = {
           batch_id?: string
           classe?: string | null
           componente?: string | null
+          contrato_id?: string | null
           created_at?: string | null
           cwp?: string | null
           data_fim?: string | null
@@ -1695,11 +1885,19 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scon_programacao_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sigem_documents: {
         Row: {
           batch_id: string
+          contrato_id: string | null
           created_at: string | null
           documento: string
           documento_revisao: string | null
@@ -1715,6 +1913,7 @@ export type Database = {
         }
         Insert: {
           batch_id: string
+          contrato_id?: string | null
           created_at?: string | null
           documento: string
           documento_revisao?: string | null
@@ -1730,6 +1929,7 @@ export type Database = {
         }
         Update: {
           batch_id?: string
+          contrato_id?: string | null
           created_at?: string | null
           documento?: string
           documento_revisao?: string | null
@@ -1749,6 +1949,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sigem_documents_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
