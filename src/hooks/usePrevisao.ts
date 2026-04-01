@@ -65,7 +65,7 @@ export function usePPUElegiveis() {
       while (true) {
         const { data, error } = await supabase
           .from("ppu_items")
-          .select("item_ppu, descricao, fase, subfase, agrupamento, disc, valor_total")
+          .select("item_ppu, descricao, fase, subfase, agrupamento, disc, valor_total, preco_unit, qtd")
           .gt("valor_total", 0)
           .range(from, from + PAGE - 1);
         if (error) throw error;
