@@ -1,0 +1,34 @@
+
+ALTER TABLE public.import_batches ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.ppu_items ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.classificacao_ppu ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.eac_items ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.criterio_medicao ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.sigem_documents ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.rel_eventos ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.scon_components ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.scon_programacao ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.cronograma_tree ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.cronograma_bm_values ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.curva_s ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.bm_periodos ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.previsao_medicao ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.previsao_historico ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.boletins_medicao ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.boletim_itens ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.anotacoes ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.doc_acompanhamento ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+ALTER TABLE public.audit_log ADD COLUMN contrato_id UUID REFERENCES public.contratos(id);
+
+CREATE INDEX idx_ppu_contrato ON public.ppu_items(contrato_id);
+CREATE INDEX idx_sigem_contrato ON public.sigem_documents(contrato_id);
+CREATE INDEX idx_rel_contrato ON public.rel_eventos(contrato_id);
+CREATE INDEX idx_scon_contrato ON public.scon_components(contrato_id);
+CREATE INDEX idx_sconp_contrato ON public.scon_programacao(contrato_id);
+CREATE INDEX idx_crono_tree_contrato ON public.cronograma_tree(contrato_id);
+CREATE INDEX idx_crono_bm_contrato ON public.cronograma_bm_values(contrato_id);
+CREATE INDEX idx_bm_per_contrato ON public.bm_periodos(contrato_id);
+CREATE INDEX idx_prev_contrato ON public.previsao_medicao(contrato_id);
+CREATE INDEX idx_bol_contrato ON public.boletins_medicao(contrato_id);
+CREATE INDEX idx_anot_contrato ON public.anotacoes(contrato_id);
+CREATE INDEX idx_audit_contrato ON public.audit_log(contrato_id);
