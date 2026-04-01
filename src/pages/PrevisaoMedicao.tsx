@@ -130,6 +130,7 @@ export default function PrevisaoMedicao() {
         isFechado={isFechado}
         onSelectBm={setSelectedBmName}
         onAddClick={() => setAddOpen(true)}
+        hasConfirmed={hasConfirmed}
       />
 
       {/* KPIs */}
