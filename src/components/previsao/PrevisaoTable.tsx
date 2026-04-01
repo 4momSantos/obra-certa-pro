@@ -10,6 +10,7 @@ import { MessageSquare, X, AlertTriangle } from "lucide-react";
 import { formatCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PrevisaoActions } from "./PrevisaoActions";
+import { NotesPanel } from "@/components/shared/NotesPanel";
 
 const STATUS_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   previsto:    { label: "Previsto",    bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
