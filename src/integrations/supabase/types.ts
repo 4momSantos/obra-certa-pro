@@ -16,28 +16,216 @@ export type Database = {
     Tables: {
       anotacoes: {
         Row: {
+          autor_id: string
+          autor_nome: string | null
+          categoria: string | null
+          contexto: string
           created_at: string | null
           id: string
-          referencia: string | null
-          texto: string | null
-          tipo: string | null
-          user_id: string
+          referencia: string
+          texto: string
         }
         Insert: {
+          autor_id: string
+          autor_nome?: string | null
+          categoria?: string | null
+          contexto: string
           created_at?: string | null
           id?: string
-          referencia?: string | null
-          texto?: string | null
-          tipo?: string | null
-          user_id: string
+          referencia: string
+          texto: string
         }
         Update: {
+          autor_id?: string
+          autor_nome?: string | null
+          categoria?: string | null
+          contexto?: string
           created_at?: string | null
           id?: string
+          referencia?: string
+          texto?: string
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          acao: string
+          created_at: string | null
+          detalhes: Json | null
+          entidade: string
+          id: string
+          referencia: string | null
+          user_id: string | null
+          user_nome: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string | null
+          detalhes?: Json | null
+          entidade: string
+          id?: string
           referencia?: string | null
-          texto?: string | null
-          tipo?: string | null
-          user_id?: string
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string | null
+          detalhes?: Json | null
+          entidade?: string
+          id?: string
+          referencia?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Relationships: []
+      }
+      bm_periodos: {
+        Row: {
+          bm_name: string
+          bm_number: number
+          created_at: string | null
+          data_abertura: string | null
+          data_fechamento: string | null
+          fechado_por: string | null
+          id: string
+          observacoes: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          status: string | null
+          updated_at: string | null
+          valor_medido: number | null
+          valor_previsto: number | null
+        }
+        Insert: {
+          bm_name: string
+          bm_number: number
+          created_at?: string | null
+          data_abertura?: string | null
+          data_fechamento?: string | null
+          fechado_por?: string | null
+          id?: string
+          observacoes?: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          status?: string | null
+          updated_at?: string | null
+          valor_medido?: number | null
+          valor_previsto?: number | null
+        }
+        Update: {
+          bm_name?: string
+          bm_number?: number
+          created_at?: string | null
+          data_abertura?: string | null
+          data_fechamento?: string | null
+          fechado_por?: string | null
+          id?: string
+          observacoes?: string | null
+          periodo_fim?: string
+          periodo_inicio?: string
+          status?: string | null
+          updated_at?: string | null
+          valor_medido?: number | null
+          valor_previsto?: number | null
+        }
+        Relationships: []
+      }
+      boletim_itens: {
+        Row: {
+          boletim_id: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          ippu: string
+          observacao: string | null
+          valor_aprovado: number | null
+          valor_executado_scon: number | null
+          valor_medido_gitec: number | null
+          valor_postado_sigem: number | null
+          valor_previsto: number | null
+        }
+        Insert: {
+          boletim_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ippu: string
+          observacao?: string | null
+          valor_aprovado?: number | null
+          valor_executado_scon?: number | null
+          valor_medido_gitec?: number | null
+          valor_postado_sigem?: number | null
+          valor_previsto?: number | null
+        }
+        Update: {
+          boletim_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ippu?: string
+          observacao?: string | null
+          valor_aprovado?: number | null
+          valor_executado_scon?: number | null
+          valor_medido_gitec?: number | null
+          valor_postado_sigem?: number | null
+          valor_previsto?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletim_itens_boletim_id_fkey"
+            columns: ["boletim_id"]
+            isOneToOne: false
+            referencedRelation: "boletins_medicao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boletins_medicao: {
+        Row: {
+          aprovado_em: string | null
+          bm_name: string
+          created_at: string | null
+          enviado_em: string | null
+          finalizado_em: string | null
+          gerado_em: string | null
+          gerado_por: string | null
+          id: string
+          numero: string
+          observacoes: string | null
+          qtd_itens: number | null
+          status: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          aprovado_em?: string | null
+          bm_name: string
+          created_at?: string | null
+          enviado_em?: string | null
+          finalizado_em?: string | null
+          gerado_em?: string | null
+          gerado_por?: string | null
+          id?: string
+          numero: string
+          observacoes?: string | null
+          qtd_itens?: number | null
+          status?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          aprovado_em?: string | null
+          bm_name?: string
+          created_at?: string | null
+          enviado_em?: string | null
+          finalizado_em?: string | null
+          gerado_em?: string | null
+          gerado_por?: string | null
+          id?: string
+          numero?: string
+          observacoes?: string | null
+          qtd_itens?: number | null
+          status?: string | null
+          valor_total?: number | null
         }
         Relationships: []
       }
@@ -87,6 +275,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      configuracoes: {
+        Row: {
+          chave: string
+          descricao: string | null
+          id: string
+          tipo: string | null
+          updated_at: string | null
+          valor: string
+        }
+        Insert: {
+          chave: string
+          descricao?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string | null
+          valor: string
+        }
+        Update: {
+          chave?: string
+          descricao?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string | null
+          valor?: string
+        }
+        Relationships: []
       }
       criterio_medicao: {
         Row: {
@@ -407,6 +622,51 @@ export type Database = {
           owner_id?: string
           settings?: Json | null
           thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      doc_acompanhamento: {
+        Row: {
+          acao: string | null
+          created_at: string | null
+          criado_por: string | null
+          documento: string
+          id: string
+          prazo: string | null
+          prioridade: string | null
+          resolvido: boolean | null
+          resolvido_em: string | null
+          responsavel: string | null
+          status_atual: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acao?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          documento: string
+          id?: string
+          prazo?: string | null
+          prioridade?: string | null
+          resolvido?: boolean | null
+          resolvido_em?: string | null
+          responsavel?: string | null
+          status_atual?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acao?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          documento?: string
+          id?: string
+          prazo?: string | null
+          prioridade?: string | null
+          resolvido?: boolean | null
+          resolvido_em?: string | null
+          responsavel?: string | null
+          status_atual?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -798,6 +1058,104 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      previsao_historico: {
+        Row: {
+          alterado_por: string | null
+          alterado_por_nome: string | null
+          bm_name: string
+          created_at: string | null
+          id: string
+          ippu: string
+          justificativa: string | null
+          previsao_id: string | null
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          alterado_por?: string | null
+          alterado_por_nome?: string | null
+          bm_name: string
+          created_at?: string | null
+          id?: string
+          ippu: string
+          justificativa?: string | null
+          previsao_id?: string | null
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          alterado_por?: string | null
+          alterado_por_nome?: string | null
+          bm_name?: string
+          created_at?: string | null
+          id?: string
+          ippu?: string
+          justificativa?: string | null
+          previsao_id?: string | null
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "previsao_historico_previsao_id_fkey"
+            columns: ["previsao_id"]
+            isOneToOne: false
+            referencedRelation: "previsao_medicao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      previsao_medicao: {
+        Row: {
+          bm_name: string
+          created_at: string | null
+          disciplina: string | null
+          id: string
+          ippu: string
+          justificativa: string | null
+          qtd_prevista: number | null
+          qtd_realizada: number | null
+          responsavel_id: string
+          responsavel_nome: string | null
+          status: string
+          updated_at: string | null
+          valor_previsto: number | null
+          valor_realizado: number | null
+        }
+        Insert: {
+          bm_name: string
+          created_at?: string | null
+          disciplina?: string | null
+          id?: string
+          ippu: string
+          justificativa?: string | null
+          qtd_prevista?: number | null
+          qtd_realizada?: number | null
+          responsavel_id: string
+          responsavel_nome?: string | null
+          status?: string
+          updated_at?: string | null
+          valor_previsto?: number | null
+          valor_realizado?: number | null
+        }
+        Update: {
+          bm_name?: string
+          created_at?: string | null
+          disciplina?: string | null
+          id?: string
+          ippu?: string
+          justificativa?: string | null
+          qtd_prevista?: number | null
+          qtd_realizada?: number | null
+          responsavel_id?: string
+          responsavel_nome?: string | null
+          status?: string
+          updated_at?: string | null
+          valor_previsto?: number | null
+          valor_realizado?: number | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1736,6 +2094,34 @@ export type Database = {
           valor_ponderado_concluido: number | null
           valor_ponderado_total: number | null
           valor_total: number | null
+        }
+        Relationships: []
+      }
+      vw_previsao_por_bm: {
+        Row: {
+          bm_name: string | null
+          cancelados: number | null
+          confirmados: number | null
+          medidos: number | null
+          postergados: number | null
+          previstos: number | null
+          total_itens: number | null
+          valor_ativo: number | null
+          valor_postergado: number | null
+          valor_total: number | null
+        }
+        Relationships: []
+      }
+      vw_previsao_por_disciplina: {
+        Row: {
+          ativos: number | null
+          bm_name: string | null
+          disciplina: string | null
+          postergados: number | null
+          responsavel_nome: string | null
+          total_itens: number | null
+          valor_ativo: number | null
+          valor_postergado: number | null
         }
         Relationships: []
       }
