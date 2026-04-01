@@ -144,7 +144,7 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                <TableCell colSpan={readonly ? 9 : 10} className="text-center text-sm text-muted-foreground py-8">
                   Nenhum item encontrado.
                 </TableCell>
               </TableRow>
