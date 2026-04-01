@@ -213,6 +213,9 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                           <span className="text-xs text-muted-foreground/50">—</span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <NotesPanel contexto="previsao" referencia={item.id} compact />
+                      </TableCell>
                       {!readonly && (
                         <TableCell>
                           <PrevisaoActions item={item} bmName={bmName} readonly={readonly} />
