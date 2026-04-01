@@ -88,6 +88,14 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/historico"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "gestor"]}>
+                <AuditLog />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
