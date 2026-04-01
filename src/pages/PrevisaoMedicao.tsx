@@ -82,6 +82,7 @@ export default function PrevisaoMedicao() {
   const postergados = enrichedItems.filter(i => i.status === "postergado").length;
   const valorPostergado = enrichedItems.filter(i => i.status === "postergado").reduce((s, i) => s + i.valor_previsto, 0);
   const existingIppus = new Set(enrichedItems.map(i => i.ippu));
+  const hasConfirmed = itensAtivos > 0;
 
   const isLoading = loadingPeriodos || loadingPrevisoes;
 
