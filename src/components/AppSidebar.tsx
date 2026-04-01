@@ -164,6 +164,7 @@ export function AppSidebar() {
       items: [
         { label: "Gestão de Usuários", path: "/admin", icon: UserCog },
         { label: "Configurações", path: "/config", icon: Settings },
+        { label: "Histórico de Auditoria", path: "/admin/historico", icon: Clock },
       ],
     },
   ], [alertCounts, recusadosCount, dashCount]);
@@ -214,7 +215,7 @@ export function AppSidebar() {
   };
 
   // ── Visible groups ─────────────────────────────────────────────────────
-  const visibleGroups = groups.filter(g => !g.adminOnly || role === "admin");
+  const visibleGroups = groups.filter(g => !g.adminOnly || role === "admin" || role === "gestor");
 
   // ── Sidebar content ────────────────────────────────────────────────────
   const sidebarContent = (

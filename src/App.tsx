@@ -37,6 +37,7 @@ import Cobertura from "@/pages/Cobertura";
 import CurvaS from "@/pages/CurvaS";
 import DetalhamentoBM from "@/pages/DetalhamentoBM";
 import GestaoBM from "@/pages/GestaoBM";
+import AuditLog from "@/pages/AuditLog";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/historico"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "gestor"]}>
+                <AuditLog />
               </ProtectedRoute>
             }
           />

@@ -6,11 +6,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, Clock } from "lucide-react";
 import type { MedicaoPPU, Semaforo } from "@/hooks/useMedicao";
 import { usePPUDetail } from "@/hooks/usePPUDetail";
 import { ComponentDetailPanel } from "./ComponentDetailPanel";
 import { NotesPanel } from "@/components/shared/NotesPanel";
+import { useAuditForEntity } from "@/hooks/useAudit";
 
 function fmtBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -73,6 +74,31 @@ function HistogramBar({ items }: { items: { label: string; count: number; color:
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+function MiniAuditTimeline({ ippu }: { ippu: string }) {
+  const { data: logs, isLoading } = useAuditForEntity("previsao", ippu);
+  if (isLoading) return <Skeleton className="h-16" />;
+  if (!logs || logs.length === 0) return <p className="text-xs text-muted-foreground py-2">Nenhum registro de auditoria</p>;
+  return (
+    <div className="space-y-2">
+      {logs.map((log: any) => (
+        <div key={log.id} className="flex items-start gap-2">
+          <Clock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[11px]">
+              <span className="font-medium">{log.user_nome || "Sistema"}</span>
+              {" — "}
+              <span className="text-muted-foreground">{log.acao}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {new Date(log.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -371,6 +397,13 @@ export function PPUDetailSheet({ item, onClose }: Props) {
                       </div>
                     ))
                   ) : <p className="text-xs text-muted-foreground">Nenhum critério encontrado para este PPU</p>}
+                </AccordionContent>
+              </AccordionItem>
+              {/* Seção 7 — Histórico */}
+              <AccordionItem value="historico">
+                <AccordionTrigger className="text-sm font-semibold">Histórico</AccordionTrigger>
+                <AccordionContent>
+                  <MiniAuditTimeline ippu={item.item_ppu} />
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
