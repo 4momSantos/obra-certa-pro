@@ -12,6 +12,7 @@ import { formatCompact } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FecharBMDialog } from "./FecharBMDialog";
+import { NotesPanel } from "@/components/shared/NotesPanel";
 
 interface Props {
   bmName: string;
@@ -181,6 +182,7 @@ export function BMStatusBanner({ bmName }: Props) {
             <span className="text-[11px] tabular-nums text-muted-foreground">{preenchimento}% preenchido</span>
           </div>
         </div>
+        <NotesPanel contexto="bm" referencia={bmName} />
         <FecharBMDialog open={fecharOpen} onClose={() => setFecharOpen(false)} bmName={bmName} />
       </>
     );

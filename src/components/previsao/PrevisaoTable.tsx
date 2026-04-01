@@ -10,6 +10,7 @@ import { MessageSquare, X, AlertTriangle } from "lucide-react";
 import { formatCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PrevisaoActions } from "./PrevisaoActions";
+import { NotesPanel } from "@/components/shared/NotesPanel";
 
 const STATUS_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   previsto:    { label: "Previsto",    bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
@@ -138,13 +139,14 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
               <TableHead className="text-xs text-right w-24">Valor Prev.</TableHead>
               <TableHead className="text-xs w-20">SCON %</TableHead>
               <TableHead className="text-xs w-36">Justificativa</TableHead>
+              <TableHead className="text-xs w-10">Notas</TableHead>
               {!readonly && <TableHead className="text-xs w-12">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={readonly ? 9 : 10} className="text-center text-sm text-muted-foreground py-8">
+                <TableCell colSpan={readonly ? 10 : 11} className="text-center text-sm text-muted-foreground py-8">
                   Nenhum item encontrado.
                 </TableCell>
               </TableRow>
@@ -211,6 +213,9 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                           <span className="text-xs text-muted-foreground/50">—</span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <NotesPanel contexto="previsao" referencia={item.id} compact />
+                      </TableCell>
                       {!readonly && (
                         <TableCell>
                           <PrevisaoActions item={item} bmName={bmName} readonly={readonly} />
@@ -219,7 +224,7 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                     </TableRow>
                     {isExpanded && item.justificativa && (
                       <TableRow key={`${item.id}-just`}>
-                        <TableCell colSpan={readonly ? 9 : 10} className={cn(
+                        <TableCell colSpan={readonly ? 10 : 11} className={cn(
                           "py-2 pl-10 border-l-2",
                           item.status === "postergado" ? "border-amber-400 bg-amber-50/50 dark:bg-amber-950/10" :
                           item.status === "cancelado" ? "border-destructive bg-red-50/50 dark:bg-red-950/10" :

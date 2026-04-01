@@ -10,6 +10,7 @@ import { CheckCircle2, Circle } from "lucide-react";
 import type { MedicaoPPU, Semaforo } from "@/hooks/useMedicao";
 import { usePPUDetail } from "@/hooks/usePPUDetail";
 import { ComponentDetailPanel } from "./ComponentDetailPanel";
+import { NotesPanel } from "@/components/shared/NotesPanel";
 
 function fmtBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -374,6 +375,9 @@ export function PPUDetailSheet({ item, onClose }: Props) {
               </AccordionItem>
             </Accordion>
           )}
+
+          {/* Anotações */}
+          <NotesPanel contexto="ippu" referencia={item.item_ppu} />
         </div>
         </>
         )}
