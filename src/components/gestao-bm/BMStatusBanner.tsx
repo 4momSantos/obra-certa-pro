@@ -182,6 +182,7 @@ export function BMStatusBanner({ bmName }: Props) {
             <span className="text-[11px] tabular-nums text-muted-foreground">{preenchimento}% preenchido</span>
           </div>
         </div>
+        <NotesPanel contexto="bm" referencia={bmName} />
         <FecharBMDialog open={fecharOpen} onClose={() => setFecharOpen(false)} bmName={bmName} />
       </>
     );

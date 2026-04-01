@@ -224,7 +224,7 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                     </TableRow>
                     {isExpanded && item.justificativa && (
                       <TableRow key={`${item.id}-just`}>
-                        <TableCell colSpan={readonly ? 9 : 10} className={cn(
+                        <TableCell colSpan={readonly ? 10 : 11} className={cn(
                           "py-2 pl-10 border-l-2",
                           item.status === "postergado" ? "border-amber-400 bg-amber-50/50 dark:bg-amber-950/10" :
                           item.status === "cancelado" ? "border-destructive bg-red-50/50 dark:bg-red-950/10" :

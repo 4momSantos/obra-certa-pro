@@ -375,6 +375,9 @@ export function PPUDetailSheet({ item, onClose }: Props) {
               </AccordionItem>
             </Accordion>
           )}
+
+          {/* Anotações */}
+          <NotesPanel contexto="ippu" referencia={item.item_ppu} />
         </div>
         </>
         )}
