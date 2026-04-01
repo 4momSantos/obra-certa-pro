@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useBMPeriodos, usePrevisaoBM, usePrevisaoResumo, usePPUElegiveis, useSconMap, useProjetadoBM } from "@/hooks/usePrevisao";
+import { useBMPeriodos, usePrevisaoBM, usePrevisaoResumo, usePPUElegiveis, useSconMap, useClassifMap, useProjetadoBM } from "@/hooks/usePrevisao";
 import { PrevisaoKPIs } from "@/components/previsao/PrevisaoKPIs";
 import { PrevisaoResumo } from "@/components/previsao/PrevisaoResumo";
 import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
-import { AddPrevisaoDialog } from "@/components/previsao/AddPrevisaoDialog";
+import { AddItemDialog } from "@/components/previsao/AddItemDialog";
 
 function formatDateBR(d: string) {
   const dt = new Date(d);
