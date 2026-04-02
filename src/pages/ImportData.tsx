@@ -126,7 +126,7 @@ const ImportData: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <UploadCard label="SIGEM" description="~22k documentos (.xlsx)" required file={sigemFile} onFile={handleSigem} />
-        <UploadCard label="REL_EVENTO" description="~6k eventos GITEC (.xlsx)" required file={relFile} onFile={handleRel} />
+        <UploadCard label="Relação de Eventos (GITEC)" description="~6.5k eventos RelResumoEvento (.xlsx)" required file={relFile} onFile={handleRel} />
         <UploadCard label="SCON (Resumido)" description="~1.5k componentes (.xlsx)" required file={sconFile} onFile={handleScon} />
       </div>
 
