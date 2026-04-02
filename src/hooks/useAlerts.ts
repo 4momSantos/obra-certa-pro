@@ -87,7 +87,7 @@ export function useAlerts() {
       const cutoff60 = new Date(Date.now() - 60 * 86400000).toISOString().split("T")[0];
       const { data: r3Data } = await supabase
         .from("rel_eventos")
-        .select("id, tag, item_ppu, valor, data_inf_execucao, fiscal_responsavel")
+        .select("id, tag, agrupamento_ippu, valor, data_inf_execucao, fiscal_responsavel")
         .neq("etapa", "Concluída")
         .lt("data_inf_execucao", cutoff60)
         .order("valor", { ascending: false })
@@ -99,8 +99,8 @@ export function useAlerts() {
           : 0;
         return {
           id: e.id,
-          label: e.tag || e.item_ppu || "-",
-          sublabel: `PPU: ${e.item_ppu || "-"} · Fiscal: ${e.fiscal_responsavel || "-"}`,
+          label: e.tag || e.agrupamento_ippu || "-",
+          sublabel: `iPPU: ${e.agrupamento_ippu || "-"} · Fiscal: ${e.fiscal_responsavel || "-"}`,
           valor: Number(e.valor) || 0,
           aging,
           link: "/gitec",
