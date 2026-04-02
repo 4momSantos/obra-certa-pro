@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEquipes, useSconComponentes } from "@/hooks/useSconViews";
+import { PPCDailyTable } from "@/components/equipes/PPCDailyTable";
 
 export default function Equipes() {
   const { data: equipes, isLoading } = useEquipes();
