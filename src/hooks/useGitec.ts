@@ -149,14 +149,14 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
     queryFn: async (): Promise<GitecEvent[]> => {
       let q = supabase
         .from("rel_eventos")
-        .select("id, item_ppu, tag, etapa, status, valor, quantidade_ponderada, data_execucao, data_inf_execucao, data_aprovacao, executado_por, fiscal_responsavel, numero_evidencias")
+        .select("id, agrupamento_ippu, tag, etapa, status, valor, peso_fisico, data_execucao, data_inf_execucao, data_aprovacao, executado_por, fiscal_responsavel, numero_evidencias")
         .order("valor", { ascending: false })
         .limit(limit);
 
       if (filters.status !== "all") q = q.eq("status", filters.status);
       if (filters.fiscal !== "all") q = q.eq("fiscal_responsavel", filters.fiscal);
       if (filters.search) {
-        q = q.or(`tag.ilike.%${filters.search}%,item_ppu.ilike.%${filters.search}%,fiscal_responsavel.ilike.%${filters.search}%`);
+        q = q.or(`tag.ilike.%${filters.search}%,agrupamento_ippu.ilike.%${filters.search}%,fiscal_responsavel.ilike.%${filters.search}%`);
       }
 
       const { data, error } = await q;
@@ -164,8 +164,9 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
 
       let rows = (data ?? []).map(r => ({
         ...r,
+        item_ppu: r.agrupamento_ippu,
         valor: Number(r.valor) || 0,
-        quantidade_ponderada: Number(r.quantidade_ponderada) || 0,
+        quantidade_ponderada: Number(r.peso_fisico) || 0,
         aging: calcAging(r.data_inf_execucao),
       }));
 

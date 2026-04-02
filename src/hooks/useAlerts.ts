@@ -87,7 +87,7 @@ export function useAlerts() {
       const cutoff60 = new Date(Date.now() - 60 * 86400000).toISOString().split("T")[0];
       const { data: r3Data } = await supabase
         .from("rel_eventos")
-        .select("id, tag, item_ppu, valor, data_inf_execucao, fiscal_responsavel")
+        .select("id, tag, agrupamento_ippu, valor, data_inf_execucao, fiscal_responsavel")
         .neq("etapa", "Concluída")
         .lt("data_inf_execucao", cutoff60)
         .order("valor", { ascending: false })
@@ -99,8 +99,8 @@ export function useAlerts() {
           : 0;
         return {
           id: e.id,
-          label: e.tag || e.item_ppu || "-",
-          sublabel: `PPU: ${e.item_ppu || "-"} · Fiscal: ${e.fiscal_responsavel || "-"}`,
+          label: e.tag || e.agrupamento_ippu || "-",
+          sublabel: `iPPU: ${e.agrupamento_ippu || "-"} · Fiscal: ${e.fiscal_responsavel || "-"}`,
           valor: Number(e.valor) || 0,
           aging,
           link: "/gitec",
@@ -119,12 +119,12 @@ export function useAlerts() {
       // R4 — Fiscal sobrecarregado (>20 pendentes)
       const { data: fiscalData } = await supabase.from("vw_fiscais").select("*");
       const r4Items: AlertItem[] = (fiscalData ?? [])
-        .filter(r => (Number(r.pendentes) || 0) > 20)
+        .filter(r => (Number((r as any).pendentes) || 0) > 20)
         .map(r => ({
           id: r.fiscal_responsavel ?? "-",
           label: r.fiscal_responsavel ?? "-",
-          sublabel: `${Number(r.pendentes) || 0} pendentes`,
-          valor: Number(r.valor_pendente) || 0,
+          sublabel: `${Number((r as any).pendentes) || 0} pendentes`,
+          valor: Number((r as any).valor_pendente) || 0,
           link: "/gitec",
         }))
         .sort((a, b) => (b.valor ?? 0) - (a.valor ?? 0));

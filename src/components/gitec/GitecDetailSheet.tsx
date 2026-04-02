@@ -25,20 +25,20 @@ export const GitecDetailSheet: React.FC<Props> = ({ eventId, open, onClose }) =>
           <>
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <span className="font-mono">{detail.tag || detail.item_ppu || "Evento"}</span>
+                <span className="font-mono">{detail.tag || detail.agrupamento_ippu || "Evento"}</span>
                 <Badge variant={detail.status === "Aprovado" ? "default" : "secondary"}>{detail.status}</Badge>
               </SheetTitle>
             </SheetHeader>
 
             <div className="mt-6 space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <Field label="Item PPU" value={detail.item_ppu ?? "-"} />
+                <Field label="iPPU" value={detail.agrupamento_ippu ?? "-"} />
                 <Field label="Agrupamento" value={detail.agrupamento ?? "-"} />
                 <Field label="Valor" value={fmt(detail.valor)} />
                 <Field label="Etapa" value={detail.etapa || "-"} />
                 <Field label="Fiscal" value={detail.fiscal_responsavel || "-"} />
                 <Field label="Executado por" value={detail.executado_por || "-"} />
-                <Field label="Qtd Ponderada" value={String(Number(detail.quantidade_ponderada) || 0)} />
+                <Field label="Peso Físico" value={String(Number(detail.peso_fisico) || 0)} />
                 <Field label="Peso Financeiro" value={String(Number(detail.peso_financeiro) || 0)} />
                 <Field label="Data Execução" value={detail.data_execucao ?? "-"} />
                 <Field label="Data Inf. Exec." value={detail.data_inf_execucao ?? "-"} />

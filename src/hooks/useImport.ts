@@ -167,11 +167,6 @@ export interface ParsedSigemRow {
 }
 
 export interface ParsedRelEventoRow {
-  item_ppu: string;
-  rel_status: string;
-  rel_status_item: string;
-  tag_agrup: string;
-  quantidade_ponderada: number;
   estrutura: string;
   fase: string;
   subfase: string;
@@ -186,13 +181,17 @@ export interface ParsedRelEventoRow {
   data_execucao: string | null;
   data_inf_execucao: string | null;
   executado_por: string;
-  necessita_evidencias: string;
+  necessita_evidencias: boolean;
   numero_evidencias: string;
   data_aprovacao: string | null;
   fiscal_responsavel: string;
   status: string;
   valor: number;
   comentario: string;
+  // Derived fields
+  agrupamento_ippu: string;
+  tag_criterio: string;
+  tag_descricao: string;
 }
 
 export interface ParsedSconRow {
@@ -361,8 +360,41 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
 
 function extractIppuFromAgrupamento(agrup: string): string {
   if (!agrup) return "";
-  const m = agrup.match(/^([A-Z])_(\d+(?:\.\d+)*)_/);
-  return m ? `${m[1]}-${m[2]}` : "";
+  // Pattern: LETTER_NUMBERS_DESCRIPTION e.g. "B_1.1_Mobilização..."
+  const m = agrup.match(/^([A-Z])_(\d[\d.]*(?:_\d[\d.]*)*)/);
+  if (m) return `${m[1]}-${m[2]}`;
+  // ETF pattern: E_ETF_3.2.1_MO_...
+  const mETF = agrup.match(/^([A-Z])_(\w+_\d[\d.]*)/);
+  if (mETF) return `${mETF[1]}-${mETF[2].replace(/_/g, "-")}`;
+  // Fallback
+  const parts = agrup.split("_");
+  if (parts.length >= 2) return parts.slice(0, 2).join("-");
+  return agrup;
+}
+
+function extractTagParts(tag: string): { criterio: string; descricao: string } {
+  if (!tag) return { criterio: "", descricao: "" };
+  const idx = tag.indexOf("_");
+  if (idx > 0) {
+    return {
+      criterio: tag.substring(0, idx).trim(),
+      descricao: tag.substring(idx + 1).trim(),
+    };
+  }
+  return { criterio: tag, descricao: "" };
+}
+
+function parseGitecDate(val: unknown): string | null {
+  if (val == null || val === "") return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val.toISOString();
+  const s = String(val).trim();
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function parseBoolean(val: unknown): boolean {
+  return String(val || "").trim().toLowerCase() === "sim";
 }
 
 function isPivotArtifact(val: string): boolean {
@@ -435,16 +467,12 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
 
           const agrupamento = str(cell(r, cAgrup));
           const tag = str(cell(r, cTag));
-          const item_ppu = extractIppuFromAgrupamento(agrupamento);
+          const agrupamento_ippu = extractIppuFromAgrupamento(agrupamento);
+          const tagParts = extractTagParts(tag);
 
-          if (!item_ppu && !tag && !agrupamento) { noKey++; continue; }
+          if (!agrupamento_ippu && !tag && !agrupamento) { noKey++; continue; }
 
           rows.push({
-            item_ppu,
-            rel_status: "",
-            rel_status_item: "",
-            tag_agrup: "",
-            quantidade_ponderada: 0,
             estrutura: str(cell(r, cEstrutura)),
             fase: str(cell(r, cFase)),
             subfase: str(cell(r, cSubfase)),
@@ -456,20 +484,23 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             etapa: str(cell(r, cEtapa)),
             peso_fisico: num(cell(r, cPesoFis)),
             peso_financeiro: num(cell(r, cPesoFin)),
-            data_execucao: dateVal(cell(r, cDataExec)),
-            data_inf_execucao: dateVal(cell(r, cDataInf)),
+            data_execucao: parseGitecDate(cell(r, cDataExec)),
+            data_inf_execucao: parseGitecDate(cell(r, cDataInf)),
             executado_por: str(cell(r, cExecPor)),
-            necessita_evidencias: str(cell(r, cNecEvid)),
+            necessita_evidencias: parseBoolean(cell(r, cNecEvid)),
             numero_evidencias: str(cell(r, cNumEvid)),
-            data_aprovacao: dateVal(cell(r, cDataAprov)),
+            data_aprovacao: parseGitecDate(cell(r, cDataAprov)),
             fiscal_responsavel: str(cell(r, cFiscal)),
             status: str(cell(r, cStatus)),
             valor: num(cell(r, cValor)),
             comentario: str(cell(r, cComent)),
+            agrupamento_ippu,
+            tag_criterio: tagParts.criterio,
+            tag_descricao: tagParts.descricao,
           });
           if (rows.length === 1) {
             const r0 = rows[0];
-            console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, item_ppu: r0.item_ppu, agrupamento: r0.agrupamento });
+            console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, agrupamento_ippu: r0.agrupamento_ippu, agrupamento: r0.agrupamento });
           }
         }
         if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU, TAG nem Agrupamento (ignoradas)`);
