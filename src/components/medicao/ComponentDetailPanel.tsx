@@ -7,8 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, Users, Info, Layers } from "lucide-react";
+import { ChevronLeft, Users, Info, Layers, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DocumentLinkSection } from "./DocumentLinkSection";
 
 function dateToBM(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -285,6 +286,18 @@ export function ComponentDetailPanel({ componente, itemWbs, onBack, onSelectComp
                     );
                   })}
                 </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Documento vinculado ao SIGEM */}
+          {info?.documento && info.documento.trim() !== "" && (
+            <AccordionItem value="documento">
+              <AccordionTrigger className="text-sm font-semibold">
+                <div className="flex items-center gap-2"><FileText className="h-4 w-4" />Documento SIGEM</div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <DocumentLinkSection documento={info.documento} />
               </AccordionContent>
             </AccordionItem>
           )}

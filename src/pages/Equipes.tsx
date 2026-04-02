@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEquipes, useSconComponentes } from "@/hooks/useSconViews";
+import { PPCDailyTable } from "@/components/equipes/PPCDailyTable";
 
 export default function Equipes() {
   const { data: equipes, isLoading } = useEquipes();
@@ -115,7 +116,13 @@ export default function Equipes() {
             <SheetTitle>Equipe: {selectedEquipe}</SheetTitle>
             <SheetDescription>Componentes atribuídos à equipe</SheetDescription>
           </SheetHeader>
+          {selectedEquipe && (
+            <div className="mt-4 mb-6">
+              <PPCDailyTable equipe={selectedEquipe} />
+            </div>
+          )}
           <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Componentes</p>
             <Table>
               <TableHeader>
                 <TableRow>
