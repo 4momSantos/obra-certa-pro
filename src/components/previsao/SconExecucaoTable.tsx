@@ -247,7 +247,8 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
           <span className="text-muted-foreground">
             <strong>{filtered.length}</strong> componentes · <strong>{notPrevistoItems.length}</strong> novos
           </span>
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground space-x-3">
+            <span>Valor total: <strong className="font-mono">{formatCompact(filtered.reduce((s, r) => s + r.valor_exec, 0))}</strong></span>
             {selected.size > 0 && <strong>{selected.size} selecionados</strong>}
           </span>
         </div>
