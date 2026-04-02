@@ -163,7 +163,8 @@ export function AppSidebar() {
       adminOnly: true,
       items: [
         { label: "Gestão de Usuários", path: "/admin", icon: UserCog },
-        { label: "Configurações", path: "/config", icon: Settings },
+        { label: "Parâmetros Contrato", path: "/config", icon: Settings },
+        { label: "Configurações", path: "/settings", icon: SlidersHorizontal },
         { label: "Histórico de Auditoria", path: "/admin/historico", icon: Clock },
       ],
     },
