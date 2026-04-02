@@ -36,9 +36,9 @@ export function CustomWidgetRenderer({ config, onRemove }: CustomWidgetRendererP
   const { state, getCurvaS } = useCronograma();
   const { filteredPeriods, filteredCurvaS } = useDashboardFilters();
 
-  const data = useMemo(() => {
+  const data = useMemo<Record<string, unknown>[]>(() => {
     const source = config.table === "curvaS" ? filteredCurvaS : filteredPeriods;
-    return source as Record<string, unknown>[];
+    return source.map((row) => row as unknown as Record<string, unknown>);
   }, [config.table, filteredCurvaS, filteredPeriods]);
 
   const measureValues = useMemo(() => {
