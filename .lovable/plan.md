@@ -1,38 +1,45 @@
 
 
-## Plan: Comparativo Tab — Cell Detail + iPPU Description + Grouping Levels
+## Plan: Enrich Visão Consolidada with KPIs, Charts, Filters & Drill-down
+
+### Problem
+The "Visão Consolidada" tab currently shows only a raw tree table with no summary metrics, no charts, and no interactive filtering — making it hard to get an overview or drill into specific areas.
 
 ### What changes
 
-**1. iPPU column shows description**
-- Display `nome` alongside the `ippu` code (e.g., "A-1.2.3 — Tubulação de Processo")
-- Widen the sticky column to accommodate
+**1. KPI Cards row at the top**
+- 6 compact cards above the tree: Valor Contrato, Total Previsto, Total Projetado, Total Realizado, Saldo (Valor - Realizado), % Avanço (Realizado/Valor)
+- Each card shows value + percentage, colored by status (green when on track, amber/red when behind)
+- Derived from the already-computed `totals` in `BmConsolidatedTree`
 
-**2. Click on cell opens detail popover/sheet**
-- Clicking a BM cell (e.g., "P: 1.8M / R: 1.8M") opens a detail panel showing:
-  - iPPU + nome
-  - BM name
-  - Previsto, Projetado, Realizado values (full precision)
-  - Underlying GITEC events for that iPPU × BM combination (tag, etapa, valor, status)
-- Implementation: Use a Popover or small Sheet triggered on cell click, with state for `selectedCell: { ippu, bmName } | null`
-- Fetch GITEC events via existing `useGitecEventosByIppu` hook, filtered client-side by `bm_name`
+**2. Summary charts section (collapsible)**
+- **Donut chart**: Distribution of Realizado by Fase (shows which phases consume the budget)
+- **Stacked bar chart**: Previsto vs Projetado vs Realizado per Fase (horizontal bars, top 10)
+- Uses Recharts (already in the project). Collapsible via a toggle button to save space
+- Data derived from the `tree` (fase-level aggregations) — no new queries
 
-**3. Grouping level selector**
-- Add a Select dropdown above the table: "Agrupamento" (default) | "Subfase" | "Fase"
-- When grouping by Subfase/Fase: aggregate BM values by summing child iPPUs
-- Rows become the unique subfases or fases from the tree, with summed matrix values
-- The iPPU column header changes to match the level name
+**3. Filter toolbar**
+- **Fase filter**: Select dropdown to filter the tree to a single Fase
+- **Semáforo filter**: Toggle buttons (medido / executado / previsto / futuro) to show only agrupamentos with that status
+- **Saldo filter**: Toggle to show only items where saldo > 0 (pending work)
+- Filters apply to the existing tree + update the KPI totals dynamically
+
+**4. Interactive row click → detail panel**
+- Clicking a **Fase** row: shows a mini summary card below the row with totals + a small bar chart of its subfases
+- Clicking an **Agrupamento** row: keeps existing behavior (AgrupamentoDetail inline) but also opens the `BmPpuDetailSheet` on double-click or via a button
+- Clicking a **Subfase** row: shows aggregated KPIs for that subfase inline
 
 ### Files to modify
 
 | File | Changes |
 |------|---------|
-| `src/components/cronograma/ComparativoTab.tsx` | Add grouping state + selector, show `nome` in iPPU column, add cell click handler with Popover showing detail data, aggregate rows by grouping level |
+| `src/components/gestao-bm/BmConsolidatedTree.tsx` | Add KPI cards section, chart section, filter toolbar, interactive drill-down on fase/subfase rows |
 
 ### Technical details
 
-- **Grouping aggregation**: Use the `tree` data to map iPPUs to their fase/subfase. When grouping by "Fase", sum all BM values for iPPUs belonging to each fase. Same for "Subfase".
-- **Cell detail popover**: Use Radix `Popover` on cell click. State: `{ ippu: string; bm: string } | null`. Show formatted values + filter `bmValues` for matching rows.
-- **GITEC integration**: Lazy-load GITEC events for the selected iPPU using existing hook, then filter by `bm_name` in the popover.
-- No new database queries needed — all data comes from existing `useAllBMValues` and `useCronogramaTree`.
+- **KPI cards**: Render a grid of `Card` components above the search bar using the existing `totals` memo, extended with saldo and % avanço
+- **Charts**: Add a `useState<boolean>` for chart visibility toggle. Donut uses `PieChart` from Recharts with fase data. Bar chart uses `BarChart` horizontal layout
+- **Filters**: Three new state vars: `faseFilter: string`, `semaforoFilter: string[]`, `saldoOnly: boolean`. Applied in a new `useMemo` that wraps the existing `filterTree` result
+- **Fase detail inline**: When a fase row is expanded, render a summary row (`<tr colSpan={8}>`) with 3 mini-KPI badges + a small horizontal bar of subfase breakdown
+- All data is client-side from the existing `useCronogramaTree` hook — no new database queries needed
 
