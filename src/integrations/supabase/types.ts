@@ -1770,112 +1770,256 @@ export type Database = {
           atividade: string | null
           batch_id: string
           classe: string | null
+          codigo_frente: string | null
+          codigo_grupo: string | null
+          codigo_tarefa: string | null
           componente: string | null
+          componente_objuid: string | null
+          conta_custo: string | null
+          conta_custo_programacao: string | null
           contrato_id: string | null
           created_at: string | null
           cwp: string | null
+          cwts_objuid: string | null
           data_fim: string | null
           data_inicio: string | null
+          datahora: string | null
+          descricao: string | null
           disciplina: string | null
+          distribuicao: string | null
           documento: string | null
+          dt_merge: string | null
           encarregado: string | null
+          encarregado_cpf: string | null
+          encarregado_mat: string | null
           engenheiro: string | null
+          engenheiro_cpf: string | null
+          engenheiro_mat: string | null
           equipe: string | null
           equipe_desc: string | null
           etapa: string | null
+          exec_domingo: number | null
+          exec_quarta: number | null
+          exec_quinta: number | null
+          exec_sabado: number | null
+          exec_segunda: number | null
+          exec_sexta: number | null
+          exec_terca: number | null
           gerente: string | null
+          gerente_cpf: string | null
+          gerente_mat: string | null
+          guid_model: string | null
           id: string
+          id_componente_etapas: string | null
           id_primavera: string | null
           indice_atual: number | null
           indice_rop: number | null
           item_wbs: string | null
+          iwp_objuid: string | null
+          kpi: string | null
+          modulo: string | null
+          nota: string | null
           pacote: string | null
+          peso_absoluto: number | null
           peso_custcode: number | null
           peso_stagecode: number | null
+          plan_domingo: number | null
+          plan_quarta: number | null
+          plan_quinta: number | null
+          plan_sabado: number | null
+          plan_segunda: number | null
+          plan_sexta: number | null
+          plan_terca: number | null
+          planta: string | null
+          programacao: number | null
           programado_componente: number | null
+          programado_pacote: number | null
           proposito: string | null
+          recebimento: string | null
           semana: string | null
           supervisor: string | null
+          supervisor_cpf: string | null
+          supervisor_mat: string | null
           tag_id_proj: string | null
+          tamanho_equipe: number | null
           tipo: string | null
           total_exec_geral: number | null
           total_exec_semana: number | null
+          ultima_oper: string | null
           unit: string | null
+          unit_unid_medida: string | null
           unit_valor: number | null
+          units: number | null
         }
         Insert: {
           atividade?: string | null
           batch_id: string
           classe?: string | null
+          codigo_frente?: string | null
+          codigo_grupo?: string | null
+          codigo_tarefa?: string | null
           componente?: string | null
+          componente_objuid?: string | null
+          conta_custo?: string | null
+          conta_custo_programacao?: string | null
           contrato_id?: string | null
           created_at?: string | null
           cwp?: string | null
+          cwts_objuid?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          datahora?: string | null
+          descricao?: string | null
           disciplina?: string | null
+          distribuicao?: string | null
           documento?: string | null
+          dt_merge?: string | null
           encarregado?: string | null
+          encarregado_cpf?: string | null
+          encarregado_mat?: string | null
           engenheiro?: string | null
+          engenheiro_cpf?: string | null
+          engenheiro_mat?: string | null
           equipe?: string | null
           equipe_desc?: string | null
           etapa?: string | null
+          exec_domingo?: number | null
+          exec_quarta?: number | null
+          exec_quinta?: number | null
+          exec_sabado?: number | null
+          exec_segunda?: number | null
+          exec_sexta?: number | null
+          exec_terca?: number | null
           gerente?: string | null
+          gerente_cpf?: string | null
+          gerente_mat?: string | null
+          guid_model?: string | null
           id?: string
+          id_componente_etapas?: string | null
           id_primavera?: string | null
           indice_atual?: number | null
           indice_rop?: number | null
           item_wbs?: string | null
+          iwp_objuid?: string | null
+          kpi?: string | null
+          modulo?: string | null
+          nota?: string | null
           pacote?: string | null
+          peso_absoluto?: number | null
           peso_custcode?: number | null
           peso_stagecode?: number | null
+          plan_domingo?: number | null
+          plan_quarta?: number | null
+          plan_quinta?: number | null
+          plan_sabado?: number | null
+          plan_segunda?: number | null
+          plan_sexta?: number | null
+          plan_terca?: number | null
+          planta?: string | null
+          programacao?: number | null
           programado_componente?: number | null
+          programado_pacote?: number | null
           proposito?: string | null
+          recebimento?: string | null
           semana?: string | null
           supervisor?: string | null
+          supervisor_cpf?: string | null
+          supervisor_mat?: string | null
           tag_id_proj?: string | null
+          tamanho_equipe?: number | null
           tipo?: string | null
           total_exec_geral?: number | null
           total_exec_semana?: number | null
+          ultima_oper?: string | null
           unit?: string | null
+          unit_unid_medida?: string | null
           unit_valor?: number | null
+          units?: number | null
         }
         Update: {
           atividade?: string | null
           batch_id?: string
           classe?: string | null
+          codigo_frente?: string | null
+          codigo_grupo?: string | null
+          codigo_tarefa?: string | null
           componente?: string | null
+          componente_objuid?: string | null
+          conta_custo?: string | null
+          conta_custo_programacao?: string | null
           contrato_id?: string | null
           created_at?: string | null
           cwp?: string | null
+          cwts_objuid?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          datahora?: string | null
+          descricao?: string | null
           disciplina?: string | null
+          distribuicao?: string | null
           documento?: string | null
+          dt_merge?: string | null
           encarregado?: string | null
+          encarregado_cpf?: string | null
+          encarregado_mat?: string | null
           engenheiro?: string | null
+          engenheiro_cpf?: string | null
+          engenheiro_mat?: string | null
           equipe?: string | null
           equipe_desc?: string | null
           etapa?: string | null
+          exec_domingo?: number | null
+          exec_quarta?: number | null
+          exec_quinta?: number | null
+          exec_sabado?: number | null
+          exec_segunda?: number | null
+          exec_sexta?: number | null
+          exec_terca?: number | null
           gerente?: string | null
+          gerente_cpf?: string | null
+          gerente_mat?: string | null
+          guid_model?: string | null
           id?: string
+          id_componente_etapas?: string | null
           id_primavera?: string | null
           indice_atual?: number | null
           indice_rop?: number | null
           item_wbs?: string | null
+          iwp_objuid?: string | null
+          kpi?: string | null
+          modulo?: string | null
+          nota?: string | null
           pacote?: string | null
+          peso_absoluto?: number | null
           peso_custcode?: number | null
           peso_stagecode?: number | null
+          plan_domingo?: number | null
+          plan_quarta?: number | null
+          plan_quinta?: number | null
+          plan_sabado?: number | null
+          plan_segunda?: number | null
+          plan_sexta?: number | null
+          plan_terca?: number | null
+          planta?: string | null
+          programacao?: number | null
           programado_componente?: number | null
+          programado_pacote?: number | null
           proposito?: string | null
+          recebimento?: string | null
           semana?: string | null
           supervisor?: string | null
+          supervisor_cpf?: string | null
+          supervisor_mat?: string | null
           tag_id_proj?: string | null
+          tamanho_equipe?: number | null
           tipo?: string | null
           total_exec_geral?: number | null
           total_exec_semana?: number | null
+          ultima_oper?: string | null
           unit?: string | null
+          unit_unid_medida?: string | null
           unit_valor?: number | null
+          units?: number | null
         }
         Relationships: [
           {
@@ -2578,19 +2722,16 @@ export type Database = {
           componente: string | null
           cwp: string | null
           disciplina: string | null
-          documento: string | null
           encarregado: string | null
-          engenheiro: string | null
-          gerente: string | null
-          indice_rop: number | null
+          equipe: string | null
+          equipe_desc: string | null
           item_wbs: string | null
-          peso_custcode: number | null
-          supervisor: string | null
+          programado: number | null
           tag_id_proj: string | null
           tipo: string | null
           total_etapas: number | null
+          total_exec: number | null
           total_semanas: number | null
-          unit_valor: number | null
         }
         Relationships: []
       }
