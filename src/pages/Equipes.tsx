@@ -115,7 +115,13 @@ export default function Equipes() {
             <SheetTitle>Equipe: {selectedEquipe}</SheetTitle>
             <SheetDescription>Componentes atribuídos à equipe</SheetDescription>
           </SheetHeader>
+          {selectedEquipe && (
+            <div className="mt-4 mb-6">
+              <PPCDailyTable equipe={selectedEquipe} />
+            </div>
+          )}
           <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Componentes</p>
             <Table>
               <TableHeader>
                 <TableRow>

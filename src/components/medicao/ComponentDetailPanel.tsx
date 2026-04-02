@@ -7,8 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, Users, Info, Layers } from "lucide-react";
+import { ChevronLeft, Users, Info, Layers, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DocumentLinkSection } from "./DocumentLinkSection";
 
 function dateToBM(dateStr: string | null): string {
   if (!dateStr) return "—";
