@@ -2,12 +2,15 @@ import { useState, useMemo, useCallback } from "react";
 import { useCronogramaTree, CronoTreeNode } from "@/hooks/useCronogramaData";
 import { AgrupamentoDetail } from "./AgrupamentoDetail";
 import { BmPpuDetailSheet } from "./BmPpuDetailSheet";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, ChevronDown, Search } from "lucide-react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import { formatCompact } from "@/lib/format";
+import { ConsolidatedKPIs } from "./consolidated/ConsolidatedKPIs";
+import { ConsolidatedCharts } from "./consolidated/ConsolidatedCharts";
+import { ConsolidatedFilters } from "./consolidated/ConsolidatedFilters";
+import { FaseInlineSummary } from "./consolidated/FaseInlineSummary";
 
 function normalizePpu(v: string) {
   return (v || "").replace(/_/g, "-").trim();
@@ -71,7 +74,6 @@ function buildAndAggregate(flatNodes: CronoTreeNode[]): AggTreeNode[] {
     }
   }
 
-  // Aggregate bottom-up
   for (const fase of fases) {
     for (const subfase of fase.children) {
       subfase.total_previsto_bm = subfase.children.reduce((s, a) => s + a.total_previsto_bm, 0);
@@ -84,47 +86,6 @@ function buildAndAggregate(flatNodes: CronoTreeNode[]): AggTreeNode[] {
   }
 
   return fases;
-}
-
-/* ── Filter logic ── */
-function filterTree(
-  tree: AggTreeNode[],
-  query: string
-): { filtered: AggTreeNode[]; autoExpand: Set<string> } {
-  if (!query) return { filtered: tree, autoExpand: new Set() };
-  const q = query.toLowerCase();
-  const autoExpand = new Set<string>();
-  const filtered: AggTreeNode[] = [];
-
-  for (const fase of tree) {
-    const faseMatch = fase.nome.toLowerCase().includes(q) || fase.ippu.toLowerCase().includes(q);
-    const matchedSubfases: AggTreeNode[] = [];
-
-    for (const sf of fase.children) {
-      const sfMatch = sf.nome.toLowerCase().includes(q) || sf.ippu.toLowerCase().includes(q);
-      const matchedAgrups = sf.children.filter(
-        (a) => a.nome.toLowerCase().includes(q) || a.ippu.toLowerCase().includes(q)
-      );
-
-      if (sfMatch || matchedAgrups.length > 0) {
-        matchedSubfases.push({
-          ...sf,
-          children: matchedAgrups.length > 0 ? matchedAgrups : sf.children,
-        });
-        autoExpand.add(fase.id);
-        autoExpand.add(sf.id);
-      }
-    }
-
-    if (faseMatch) {
-      filtered.push(fase);
-      autoExpand.add(fase.id);
-    } else if (matchedSubfases.length > 0) {
-      filtered.push({ ...fase, children: matchedSubfases });
-      autoExpand.add(fase.id);
-    }
-  }
-  return { filtered, autoExpand };
 }
 
 /* ── Semáforo dot ── */
@@ -144,18 +105,97 @@ export function BmConsolidatedTree() {
   const [search, setSearch] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
+  const [faseFilter, setFaseFilter] = useState("__all__");
+  const [semaforoFilter, setSemaforoFilter] = useState<string[]>([]);
+  const [saldoOnly, setSaldoOnly] = useState(false);
 
   const tree = useMemo(() => buildAndAggregate(treeData || []), [treeData]);
 
-  const { filtered, autoExpand } = useMemo(
-    () => filterTree(tree, search.trim()),
-    [tree, search]
-  );
+  const faseNames = useMemo(() => tree.map((f) => f.nome), [tree]);
+
+  // Apply filters
+  const filteredTree = useMemo(() => {
+    let result = tree;
+
+    // Fase filter
+    if (faseFilter !== "__all__") {
+      result = result.filter((f) => f.nome === faseFilter);
+    }
+
+    // Semáforo filter — filter agrupamentos within subfases
+    if (semaforoFilter.length > 0) {
+      result = result
+        .map((fase) => ({
+          ...fase,
+          children: fase.children
+            .map((sf) => ({
+              ...sf,
+              children: sf.children.filter((a) => semaforoFilter.includes(a.semaforo || "futuro")),
+            }))
+            .filter((sf) => sf.children.length > 0),
+        }))
+        .filter((f) => f.children.length > 0);
+    }
+
+    // Saldo filter
+    if (saldoOnly) {
+      result = result
+        .map((fase) => ({
+          ...fase,
+          children: fase.children
+            .map((sf) => ({
+              ...sf,
+              children: sf.children.filter((a) => a.saldo > 0),
+            }))
+            .filter((sf) => sf.children.length > 0),
+        }))
+        .filter((f) => f.children.length > 0);
+    }
+
+    // Text search
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result
+        .map((fase) => {
+          const faseMatch = fase.nome.toLowerCase().includes(q) || fase.ippu.toLowerCase().includes(q);
+          const matchedSf = fase.children
+            .map((sf) => {
+              const sfMatch = sf.nome.toLowerCase().includes(q) || sf.ippu.toLowerCase().includes(q);
+              const matchedAgrups = sf.children.filter(
+                (a) => a.nome.toLowerCase().includes(q) || a.ippu.toLowerCase().includes(q)
+              );
+              if (sfMatch || matchedAgrups.length > 0) {
+                return { ...sf, children: matchedAgrups.length > 0 ? matchedAgrups : sf.children };
+              }
+              return null;
+            })
+            .filter(Boolean) as AggTreeNode[];
+
+          if (faseMatch) return fase;
+          if (matchedSf.length > 0) return { ...fase, children: matchedSf };
+          return null;
+        })
+        .filter(Boolean) as AggTreeNode[];
+    }
+
+    return result;
+  }, [tree, faseFilter, semaforoFilter, saldoOnly, search]);
+
+  // Auto-expand on search
+  const autoExpandIds = useMemo(() => {
+    if (!search.trim()) return new Set<string>();
+    const ids = new Set<string>();
+    filteredTree.forEach((f) => {
+      ids.add(f.id);
+      f.children.forEach((sf) => ids.add(sf.id));
+    });
+    return ids;
+  }, [filteredTree, search]);
 
   const effectiveExpanded = useMemo(() => {
-    if (search.trim()) return new Set([...expandedIds, ...autoExpand]);
+    if (search.trim()) return new Set([...expandedIds, ...autoExpandIds]);
     return expandedIds;
-  }, [expandedIds, autoExpand, search]);
+  }, [expandedIds, autoExpandIds, search]);
 
   const toggle = useCallback((id: string) => {
     setExpandedIds((prev) => {
@@ -166,12 +206,39 @@ export function BmConsolidatedTree() {
     });
   }, []);
 
+  // Totals from filtered data
   const totals = useMemo(() => ({
-    valor: tree.reduce((s, f) => s + f.valor, 0),
-    previsto: tree.reduce((s, f) => s + f.total_previsto_bm, 0),
-    projetado: tree.reduce((s, f) => s + f.total_projetado_bm, 0),
-    realizado: tree.reduce((s, f) => s + f.total_realizado_bm, 0),
-  }), [tree]);
+    valor: filteredTree.reduce((s, f) => s + f.valor, 0),
+    previsto: filteredTree.reduce((s, f) => s + f.total_previsto_bm, 0),
+    projetado: filteredTree.reduce((s, f) => s + f.total_projetado_bm, 0),
+    realizado: filteredTree.reduce((s, f) => s + f.total_realizado_bm, 0),
+  }), [filteredTree]);
+
+  // Chart data from full tree (unfiltered fases)
+  const chartFases = useMemo(() =>
+    tree.map((f) => ({
+      nome: f.nome,
+      valor: f.valor,
+      previsto: f.total_previsto_bm,
+      projetado: f.total_projetado_bm,
+      realizado: f.total_realizado_bm,
+    })),
+  [tree]);
+
+  const hasFilters = faseFilter !== "__all__" || semaforoFilter.length > 0 || saldoOnly || search.trim() !== "";
+
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setFaseFilter("__all__");
+    setSemaforoFilter([]);
+    setSaldoOnly(false);
+  }, []);
+
+  const toggleSemaforo = useCallback((s: string) => {
+    setSemaforoFilter((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+  }, []);
 
   if (isLoading) {
     return (
@@ -184,20 +251,35 @@ export function BmConsolidatedTree() {
   }
 
   return (
-    <div className="space-y-3">
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome ou iPPU..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 h-9 text-sm"
-        />
-      </div>
+    <div className="space-y-4">
+      {/* KPI Cards */}
+      <ConsolidatedKPIs
+        valor={totals.valor}
+        previsto={totals.previsto}
+        projetado={totals.projetado}
+        realizado={totals.realizado}
+      />
+
+      {/* Charts */}
+      <ConsolidatedCharts fases={chartFases} />
+
+      {/* Filters */}
+      <ConsolidatedFilters
+        search={search}
+        onSearchChange={setSearch}
+        fases={faseNames}
+        faseFilter={faseFilter}
+        onFaseChange={setFaseFilter}
+        semaforoFilter={semaforoFilter}
+        onSemaforoToggle={toggleSemaforo}
+        saldoOnly={saldoOnly}
+        onSaldoToggle={() => setSaldoOnly((p) => !p)}
+        onClear={clearFilters}
+        hasFilters={hasFilters}
+      />
 
       {/* Tree table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-auto max-h-[65vh]">
         <table className="w-full text-sm table-fixed">
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr className="border-b">
@@ -212,7 +294,7 @@ export function BmConsolidatedTree() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((fase) => (
+            {filteredTree.map((fase) => (
               <TreeRows
                 key={fase.id}
                 node={fase}
@@ -329,6 +411,25 @@ function TreeRows({
           {isAgrupamento && <SemaforoDot s={node.semaforo} />}
         </td>
       </tr>
+
+      {/* Fase/Subfase inline summary */}
+      {isExpanded && (isFase || isSubfase) && node.children.length > 0 && (
+        <tr>
+          <td colSpan={8} className="p-0">
+            <FaseInlineSummary
+              previsto={node.total_previsto_bm}
+              projetado={node.total_projetado_bm}
+              realizado={node.total_realizado_bm}
+              subfases={node.children.map((c) => ({
+                nome: c.nome,
+                previsto: c.total_previsto_bm,
+                projetado: c.total_projetado_bm,
+                realizado: c.total_realizado_bm,
+              }))}
+            />
+          </td>
+        </tr>
+      )}
 
       {/* Children */}
       {isExpanded && node.children.map((child) => (
