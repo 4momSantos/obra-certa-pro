@@ -175,18 +175,30 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconPro
         {/* REL_EVENTO tab */}
         {relEvento.length > 0 && (
           <TabsContent value="rel" className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <KpiCard label="Concluídos" value={relKpis.concluida.toLocaleString("pt-BR")} color="text-emerald-500" />
-              <KpiCard label="Pendentes" value={relKpis.pendente.toLocaleString("pt-BR")} color="text-amber-500" />
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <KpiCard label="Total Eventos" value={relEvento.length.toLocaleString("pt-BR")} />
+              <KpiCard label="iPPU Extraídos" value={relKpis.distinctIppu} color="text-primary" />
+              <KpiCard label="Critérios" value={relKpis.distinctCriterio} />
+              <KpiCard label="Fiscais" value={relKpis.distinctFiscal} />
               <KpiCard label="Valor Total" value={`R$ ${(relKpis.valTotal / 1e6).toFixed(2)}M`} color="text-primary" />
-              {relKpis.noItem > 0 && <KpiCard label="Sem Item PPU" value={relKpis.noItem} color="text-destructive" />}
             </div>
+            <StatusBar items={
+              Object.entries(relKpis.byStatus)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([ label, count ], i) => ({
+                  label,
+                  count,
+                  color: ["bg-emerald-500", "bg-amber-500", "bg-blue-500", "bg-orange-500", "bg-destructive", "bg-muted-foreground/50"][i] || "bg-muted-foreground/50",
+                }))
+            } />
             <div className="rounded-lg border overflow-auto max-h-[350px]">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item PPU</TableHead>
+                    <TableHead>iPPU</TableHead>
                     <TableHead>TAG</TableHead>
+                    <TableHead>Critério</TableHead>
                     <TableHead>Etapa</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
@@ -196,8 +208,9 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconPro
                 <TableBody>
                   {relEvento.slice(0, 15).map((r, i) => (
                     <TableRow key={i}>
-                      <TableCell className="font-mono text-xs">{r.item_ppu || "-"}</TableCell>
-                      <TableCell className="text-xs">{r.tag || "-"}</TableCell>
+                      <TableCell className="font-mono text-xs">{r.agrupamento_ippu || "-"}</TableCell>
+                      <TableCell className="text-xs max-w-[120px] truncate">{r.tag || "-"}</TableCell>
+                      <TableCell className="font-mono text-xs">{r.tag_criterio || "-"}</TableCell>
                       <TableCell className="text-xs">{r.etapa || "-"}</TableCell>
                       <TableCell><Badge variant={r.status === "Aprovado" ? "default" : "secondary"} className="text-xs">{r.status || "-"}</Badge></TableCell>
                       <TableCell className="text-right font-mono text-xs">{r.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
