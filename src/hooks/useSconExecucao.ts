@@ -14,9 +14,18 @@ export interface SconExecucaoRow {
   total_exec_semana: number;
   total_exec_geral: number;
   unit_valor: number;
+  indice_rop: number;
   semana: string;
   equipe: string;
+  equipe_desc: string;
   scon_etapa: string;
+  // Campos diários
+  plan_segunda: number; plan_terca: number; plan_quarta: number; plan_quinta: number;
+  plan_sexta: number; plan_sabado: number; plan_domingo: number;
+  exec_segunda: number; exec_terca: number; exec_quarta: number; exec_quinta: number;
+  exec_sexta: number; exec_sabado: number; exec_domingo: number;
+  valor_exec_semana: number;
+  // Cruzamento
   item_criterio: string | null;
   avanco_ponderado: number;
   tag: string | null;
