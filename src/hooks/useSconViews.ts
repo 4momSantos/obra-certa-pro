@@ -6,10 +6,10 @@ export function useEquipes() {
     queryKey: ["vw_equipes"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("vw_equipes")
+        .from("vw_equipes" as any)
         .select("*");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 }
@@ -19,10 +19,10 @@ export function useDisciplinas() {
     queryKey: ["vw_disciplinas"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("vw_disciplinas")
+        .from("vw_disciplinas" as any)
         .select("*");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 }
@@ -32,10 +32,10 @@ export function useSconComponentes() {
     queryKey: ["vw_scon_componentes"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("vw_scon_componentes")
+        .from("vw_scon_componentes" as any)
         .select("*");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 }
@@ -53,12 +53,12 @@ export function useCobertura() {
 
       // Get SCON coverage per PPU
       const { data: scon, error: sconErr } = await supabase
-        .from("vw_scon_por_ppu")
+        .from("vw_scon_por_ppu" as any)
         .select("item_wbs, avg_avanco, total_componentes");
       if (sconErr) throw sconErr;
 
       const sconMap = new Map(
-        (scon ?? []).map((s) => [s.item_wbs, s])
+        ((scon ?? []) as any[]).map((s: any) => [s.item_wbs, s])
       );
 
       const items = (tree ?? []).map((t) => {
