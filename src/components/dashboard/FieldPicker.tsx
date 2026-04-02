@@ -11,7 +11,7 @@ const typeIcons: Record<string, React.ElementType> = {
 };
 
 interface FieldPickerProps {
-  onFieldSelect: (column: ColumnDef) => void;
+  onFieldSelect?: (column: ColumnDef) => void;
   onFieldDragStart?: (column: ColumnDef, e: React.DragEvent) => void;
 }
 
