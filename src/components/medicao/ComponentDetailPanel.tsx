@@ -289,6 +289,18 @@ export function ComponentDetailPanel({ componente, itemWbs, onBack, onSelectComp
               </AccordionContent>
             </AccordionItem>
           )}
+
+          {/* Documento vinculado ao SIGEM */}
+          {info?.documento && info.documento.trim() !== "" && (
+            <AccordionItem value="documento">
+              <AccordionTrigger className="text-sm font-semibold">
+                <div className="flex items-center gap-2"><FileText className="h-4 w-4" />Documento SIGEM</div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <DocumentLinkSection documento={info.documento} />
+              </AccordionContent>
+            </AccordionItem>
+          )}
         </Accordion>
       )}
     </div>
