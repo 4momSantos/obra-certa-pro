@@ -175,6 +175,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
               <TableHead className="text-xs">Critério Medição</TableHead>
               <TableHead className="text-xs w-24">Disciplina</TableHead>
               <TableHead className="text-xs text-right w-20">Exec. Sem.</TableHead>
+              <TableHead className="text-xs text-right w-24">Valor Exec.</TableHead>
               <TableHead className="text-xs text-right w-20">Avanço %</TableHead>
               <TableHead className="text-xs w-20">GITEC</TableHead>
             </TableRow>
