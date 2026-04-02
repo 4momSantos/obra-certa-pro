@@ -25,7 +25,7 @@ export const GitecDetailSheet: React.FC<Props> = ({ eventId, open, onClose }) =>
           <>
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <span className="font-mono">{detail.tag || detail.item_ppu || "Evento"}</span>
+                <span className="font-mono">{detail.tag || detail.agrupamento_ippu || "Evento"}</span>
                 <Badge variant={detail.status === "Aprovado" ? "default" : "secondary"}>{detail.status}</Badge>
               </SheetTitle>
             </SheetHeader>
