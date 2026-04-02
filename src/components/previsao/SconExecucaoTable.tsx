@@ -43,6 +43,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
       item_criterio: string;
       dicionario_etapa: string;
       total_exec: number;
+      valor_exec: number;
       avanco: number;
       unit_valor: number;
       semanas: string[];
@@ -55,6 +56,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
       const existing = map.get(key);
       if (existing) {
         existing.total_exec += row.total_exec_semana;
+        existing.valor_exec += row.valor_exec_semana;
         if (!existing.semanas.includes(row.semana)) existing.semanas.push(row.semana);
       } else {
         map.set(key, {
@@ -66,6 +68,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
           item_criterio: row.item_criterio || "",
           dicionario_etapa: row.dicionario_etapa || "",
           total_exec: row.total_exec_semana,
+          valor_exec: row.valor_exec_semana,
           avanco: row.avanco_ponderado,
           unit_valor: row.unit_valor,
           semanas: [row.semana],
@@ -172,6 +175,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
               <TableHead className="text-xs">Critério Medição</TableHead>
               <TableHead className="text-xs w-24">Disciplina</TableHead>
               <TableHead className="text-xs text-right w-20">Exec. Sem.</TableHead>
+              <TableHead className="text-xs text-right w-24">Valor Exec.</TableHead>
               <TableHead className="text-xs text-right w-20">Avanço %</TableHead>
               <TableHead className="text-xs w-20">GITEC</TableHead>
             </TableRow>
@@ -179,7 +183,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
                   Nenhum item executado encontrado para este período.
                 </TableCell>
               </TableRow>
@@ -223,6 +227,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
                     {row.disciplina ? <Badge variant="outline" className="text-[10px]">{row.disciplina}</Badge> : "—"}
                   </TableCell>
                   <TableCell className="text-xs text-right tabular-nums">{row.total_exec.toFixed(0)}</TableCell>
+                  <TableCell className="text-xs text-right tabular-nums font-mono">{formatCompact(row.valor_exec)}</TableCell>
                   <TableCell className="text-xs text-right tabular-nums">{(row.avanco * 100).toFixed(1)}%</TableCell>
                   <TableCell>
                     {row.status_gitec ? (
@@ -242,7 +247,8 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
           <span className="text-muted-foreground">
             <strong>{filtered.length}</strong> componentes · <strong>{notPrevistoItems.length}</strong> novos
           </span>
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground space-x-3">
+            <span>Valor total: <strong className="font-mono">{formatCompact(filtered.reduce((s, r) => s + r.valor_exec, 0))}</strong></span>
             {selected.size > 0 && <strong>{selected.size} selecionados</strong>}
           </span>
         </div>

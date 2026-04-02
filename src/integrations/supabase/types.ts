@@ -2855,10 +2855,26 @@ export type Database = {
           dicionario_etapa: string | null
           disciplina: string | null
           equipe: string | null
+          equipe_desc: string | null
+          exec_domingo: number | null
+          exec_quarta: number | null
+          exec_quinta: number | null
+          exec_sabado: number | null
+          exec_segunda: number | null
+          exec_sexta: number | null
+          exec_terca: number | null
+          indice_rop: number | null
           item_criterio: string | null
           item_wbs: string | null
           peso_absoluto: number | null
           peso_fisico_fin: number | null
+          plan_domingo: number | null
+          plan_quarta: number | null
+          plan_quinta: number | null
+          plan_sabado: number | null
+          plan_segunda: number | null
+          plan_sexta: number | null
+          plan_terca: number | null
           scon_etapa: string | null
           scon_prog_id: string | null
           semana: string | null
@@ -2869,6 +2885,7 @@ export type Database = {
           total_exec_geral: number | null
           total_exec_semana: number | null
           unit_valor: number | null
+          valor_exec_semana: number | null
         }
         Relationships: []
       }
