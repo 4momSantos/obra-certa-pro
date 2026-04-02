@@ -2620,6 +2620,29 @@ export type Database = {
           },
         ]
       }
+      vw_disciplinas: {
+        Row: {
+          concluidos: number | null
+          disciplina: string | null
+          total_componentes: number | null
+          total_linhas: number | null
+          total_ppu: number | null
+        }
+        Relationships: []
+      }
+      vw_equipes: {
+        Row: {
+          comps_por_semana: number | null
+          disciplinas: string[] | null
+          encarregados: string[] | null
+          equipe: string | null
+          supervisores: string[] | null
+          total_componentes: number | null
+          total_linhas: number | null
+          total_semanas: number | null
+        }
+        Relationships: []
+      }
       vw_fiscais: {
         Row: {
           aprovados: number | null
@@ -2689,6 +2712,26 @@ export type Database = {
           total_itens: number | null
           valor_ativo: number | null
           valor_postergado: number | null
+        }
+        Relationships: []
+      }
+      vw_scon_componentes: {
+        Row: {
+          avanco: number | null
+          classe: string | null
+          componente: string | null
+          cwp: string | null
+          disciplina: string | null
+          encarregado: string | null
+          equipe: string | null
+          equipe_desc: string | null
+          item_wbs: string | null
+          programado: number | null
+          tag_id_proj: string | null
+          tipo: string | null
+          total_etapas: number | null
+          total_exec: number | null
+          total_semanas: number | null
         }
         Relationships: []
       }
