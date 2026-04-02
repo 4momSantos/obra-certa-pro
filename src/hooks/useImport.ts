@@ -640,49 +640,36 @@ const SCON_PROG_COLUMNS: Record<string, SconColDef> = {
 // ── SCON Programação Parser Helpers ──
 
 function parseSconProgDate(v: unknown): string | null {
-  if (v == null || v === "") return null;
-  if (v instanceof Date) {
-    if (isNaN(v.getTime())) return null;
-    return v.toISOString().slice(0, 10);
-  }
+  if (!v) return null;
   const s = String(v).trim();
   if (!s) return null;
-  // Excel serial number (e.g. 46101)
+  // "2026/03/16" → YYYY-MM-DD
+  const isoMatch = s.match(/^(\d{4})\/(\d{2})\/(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  // "16/03/2026" → YYYY-MM-DD
+  const brMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`;
+  // "2026-03-16"
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  // Excel serial (30000–60000)
   const n = parseFloat(s);
-  if (!isNaN(n) && n > 40000 && n < 100000) {
-    const d = XLSX.SSF.parse_date_code(n);
-    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+  if (!isNaN(n) && n > 30000 && n < 60000) {
+    return new Date((n - 25569) * 86400000).toISOString().slice(0, 10);
   }
-  // "2026/03/16" or "2026-03-16"
-  const iso = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  // "16/03/2026"
-  const dmy = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
-  return dateVal(v);
+  return null;
 }
 
 function parseSconProgTimestamp(v: unknown): string | null {
-  if (v == null || v === "") return null;
-  if (v instanceof Date) {
-    if (isNaN(v.getTime())) return null;
-    return v.toISOString();
-  }
+  if (!v) return null;
   const s = String(v).trim();
   if (!s) return null;
-  // Excel serial with fractional time
-  const n = parseFloat(s);
-  if (!isNaN(n) && n > 40000 && n < 100000) {
-    const dt = new Date((n - 25569) * 86400000);
-    if (!isNaN(dt.getTime())) return dt.toISOString();
-  }
-  // "23/03/2026 15:07" or "23/03/2026 15:07:30"
-  const dmy = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
-  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}T${dmy[4]}:${dmy[5]}:${dmy[6] || "00"}`;
-  // "2026-03-23T15:07:00" or "2026/03/23 15:07"
-  const ymd = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})[\sT](\d{2}):(\d{2})(?::(\d{2}))?/);
-  if (ymd) return `${ymd[1]}-${ymd[2]}-${ymd[3]}T${ymd[4]}:${ymd[5]}:${ymd[6] || "00"}`;
-  return s;
+  // "23/03/2026 15:07"
+  const brMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+  if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}T${brMatch[4]}:${brMatch[5]}:00`;
+  // "2026/03/23 15:07"
+  const isoMatch = s.match(/^(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T${isoMatch[4]}:${isoMatch[5]}:00`;
+  return null;
 }
 
 function parseSconProgNumber(v: unknown): number {
