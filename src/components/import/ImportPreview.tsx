@@ -53,11 +53,13 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconPro
   }, [sigem]);
 
   const relKpis = useMemo(() => {
-    const concluida = relEvento.filter(r => r.etapa === "Concluída").length;
-    const pendente = relEvento.length - concluida;
+    const byStatus: Record<string, number> = {};
+    relEvento.forEach(r => { byStatus[r.status || "Outros"] = (byStatus[r.status || "Outros"] || 0) + 1; });
     const valTotal = relEvento.reduce((s, r) => s + r.valor, 0);
-    const noItem = relEvento.filter(r => !r.item_ppu).length;
-    return { concluida, pendente, valTotal, noItem };
+    const distinctIppu = new Set(relEvento.map(r => r.agrupamento_ippu).filter(Boolean)).size;
+    const distinctCriterio = new Set(relEvento.map(r => r.tag_criterio).filter(Boolean)).size;
+    const distinctFiscal = new Set(relEvento.map(r => r.fiscal_responsavel).filter(Boolean)).size;
+    return { byStatus, valTotal, distinctIppu, distinctCriterio, distinctFiscal };
   }, [relEvento]);
 
   const sconKpis = useMemo(() => {
