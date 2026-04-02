@@ -183,7 +183,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
                   Nenhum item executado encontrado para este período.
                 </TableCell>
               </TableRow>
