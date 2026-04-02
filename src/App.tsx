@@ -80,6 +80,7 @@ const AppRoutes = () => {
           <Route path="/cobertura" element={<Cobertura />} />
           <Route path="/ajuste" element={<Ajuste />} />
           <Route path="/config" element={<Config />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/configuracao" element={<Configuracao />} />
           <Route
             path="/admin"
