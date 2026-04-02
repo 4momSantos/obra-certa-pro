@@ -119,12 +119,12 @@ export function useAlerts() {
       // R4 — Fiscal sobrecarregado (>20 pendentes)
       const { data: fiscalData } = await supabase.from("vw_fiscais").select("*");
       const r4Items: AlertItem[] = (fiscalData ?? [])
-        .filter(r => (Number(r.pendentes) || 0) > 20)
+        .filter(r => (Number((r as any).pendentes) || 0) > 20)
         .map(r => ({
           id: r.fiscal_responsavel ?? "-",
           label: r.fiscal_responsavel ?? "-",
-          sublabel: `${Number(r.pendentes) || 0} pendentes`,
-          valor: Number(r.valor_pendente) || 0,
+          sublabel: `${Number((r as any).pendentes) || 0} pendentes`,
+          valor: Number((r as any).valor_pendente) || 0,
           link: "/gitec",
         }))
         .sort((a, b) => (b.valor ?? 0) - (a.valor ?? 0));

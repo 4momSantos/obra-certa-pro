@@ -467,16 +467,12 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
 
           const agrupamento = str(cell(r, cAgrup));
           const tag = str(cell(r, cTag));
-          const item_ppu = extractIppuFromAgrupamento(agrupamento);
+          const agrupamento_ippu = extractIppuFromAgrupamento(agrupamento);
+          const tagParts = extractTagParts(tag);
 
-          if (!item_ppu && !tag && !agrupamento) { noKey++; continue; }
+          if (!agrupamento_ippu && !tag && !agrupamento) { noKey++; continue; }
 
           rows.push({
-            item_ppu,
-            rel_status: "",
-            rel_status_item: "",
-            tag_agrup: "",
-            quantidade_ponderada: 0,
             estrutura: str(cell(r, cEstrutura)),
             fase: str(cell(r, cFase)),
             subfase: str(cell(r, cSubfase)),
@@ -488,20 +484,23 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             etapa: str(cell(r, cEtapa)),
             peso_fisico: num(cell(r, cPesoFis)),
             peso_financeiro: num(cell(r, cPesoFin)),
-            data_execucao: dateVal(cell(r, cDataExec)),
-            data_inf_execucao: dateVal(cell(r, cDataInf)),
+            data_execucao: parseGitecDate(cell(r, cDataExec)),
+            data_inf_execucao: parseGitecDate(cell(r, cDataInf)),
             executado_por: str(cell(r, cExecPor)),
-            necessita_evidencias: str(cell(r, cNecEvid)),
+            necessita_evidencias: parseBoolean(cell(r, cNecEvid)),
             numero_evidencias: str(cell(r, cNumEvid)),
-            data_aprovacao: dateVal(cell(r, cDataAprov)),
+            data_aprovacao: parseGitecDate(cell(r, cDataAprov)),
             fiscal_responsavel: str(cell(r, cFiscal)),
             status: str(cell(r, cStatus)),
             valor: num(cell(r, cValor)),
             comentario: str(cell(r, cComent)),
+            agrupamento_ippu,
+            tag_criterio: tagParts.criterio,
+            tag_descricao: tagParts.descricao,
           });
           if (rows.length === 1) {
             const r0 = rows[0];
-            console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, item_ppu: r0.item_ppu, agrupamento: r0.agrupamento });
+            console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, agrupamento_ippu: r0.agrupamento_ippu, agrupamento: r0.agrupamento });
           }
         }
         if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU, TAG nem Agrupamento (ignoradas)`);
