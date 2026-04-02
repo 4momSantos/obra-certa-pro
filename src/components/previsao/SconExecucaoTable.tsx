@@ -43,6 +43,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
       item_criterio: string;
       dicionario_etapa: string;
       total_exec: number;
+      valor_exec: number;
       avanco: number;
       unit_valor: number;
       semanas: string[];
@@ -55,6 +56,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
       const existing = map.get(key);
       if (existing) {
         existing.total_exec += row.total_exec_semana;
+        existing.valor_exec += row.valor_exec_semana;
         if (!existing.semanas.includes(row.semana)) existing.semanas.push(row.semana);
       } else {
         map.set(key, {
@@ -66,6 +68,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
           item_criterio: row.item_criterio || "",
           dicionario_etapa: row.dicionario_etapa || "",
           total_exec: row.total_exec_semana,
+          valor_exec: row.valor_exec_semana,
           avanco: row.avanco_ponderado,
           unit_valor: row.unit_valor,
           semanas: [row.semana],
