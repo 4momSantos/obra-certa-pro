@@ -39,6 +39,7 @@ import DetalhamentoBM from "@/pages/DetalhamentoBM";
 import GestaoBM from "@/pages/GestaoBM";
 import AuditLog from "@/pages/AuditLog";
 import NotFound from "@/pages/NotFound";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
 
