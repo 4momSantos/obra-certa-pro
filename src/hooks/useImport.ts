@@ -546,6 +546,126 @@ export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warn
   });
 }
 
+// ── SCON Programação Column Config ──
+
+interface SconColDef {
+  field: string;
+  type: 'text' | 'number' | 'integer' | 'date' | 'datetime';
+  required?: boolean;
+  aliases?: string[];
+}
+
+const SCON_PROG_COLUMNS: Record<string, SconColDef> = {
+  'PLANTA':                  { field: 'planta',             type: 'text' },
+  'CWP':                     { field: 'cwp',                type: 'text' },
+  'COMPONENTE':              { field: 'componente',         type: 'text',   required: true },
+  'DESCRICAO':               { field: 'descricao',          type: 'text',   aliases: ['descrição'] },
+  'PACOTE':                  { field: 'pacote',             type: 'text' },
+  'PROPOSITO':               { field: 'proposito',          type: 'text',   aliases: ['propósito'] },
+  'ETAPA':                   { field: 'etapa',              type: 'text' },
+  'ATIVIDADE':               { field: 'atividade',          type: 'text' },
+  'SEMANA':                  { field: 'semana',             type: 'text' },
+  'DATA_INICIO':             { field: 'data_inicio',        type: 'date',   aliases: ['data inicio'] },
+  'DATA_FIM':                { field: 'data_fim',           type: 'date',   aliases: ['data fim'] },
+  'EQUIPE':                  { field: 'equipe',             type: 'text' },
+  'EQUIPE_DESC':             { field: 'equipe_desc',        type: 'text',   aliases: ['equipe desc'] },
+  'TAMANHO_EQUIPE':          { field: 'tamanho_equipe',     type: 'integer', aliases: ['tamanho equipe'] },
+  'ENCARREGADO':             { field: 'encarregado',        type: 'text' },
+  'ENCARREGADO_MAT':         { field: 'encarregado_mat',    type: 'text',   aliases: ['encarregado mat'] },
+  'ENCARREGADO_CPF':         { field: 'encarregado_cpf',    type: 'text',   aliases: ['encarregado cpf'] },
+  'SUPERVISOR':              { field: 'supervisor',         type: 'text' },
+  'SUPERVISOR_MAT':          { field: 'supervisor_mat',     type: 'text',   aliases: ['supervisor mat'] },
+  'SUPERVISOR_CPF':          { field: 'supervisor_cpf',     type: 'text',   aliases: ['supervisor cpf'] },
+  'ENGENHEIRO':              { field: 'engenheiro',         type: 'text' },
+  'ENGENHEIRO_MAT':          { field: 'engenheiro_mat',     type: 'text',   aliases: ['engenheiro mat'] },
+  'ENGENHEIRO_CPF':          { field: 'engenheiro_cpf',     type: 'text',   aliases: ['engenheiro cpf'] },
+  'GERENTE':                 { field: 'gerente',            type: 'text' },
+  'GERENTE_MAT':             { field: 'gerente_mat',        type: 'text',   aliases: ['gerente mat'] },
+  'GERENTE_CPF':             { field: 'gerente_cpf',        type: 'text',   aliases: ['gerente cpf'] },
+  'PROGRAMACAO':             { field: 'programacao',         type: 'number', aliases: ['programação'] },
+  'DISTRIBUICAO':            { field: 'distribuicao',        type: 'text',   aliases: ['distribuição'] },
+  'DISCIPLINA':              { field: 'disciplina',          type: 'text' },
+  'UNIT':                    { field: 'unit',                type: 'text' },
+  'UNIT_VALOR':              { field: 'unit_valor',          type: 'number', aliases: ['unit valor'] },
+  'UNIT_UNID_MEDIDA':        { field: 'unit_unid_medida',    type: 'text',   aliases: ['unit unid medida'] },
+  'PROGRAMADO_COMPONENTE':   { field: 'programado_componente', type: 'number', aliases: ['programado componente'] },
+  'PROGRAMADO_PACOTE':       { field: 'programado_pacote',     type: 'number', aliases: ['programado pacote'] },
+  'PLAN_SEGUNDA':            { field: 'plan_segunda',        type: 'number' },
+  'PLAN_TERCA':              { field: 'plan_terca',          type: 'number', aliases: ['plan_terça'] },
+  'PLAN_QUARTA':             { field: 'plan_quarta',         type: 'number' },
+  'PLAN_QUINTA':             { field: 'plan_quinta',         type: 'number' },
+  'PLAN_SEXTA':              { field: 'plan_sexta',          type: 'number' },
+  'PLAN_SABADO':             { field: 'plan_sabado',         type: 'number', aliases: ['plan_sábado'] },
+  'PLAN_DOMINGO':            { field: 'plan_domingo',        type: 'number' },
+  'EXEC_SEGUNDA':            { field: 'exec_segunda',        type: 'number' },
+  'EXEC_TERCA':              { field: 'exec_terca',          type: 'number', aliases: ['exec_terça'] },
+  'EXEC_QUARTA':             { field: 'exec_quarta',         type: 'number' },
+  'EXEC_QUINTA':             { field: 'exec_quinta',         type: 'number' },
+  'EXEC_SEXTA':              { field: 'exec_sexta',          type: 'number' },
+  'EXEC_SABADO':             { field: 'exec_sabado',         type: 'number', aliases: ['exec_sábado'] },
+  'EXEC_DOMINGO':            { field: 'exec_domingo',        type: 'number' },
+  'TOTAL_EXEC_SEMANA':       { field: 'total_exec_semana',   type: 'number', aliases: ['total exec semana'] },
+  'TOTAL_EXEC_GERAL':        { field: 'total_exec_geral',    type: 'number', aliases: ['total exec geral'] },
+  'DATAHORA':                { field: 'datahora',            type: 'datetime' },
+  'ContaCusto':              { field: 'conta_custo',         type: 'text',   aliases: ['CONTA_CUSTO', 'conta_custo'] },
+  'IndiceROP':               { field: 'indice_rop',          type: 'number', aliases: ['INDICEROP', 'indice rop', 'indice_rop'] },
+  'Classe':                  { field: 'classe',              type: 'text',   aliases: ['CLASSE'] },
+  'PESO_CUSTCODE':           { field: 'peso_custcode',       type: 'number', aliases: ['peso custcode'] },
+  'IndiceAtual':             { field: 'indice_atual',        type: 'number', aliases: ['INDICEATUAL', 'indice atual', 'indice_atual'] },
+  'ComponenteOBJUID':        { field: 'componente_objuid',   type: 'text',   aliases: ['COMPONENTE_OBJUID', 'componente_objuid'] },
+  'GuidModel':               { field: 'guid_model',          type: 'text',   aliases: ['GUID_MODEL', 'guid_model'] },
+  'IDPrimavera':             { field: 'id_primavera',        type: 'text',   aliases: ['IDPRIMAVERA', 'id primavera', 'id_primavera'] },
+  'ItemWBS':                 { field: 'item_wbs',            type: 'text',   required: true, aliases: ['ITEMWBS', 'Item WBS', 'item_wbs', 'item wbs'] },
+  'Tipo':                    { field: 'tipo',                type: 'text',   aliases: ['TIPO'] },
+  'CWTS_OBJUID':             { field: 'cwts_objuid',         type: 'text',   aliases: ['cwts_objuid'] },
+  'PESO_STAGECODE':          { field: 'peso_stagecode',      type: 'number', aliases: ['peso stagecode', 'peso_stagecode'] },
+  'ID_ComponenteEtapas':     { field: 'id_componente_etapas', type: 'text',  aliases: ['ID_COMPONENTE_ETAPAS', 'id_componente_etapas'] },
+  'Modulo':                  { field: 'modulo',              type: 'text',   aliases: ['MODULO', 'módulo'] },
+  'UNITS':                   { field: 'units',               type: 'number', aliases: ['units'] },
+  'ContaCustoProgramacao':   { field: 'conta_custo_programacao', type: 'text', aliases: ['CONTA_CUSTO_PROGRAMACAO', 'conta_custo_programacao'] },
+  'IWP_OBJUID':              { field: 'iwp_objuid',          type: 'text',   aliases: ['iwp_objuid'] },
+  'Documento':               { field: 'documento',           type: 'text',   aliases: ['DOCUMENTO'] },
+  'PesoAbsoluto':            { field: 'peso_absoluto',       type: 'number', aliases: ['PESO_ABSOLUTO', 'peso_absoluto', 'peso absoluto'] },
+  'KPI':                     { field: 'kpi',                 type: 'text' },
+  'Nota':                    { field: 'nota',                type: 'text',   aliases: ['NOTA'] },
+  'Recebimento':             { field: 'recebimento',         type: 'text',   aliases: ['RECEBIMENTO'] },
+  'TagIDProj':               { field: 'tag_id_proj',         type: 'text',   aliases: ['TAGIDPROJ', 'tag id proj', 'tag_id_proj'] },
+  'CODIGO_GRUPO':            { field: 'codigo_grupo',        type: 'text',   aliases: ['codigo_grupo', 'código_grupo'] },
+  'CODIGO_FRENTE':           { field: 'codigo_frente',       type: 'text',   aliases: ['codigo_frente', 'código_frente'] },
+  'CODIGO_TAREFA':           { field: 'codigo_tarefa',       type: 'text',   aliases: ['codigo_tarefa', 'código_tarefa'] },
+  'DT_MERGE':                { field: 'dt_merge',            type: 'datetime', aliases: ['dt_merge'] },
+  'ULTIMA_OPER':             { field: 'ultima_oper',         type: 'text',   aliases: ['ultima_oper', 'última_oper'] },
+};
+
+// ── SCON Programação Parser Helpers ──
+
+function parseSconProgDate(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  const n = parseFloat(String(v));
+  if (!isNaN(n) && n > 40000) {
+    return new Date((n - 25569) * 86400000).toISOString().slice(0, 10);
+  }
+  return dateVal(v);
+}
+
+function parseSconProgTimestamp(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  const s = String(v).trim();
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00`;
+  return s;
+}
+
+function parseSconProgCellValue(v: unknown, type: SconColDef['type']): string | number | null {
+  switch (type) {
+    case 'text':     return str(v);
+    case 'number':   return num(v);
+    case 'integer':  return Math.round(num(v));
+    case 'date':     return parseSconProgDate(v);
+    case 'datetime': return parseSconProgTimestamp(v);
+  }
+}
+
 // ── SCON Programação Parser ──
 
 export function parseSconProgramacaoFile(file: File): Promise<{ rows: ParsedSconProgRow[]; warnings: string[] }> {
@@ -561,89 +681,23 @@ export function parseSconProgramacaoFile(file: File): Promise<{ rows: ParsedScon
         const warnings: string[] = [];
         const headers = (raw[0] || []).map((h, i) => h != null ? str(h) : `col_${i}`);
 
-        const cPlanta = findCol(headers, "PLANTA", "planta");
-        const cComp = findCol(headers, "COMPONENTE", "componente");
-        const cDescr = findCol(headers, "DESCRICAO", "descricao", "descrição");
-        const cEtapa = findCol(headers, "ETAPA", "etapa");
-        const cAtiv = findCol(headers, "ATIVIDADE", "atividade");
-        const cSemana = findCol(headers, "SEMANA", "semana");
-        const cDtIni = findCol(headers, "DATA_INICIO", "data inicio", "data_inicio");
-        const cDtFim = findCol(headers, "DATA_FIM", "data fim", "data_fim");
-        const cEquipe = findCol(headers, "EQUIPE", "equipe");
-        const cEquipeDesc = findCol(headers, "EQUIPE_DESC", "equipe desc", "equipe_desc");
-        const cTamEquipe = findCol(headers, "TAMANHO_EQUIPE", "tamanho equipe", "tamanho_equipe");
-        const cEncarr = findCol(headers, "ENCARREGADO", "encarregado");
-        const cEncarrMat = findCol(headers, "ENCARREGADO_MAT", "encarregado mat", "encarregado_mat");
-        const cEncarrCpf = findCol(headers, "ENCARREGADO_CPF", "encarregado cpf", "encarregado_cpf");
-        const cSuper = findCol(headers, "SUPERVISOR", "supervisor");
-        const cSuperMat = findCol(headers, "SUPERVISOR_MAT", "supervisor mat", "supervisor_mat");
-        const cSuperCpf = findCol(headers, "SUPERVISOR_CPF", "supervisor cpf", "supervisor_cpf");
-        const cEng = findCol(headers, "ENGENHEIRO", "engenheiro");
-        const cEngMat = findCol(headers, "ENGENHEIRO_MAT", "engenheiro mat", "engenheiro_mat");
-        const cEngCpf = findCol(headers, "ENGENHEIRO_CPF", "engenheiro cpf", "engenheiro_cpf");
-        const cGer = findCol(headers, "GERENTE", "gerente");
-        const cGerMat = findCol(headers, "GERENTE_MAT", "gerente mat", "gerente_mat");
-        const cGerCpf = findCol(headers, "GERENTE_CPF", "gerente cpf", "gerente_cpf");
-        const cProgramacao = findCol(headers, "PROGRAMACAO", "programação", "programacao");
-        const cDistribuicao = findCol(headers, "DISTRIBUICAO", "distribuição", "distribuicao");
-        const cProgComp = findCol(headers, "PROGRAMADO_COMPONENTE", "programado componente", "programado_componente");
-        const cProgPacote = findCol(headers, "PROGRAMADO_PACOTE", "programado pacote", "programado_pacote");
-        const cExecSem = findCol(headers, "TOTAL_EXEC_SEMANA", "total exec semana", "total_exec_semana");
-        const cExecGeral = findCol(headers, "TOTAL_EXEC_GERAL", "total exec geral", "total_exec_geral");
-        const cPesoStage = findCol(headers, "PESO_STAGECODE", "peso stagecode", "peso_stagecode");
-        const cCwp = findCol(headers, "CWP", "cwp");
-        const cDisc = findCol(headers, "DISCIPLINA", "disciplina");
-        const cClasse = findCol(headers, "Classe", "classe", "CLASSE");
-        const cTipo = findCol(headers, "Tipo", "tipo", "TIPO");
-        const cTagIdProj = findCol(headers, "TagIDProj", "tag id proj", "tag_id_proj", "TAGIDPROJ");
-        const cDoc = findCol(headers, "Documento", "documento", "DOCUMENTO");
-        const cPacote = findCol(headers, "PACOTE", "pacote");
-        const cProposito = findCol(headers, "PROPOSITO", "proposito", "propósito");
-        const cIdPrimavera = findCol(headers, "IDPrimavera", "id primavera", "id_primavera", "IDPRIMAVERA");
-        const cUnitValor = findCol(headers, "UNIT_VALOR", "unit valor", "unit_valor");
-        const cUnit = findCol(headers, "UNIT", "unit");
-        const cUnitUnid = findCol(headers, "UNIT_UNID_MEDIDA", "unit unid medida", "unit_unid_medida");
-        const cIndiceRop = findCol(headers, "IndiceROP", "indice rop", "indice_rop", "INDICEROP");
-        const cPesoCust = findCol(headers, "PESO_CUSTCODE", "peso custcode", "peso_custcode");
-        const cIndiceAtual = findCol(headers, "IndiceAtual", "indice atual", "indice_atual", "INDICEATUAL");
-        const cItemWbs = findCol(headers, "ItemWBS", "Item WBS", "item_wbs", "item wbs", "ITEMWBS");
-        const cCompObjuid = findCol(headers, "COMPONENTE_OBJUID", "componente_objuid");
-        const cGuidModel = findCol(headers, "GUID_MODEL", "guid_model");
-        const cCwtsObjuid = findCol(headers, "CWTS_OBJUID", "cwts_objuid");
-        const cIdCompEtapas = findCol(headers, "ID_COMPONENTE_ETAPAS", "id_componente_etapas");
-        const cModulo = findCol(headers, "MODULO", "modulo", "módulo");
-        const cUnits = findCol(headers, "UNITS", "units");
-        const cContaCustoProg = findCol(headers, "CONTA_CUSTO_PROGRAMACAO", "conta_custo_programacao");
-        const cIwpObjuid = findCol(headers, "IWP_OBJUID", "iwp_objuid");
-        const cPesoAbs = findCol(headers, "PESO_ABSOLUTO", "peso_absoluto", "peso absoluto");
-        const cKpi = findCol(headers, "KPI", "kpi");
-        const cNota = findCol(headers, "NOTA", "nota");
-        const cRecebimento = findCol(headers, "RECEBIMENTO", "recebimento");
-        const cCodGrupo = findCol(headers, "CODIGO_GRUPO", "codigo_grupo", "código_grupo");
-        const cCodFrente = findCol(headers, "CODIGO_FRENTE", "codigo_frente", "código_frente");
-        const cCodTarefa = findCol(headers, "CODIGO_TAREFA", "codigo_tarefa", "código_tarefa");
-        const cContaCusto = findCol(headers, "CONTA_CUSTO", "conta_custo");
-        const cDatahora = findCol(headers, "DATAHORA", "datahora");
-        const cDtMerge = findCol(headers, "DT_MERGE", "dt_merge");
-        const cUltimaOper = findCol(headers, "ULTIMA_OPER", "ultima_oper", "última_oper");
-        // Daily plan/exec columns
-        const cPlanSeg = findCol(headers, "PLAN_SEGUNDA", "plan_segunda");
-        const cPlanTer = findCol(headers, "PLAN_TERCA", "plan_terca", "plan_terça");
-        const cPlanQua = findCol(headers, "PLAN_QUARTA", "plan_quarta");
-        const cPlanQui = findCol(headers, "PLAN_QUINTA", "plan_quinta");
-        const cPlanSex = findCol(headers, "PLAN_SEXTA", "plan_sexta");
-        const cPlanSab = findCol(headers, "PLAN_SABADO", "plan_sabado", "plan_sábado");
-        const cPlanDom = findCol(headers, "PLAN_DOMINGO", "plan_domingo");
-        const cExecSeg = findCol(headers, "EXEC_SEGUNDA", "exec_segunda");
-        const cExecTer = findCol(headers, "EXEC_TERCA", "exec_terca", "exec_terça");
-        const cExecQua = findCol(headers, "EXEC_QUARTA", "exec_quarta");
-        const cExecQui = findCol(headers, "EXEC_QUINTA", "exec_quinta");
-        const cExecSex = findCol(headers, "EXEC_SEXTA", "exec_sexta");
-        const cExecSab = findCol(headers, "EXEC_SABADO", "exec_sabado", "exec_sábado");
-        const cExecDom = findCol(headers, "EXEC_DOMINGO", "exec_domingo");
+        // Build column index map from SCON_PROG_COLUMNS config
+        const colMap: Array<{ colIdx: number; def: SconColDef }> = [];
 
-        if (cComp < 0) warnings.push("Coluna 'COMPONENTE' não encontrada no SCON Programação");
-        if (cItemWbs < 0) warnings.push("Coluna 'ItemWBS' não encontrada no SCON Programação");
+        for (const [headerName, def] of Object.entries(SCON_PROG_COLUMNS)) {
+          const aliases = [headerName, def.field, ...(def.aliases || [])];
+          const colIdx = findCol(headers, ...aliases);
+          if (colIdx >= 0) {
+            colMap.push({ colIdx, def });
+          } else if (def.required) {
+            warnings.push(`Coluna '${headerName}' não encontrada no SCON Programação`);
+          }
+        }
+
+        // Quick-access indices for validation
+        const cComp = findCol(headers, "COMPONENTE", "componente");
+        const cDisc = findCol(headers, "DISCIPLINA", "disciplina");
+        const cProgComp = findCol(headers, "PROGRAMADO_COMPONENTE", "programado componente", "programado_componente");
 
         let noComp = 0;
         let noDisc = 0;
@@ -656,112 +710,18 @@ export function parseSconProgramacaoFile(file: File): Promise<{ rows: ParsedScon
           const componente = str(cell(r, cComp));
           if (!componente) { noComp++; continue; }
 
-          const programado_componente = num(cell(r, cProgComp));
-          const disciplina = str(cell(r, cDisc));
+          const disciplina = cDisc >= 0 ? str(cell(r, cDisc)) : "";
+          const programado = cProgComp >= 0 ? num(cell(r, cProgComp)) : 0;
           if (!disciplina) noDisc++;
-          if (programado_componente === 0) zeroProg++;
+          if (programado === 0) zeroProg++;
 
-          // Date handling for raw:false mode
-          const parseDate = (v: unknown): string | null => {
-            if (v == null || v === "") return null;
-            const n = parseFloat(String(v));
-            if (!isNaN(n) && n > 40000) {
-              return new Date((n - 25569) * 86400000).toISOString().slice(0, 10);
-            }
-            return dateVal(v);
-          };
+          // Build row dynamically from column map
+          const row: Record<string, string | number | null> = {};
+          for (const { colIdx, def } of colMap) {
+            row[def.field] = parseSconProgCellValue(cell(r, colIdx), def.type);
+          }
 
-          // Timestamp handling
-          const parseTimestamp = (v: unknown): string | null => {
-            if (v == null || v === "") return null;
-            const s = String(v).trim();
-            // Try DD/MM/YYYY HH:mm format
-            const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
-            if (m) return `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00`;
-            return s;
-          };
-
-          rows.push({
-            planta: str(cell(r, cPlanta)),
-            cwp: str(cell(r, cCwp)),
-            componente,
-            descricao: str(cell(r, cDescr)),
-            pacote: str(cell(r, cPacote)),
-            proposito: str(cell(r, cProposito)),
-            etapa: str(cell(r, cEtapa)),
-            atividade: str(cell(r, cAtiv)),
-            semana: str(cell(r, cSemana)),
-            data_inicio: parseDate(cell(r, cDtIni)),
-            data_fim: parseDate(cell(r, cDtFim)),
-            equipe: str(cell(r, cEquipe)),
-            equipe_desc: str(cell(r, cEquipeDesc)),
-            tamanho_equipe: num(cell(r, cTamEquipe)),
-            encarregado: str(cell(r, cEncarr)),
-            encarregado_mat: str(cell(r, cEncarrMat)),
-            encarregado_cpf: str(cell(r, cEncarrCpf)),
-            supervisor: str(cell(r, cSuper)),
-            supervisor_mat: str(cell(r, cSuperMat)),
-            supervisor_cpf: str(cell(r, cSuperCpf)),
-            engenheiro: str(cell(r, cEng)),
-            engenheiro_mat: str(cell(r, cEngMat)),
-            engenheiro_cpf: str(cell(r, cEngCpf)),
-            gerente: str(cell(r, cGer)),
-            gerente_mat: str(cell(r, cGerMat)),
-            gerente_cpf: str(cell(r, cGerCpf)),
-            programacao: num(cell(r, cProgramacao)),
-            distribuicao: str(cell(r, cDistribuicao)),
-            disciplina,
-            unit: str(cell(r, cUnit)),
-            unit_valor: num(cell(r, cUnitValor)),
-            unit_unid_medida: str(cell(r, cUnitUnid)),
-            programado_componente,
-            programado_pacote: num(cell(r, cProgPacote)),
-            plan_segunda: num(cell(r, cPlanSeg)),
-            plan_terca: num(cell(r, cPlanTer)),
-            plan_quarta: num(cell(r, cPlanQua)),
-            plan_quinta: num(cell(r, cPlanQui)),
-            plan_sexta: num(cell(r, cPlanSex)),
-            plan_sabado: num(cell(r, cPlanSab)),
-            plan_domingo: num(cell(r, cPlanDom)),
-            exec_segunda: num(cell(r, cExecSeg)),
-            exec_terca: num(cell(r, cExecTer)),
-            exec_quarta: num(cell(r, cExecQua)),
-            exec_quinta: num(cell(r, cExecQui)),
-            exec_sexta: num(cell(r, cExecSex)),
-            exec_sabado: num(cell(r, cExecSab)),
-            exec_domingo: num(cell(r, cExecDom)),
-            total_exec_semana: num(cell(r, cExecSem)),
-            total_exec_geral: num(cell(r, cExecGeral)),
-            datahora: parseTimestamp(cell(r, cDatahora)),
-            conta_custo: str(cell(r, cContaCusto)),
-            indice_rop: num(cell(r, cIndiceRop)),
-            classe: str(cell(r, cClasse)),
-            peso_custcode: num(cell(r, cPesoCust)),
-            indice_atual: num(cell(r, cIndiceAtual)),
-            componente_objuid: str(cell(r, cCompObjuid)),
-            guid_model: str(cell(r, cGuidModel)),
-            id_primavera: str(cell(r, cIdPrimavera)),
-            item_wbs: str(cell(r, cItemWbs)),
-            tipo: str(cell(r, cTipo)),
-            cwts_objuid: str(cell(r, cCwtsObjuid)),
-            peso_stagecode: num(cell(r, cPesoStage)),
-            id_componente_etapas: str(cell(r, cIdCompEtapas)),
-            modulo: str(cell(r, cModulo)),
-            units: num(cell(r, cUnits)),
-            conta_custo_programacao: str(cell(r, cContaCustoProg)),
-            iwp_objuid: str(cell(r, cIwpObjuid)),
-            documento: str(cell(r, cDoc)),
-            peso_absoluto: num(cell(r, cPesoAbs)),
-            kpi: str(cell(r, cKpi)),
-            nota: str(cell(r, cNota)),
-            recebimento: str(cell(r, cRecebimento)),
-            tag_id_proj: str(cell(r, cTagIdProj)),
-            codigo_grupo: str(cell(r, cCodGrupo)),
-            codigo_frente: str(cell(r, cCodFrente)),
-            codigo_tarefa: str(cell(r, cCodTarefa)),
-            dt_merge: parseTimestamp(cell(r, cDtMerge)),
-            ultima_oper: str(cell(r, cUltimaOper)),
-          });
+          rows.push(row as unknown as ParsedSconProgRow);
         }
 
         if (noComp > 0) warnings.push(`${noComp} linhas sem COMPONENTE (filtradas)`);
