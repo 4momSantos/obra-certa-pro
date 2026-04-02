@@ -11,7 +11,7 @@ const typeIcons: Record<string, React.ElementType> = {
 };
 
 interface FieldPickerProps {
-  onFieldSelect: (column: ColumnDef) => void;
+  onFieldSelect?: (column: ColumnDef) => void;
   onFieldDragStart?: (column: ColumnDef, e: React.DragEvent) => void;
 }
 
@@ -42,7 +42,7 @@ function TableGroup({ table, onFieldSelect, onFieldDragStart }: { table: TableDe
                   e.dataTransfer.effectAllowed = "copy";
                   onFieldDragStart?.(col, e);
                 }}
-                onClick={() => onFieldSelect(col)}
+                onClick={() => onFieldSelect?.(col)}
                 className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded cursor-grab active:cursor-grabbing transition-colors group"
               >
                 <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-40 transition-opacity" />
