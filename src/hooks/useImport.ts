@@ -167,11 +167,6 @@ export interface ParsedSigemRow {
 }
 
 export interface ParsedRelEventoRow {
-  item_ppu: string;
-  rel_status: string;
-  rel_status_item: string;
-  tag_agrup: string;
-  quantidade_ponderada: number;
   estrutura: string;
   fase: string;
   subfase: string;
@@ -186,13 +181,17 @@ export interface ParsedRelEventoRow {
   data_execucao: string | null;
   data_inf_execucao: string | null;
   executado_por: string;
-  necessita_evidencias: string;
+  necessita_evidencias: boolean;
   numero_evidencias: string;
   data_aprovacao: string | null;
   fiscal_responsavel: string;
   status: string;
   valor: number;
   comentario: string;
+  // Derived fields
+  agrupamento_ippu: string;
+  tag_criterio: string;
+  tag_descricao: string;
 }
 
 export interface ParsedSconRow {
