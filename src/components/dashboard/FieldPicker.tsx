@@ -1,149 +1,98 @@
-import { useState, useMemo } from "react";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
-} from "@/components/ui/sheet";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Database, Search, ChevronRight, Hash, Type, CalendarDays, CheckSquare,
-  Calendar, TrendingUp, FileText, Calculator, Users, Shield, Copy,
-} from "lucide-react";
-import { toast } from "sonner";
-import { dataModel, type ColumnDef, type TableDef } from "@/lib/data-model";
+import { useState } from "react";
+import { dataModel, TableDef, ColumnDef } from "@/lib/data-model";
+import { ChevronDown, ChevronRight, Table2, Hash, Type, ToggleLeft, Calendar, GripVertical } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const iconMap: Record<string, React.ElementType> = {
-  Calendar, TrendingUp, FileText, Calculator, Users, Shield,
+const typeIcons: Record<string, React.ElementType> = {
+  number: Hash,
+  text: Type,
+  boolean: ToggleLeft,
+  date: Calendar,
 };
 
-const typeIcons: Record<ColumnDef["type"], { icon: React.ElementType; label: string }> = {
-  number: { icon: Hash, label: "Número" },
-  text: { icon: Type, label: "Texto" },
-  date: { icon: CalendarDays, label: "Data" },
-  boolean: { icon: CheckSquare, label: "Booleano" },
-};
+interface FieldPickerProps {
+  onFieldSelect: (column: ColumnDef) => void;
+  onFieldDragStart?: (column: ColumnDef, e: React.DragEvent) => void;
+}
 
-function FieldRow({ table, column }: { table: TableDef; column: ColumnDef }) {
-  const TypeIcon = typeIcons[column.type].icon;
-  const path = `${table.name}.${column.name}`;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(path);
-      toast.success(`${path} copiado!`);
-    } catch {
-      toast.error("Não foi possível copiar");
-    }
-  };
+function TableGroup({ table, onFieldSelect, onFieldDragStart }: { table: TableDef } & FieldPickerProps) {
+  const [expanded, setExpanded] = useState(true);
 
   return (
-    <button
-      onClick={handleCopy}
-      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent/10 transition-colors group text-left"
-    >
-      <TypeIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="flex-1 truncate text-foreground">{column.label}</span>
-      {column.format && (
-        <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 shrink-0">
-          {column.format}
-        </Badge>
+    <div className="mb-1">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/50 rounded transition-colors"
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        <Table2 className="h-3.5 w-3.5 text-accent" />
+        {table.displayName}
+        <span className="text-[10px] text-muted-foreground ml-auto">{table.columns.length}</span>
+      </button>
+      {expanded && (
+        <div className="ml-3 border-l border-border/50 pl-2">
+          {table.columns.map((col) => {
+            const Icon = typeIcons[col.type] || Type;
+            return (
+              <div
+                key={`${col.table}.${col.name}`}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/field", JSON.stringify(col));
+                  e.dataTransfer.effectAllowed = "copy";
+                  onFieldDragStart?.(col, e);
+                }}
+                onClick={() => onFieldSelect(col)}
+                className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded cursor-grab active:cursor-grabbing transition-colors group"
+              >
+                <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-40 transition-opacity" />
+                <Icon className="h-3 w-3 shrink-0" />
+                <span className="truncate">{col.displayName}</span>
+                <span className="text-[9px] text-muted-foreground/50 ml-auto font-mono">{col.type}</span>
+              </div>
+            );
+          })}
+        </div>
       )}
-      <Copy className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-    </button>
+    </div>
   );
 }
 
-function TableAccordion({ table, search }: { table: TableDef; search: string }) {
-  const [open, setOpen] = useState(false);
-  const TableIcon = iconMap[table.icon] || Database;
-
-  const filtered = useMemo(() => {
-    if (!search) return table.columns;
-    const q = search.toLowerCase();
-    return table.columns.filter(
-      (c) => c.label.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
-    );
-  }, [table.columns, search]);
-
-  if (search && filtered.length === 0) return null;
-
-  return (
-    <Collapsible open={open || !!search} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors text-sm font-medium">
-        <ChevronRight className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${(open || search) ? "rotate-90" : ""}`} />
-        <TableIcon className="h-4 w-4 shrink-0 text-accent" />
-        <span className="flex-1 text-left truncate">{table.label}</span>
-        <Badge variant="secondary" className="text-[9px] px-1.5 h-4 shrink-0">
-          {filtered.length}
-        </Badge>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pl-5 pb-1">
-        {filtered.map((col) => (
-          <FieldRow key={col.name} table={table} column={col} />
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
-export function FieldPicker() {
+export function FieldPicker({ onFieldSelect, onFieldDragStart }: FieldPickerProps) {
   const [search, setSearch] = useState("");
 
-  const visibleTables = useMemo(() => {
-    if (!search) return dataModel;
-    const q = search.toLowerCase();
-    return dataModel.filter((t) =>
-      t.label.toLowerCase().includes(q) ||
-      t.columns.some((c) => c.label.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
-    );
-  }, [search]);
-
-  const totalColumns = dataModel.reduce((s, t) => s + t.columns.length, 0);
+  const filtered = dataModel.tables
+    .map((t) => ({
+      ...t,
+      columns: t.columns.filter((c) =>
+        c.displayName.toLowerCase().includes(search.toLowerCase()) ||
+        c.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    }))
+    .filter((t) => t.columns.length > 0);
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-          <Database className="h-3 w-3" />
-          Campos
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-80 sm:w-96 p-0 flex flex-col">
-        <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="text-sm flex items-center gap-2">
-            <Database className="h-4 w-4 text-accent" />
-            Campos Disponíveis
-            <Badge variant="secondary" className="text-[9px] ml-auto">{totalColumns} campos</Badge>
-          </SheetTitle>
-        </SheetHeader>
-
-        {/* Search */}
-        <div className="px-4 pb-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar campo..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 text-xs pl-8"
-            />
-          </div>
-        </div>
-
-        {/* Tables */}
-        <div className="flex-1 overflow-auto px-2 pb-4 space-y-0.5">
-          {visibleTables.length > 0 ? (
-            visibleTables.map((t) => (
-              <TableAccordion key={t.name} table={t} search={search} />
-            ))
-          ) : (
-            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-              Nenhum campo encontrado
-            </div>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <div className="flex flex-col h-full">
+      <div className="px-3 pb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Campos</p>
+        <input
+          type="text"
+          placeholder="Buscar campo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full h-9 sm:h-7 px-2 text-xs bg-muted/50 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+      <ScrollArea className="flex-1 px-1">
+        {filtered.map((table) => (
+          <TableGroup
+            key={table.name}
+            table={table}
+            onFieldSelect={onFieldSelect}
+            onFieldDragStart={onFieldDragStart}
+          />
+        ))}
+      </ScrollArea>
+    </div>
   );
 }

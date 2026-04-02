@@ -68,7 +68,7 @@ export function DonutWidget() {
 
   return (
     <WidgetWrapper title="Distribuição de Valores">
-      <div className="h-[300px] relative">
+      <div className="h-[240px] sm:h-[270px] lg:h-[300px] relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

@@ -85,7 +85,7 @@ export default function ETFWizardEquipGrid({
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="flex gap-2 sm:gap-4 flex-wrap">
         {[
           { label: 'Equip.', value: stats.totalEquip },
           { label: 'Tipos', value: stats.tipos },
@@ -151,7 +151,7 @@ export default function ETFWizardEquipGrid({
                               value={row.qtds[dk] || 0}
                               disabled={feriados.has(dk)}
                               onChange={e => updateQtd(idx, dk, parseInt(e.target.value) || 0)}
-                              className="h-7 w-12 text-center text-xs p-0"
+                              className="h-8 w-14 text-center text-xs p-0.5"
                             />
                           </td>
                         ))}
@@ -159,7 +159,7 @@ export default function ETFWizardEquipGrid({
                           <Badge variant={total > 0 ? 'default' : 'secondary'}>{total}</Badge>
                         </td>
                         <td className="px-1">
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeRow(idx)}>✕</Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRow(idx)}>✕</Button>
                         </td>
                       </tr>
                     );

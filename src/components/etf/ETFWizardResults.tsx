@@ -40,11 +40,11 @@ export default function ETFWizardResults({ results, onBack, onExport }: Props) {
   return (
     <div className="space-y-4">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
         {stats.map(s => (
           <Card key={s.label} className="glass-card">
             <CardContent className="p-3 text-center">
-              <p className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</p>
+              <p className={`text-lg sm:text-xl font-bold font-mono ${s.color}`}>{s.value}</p>
               <p className="text-xs text-muted-foreground">{s.label}</p>
             </CardContent>
           </Card>

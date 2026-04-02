@@ -203,7 +203,7 @@ function Hero() {
       <motion.div style={{ y: orb1Y }} className="absolute top-1/4 -left-32 pointer-events-none">
         <motion.div
           style={{ x: orb1MX, y: orb1MY }}
-          className="w-[440px] h-[440px] rounded-full bg-primary/[0.07] blur-3xl"
+          className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] lg:w-[440px] lg:h-[440px] rounded-full bg-primary/[0.07] blur-3xl"
         />
       </motion.div>
 
@@ -211,7 +211,7 @@ function Hero() {
       <motion.div style={{ y: orb2Y }} className="absolute bottom-1/4 -right-32 pointer-events-none">
         <motion.div
           style={{ x: orb2MX, y: orb2MY }}
-          className="w-[440px] h-[440px] rounded-full bg-accent/[0.07] blur-3xl"
+          className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] lg:w-[440px] lg:h-[440px] rounded-full bg-accent/[0.07] blur-3xl"
         />
       </motion.div>
 
@@ -220,13 +220,13 @@ function Hero() {
         style={{ y: orb3Y }}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
       >
-        <div className="w-[720px] h-[720px] rounded-full bg-chart-3/[0.025] blur-3xl" />
+        <div className="w-[400px] h-[400px] sm:w-[560px] sm:h-[560px] lg:w-[720px] lg:h-[720px] rounded-full bg-chart-3/[0.025] blur-3xl" />
       </motion.div>
 
       {/* Content with scroll parallax + fade */}
       <motion.div
         style={{ y: contentY, opacity: contentOpacity }}
-        className="relative z-10 max-w-4xl mx-auto text-center px-6"
+        className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6"
       >
         <motion.div initial="hidden" animate="visible" className="space-y-8">
           {/* Floating badge */}
@@ -303,7 +303,7 @@ function Hero() {
 
 function Modules() {
   return (
-    <section id="modulos" className="py-24 px-6">
+    <section id="modulos" className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden"
@@ -351,7 +351,7 @@ function Modules() {
 
 function Benefits() {
   return (
-    <section id="beneficios" className="py-24 px-6 bg-muted/30">
+    <section id="beneficios" className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-muted/30">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden"

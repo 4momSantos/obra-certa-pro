@@ -13,8 +13,8 @@ export function SeriesToggle() {
   const { filters, toggleSeries } = useDashboardFilters();
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-muted-foreground mr-1">Séries:</span>
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+      <span className="text-xs text-muted-foreground mr-0.5 sm:mr-1">Séries:</span>
       {seriesConfig.map((s) => {
         const visible = filters.seriesVisibility[s.key];
         return (
@@ -22,7 +22,7 @@ export function SeriesToggle() {
             key={s.key}
             variant={visible ? "default" : "outline"}
             size="sm"
-            className="h-7 text-[10px] gap-1.5 px-2"
+            className="h-8 sm:h-7 text-[10px] gap-1.5 px-2.5 sm:px-2"
             onClick={() => toggleSeries(s.key)}
           >
             <span className={`h-2 w-2 rounded-full ${visible ? s.color : "bg-muted-foreground/30"}`} />

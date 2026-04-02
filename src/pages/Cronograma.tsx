@@ -105,7 +105,7 @@ export default function Cronograma() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+      <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
         {[
           { label: "Contrato", value: totals.contrato, color: "text-foreground" },
           { label: "Acumulado", value: totals.acum, color: "text-chart-3" },

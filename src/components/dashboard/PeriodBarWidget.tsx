@@ -17,7 +17,7 @@ export function PeriodBarWidget() {
 
   return (
     <WidgetWrapper title="Comparativo por Período">
-      <div className="h-[340px]">
+      <div className="h-[260px] sm:h-[300px] lg:h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={filteredCurvaS} onClick={handleClick} style={{ cursor: "pointer" }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />

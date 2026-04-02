@@ -5,7 +5,7 @@ import { WidgetWrapper } from "./WidgetWrapper";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
-type SortField = "label" | "baseline" | "previsto" | "projetado" | "realizado" | "adiantamento" | "variacao";
+type SortField = "label" | "baseline" | "previsto" | "projetado" | "realizado" | "adiantamento";
 type SortDir = "asc" | "desc";
 
 export function DataTableWidget() {
@@ -23,14 +23,9 @@ export function DataTableWidget() {
   };
 
   const sorted = useMemo(() => {
-    const withVariacao = filteredPeriods.map(p => ({
-      ...p,
-      variacao: p.realizado - p.baseline,
-    }));
-    return [...withVariacao].sort((a, b) => {
-      const field = sortField;
-      const va = a[field as keyof typeof a];
-      const vb = b[field as keyof typeof b];
+    return [...filteredPeriods].sort((a, b) => {
+      const va = a[sortField];
+      const vb = b[sortField];
       if (typeof va === "string" && typeof vb === "string") {
         return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
       }
@@ -50,23 +45,12 @@ export function DataTableWidget() {
     { field: "projetado", label: "Projetado" },
     { field: "realizado", label: "Realizado" },
     { field: "adiantamento", label: "Adiant." },
-    { field: "variacao", label: "Variação" },
   ];
-
-  if (sorted.length === 0) {
-    return (
-      <WidgetWrapper title="Tabela de Períodos" noPadding>
-        <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-          Nenhum dado para os filtros selecionados
-        </div>
-      </WidgetWrapper>
-    );
-  }
 
   return (
     <WidgetWrapper title="Tabela de Períodos" noPadding>
-      <div className="overflow-auto max-h-[380px]">
-        <table className="w-full text-xs">
+      <div className="overflow-x-auto overflow-y-auto max-h-[300px] sm:max-h-[380px]">
+        <table className="w-full text-xs min-w-[600px]">
           <thead className="sticky top-0 bg-card z-10">
             <tr className="border-b border-border/50">
               {columns.map((col) => (
@@ -91,22 +75,17 @@ export function DataTableWidget() {
                 <tr
                   key={p.id}
                   className={`border-b border-border/30 cursor-pointer transition-colors ${
-                    isSelected ? "bg-accent" : "hover:bg-muted/50"
+                    isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                   } ${filters.selectedPeriod && !isSelected ? "opacity-40" : ""}`}
                   onClick={() => setSelectedPeriod(p.label)}
                 >
-                  <td className="px-3 py-2 font-mono font-medium">{p.label}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.baseline)}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.previsto)}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.projetado)}</td>
-                  <td className="px-3 py-2 font-mono font-medium">{formatCurrency(p.realizado)}</td>
-                  <td className="px-3 py-2 font-mono">{formatCurrency(p.adiantamento)}</td>
-                  <td className={`px-3 py-2 font-mono font-medium ${
-                    p.variacao >= 0 ? "text-green-500" : "text-red-500"
-                  }`}>
-                    {p.variacao >= 0 ? "+" : ""}{formatCurrency(p.variacao)}
-                  </td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 sm:px-3 py-2 font-mono font-medium">{p.label}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.baseline)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.previsto)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.projetado)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono font-medium">{formatCurrency(p.realizado)}</td>
+                  <td className="px-2 sm:px-3 py-2 font-mono">{formatCurrency(p.adiantamento)}</td>
+                  <td className="px-2 sm:px-3 py-2">
                     <Badge variant={p.fechado ? "default" : "secondary"} className="text-[9px]">
                       {p.fechado ? "Fechado" : "Aberto"}
                     </Badge>

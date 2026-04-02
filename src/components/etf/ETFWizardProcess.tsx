@@ -38,7 +38,7 @@ export default function ETFWizardProcess({ progress, logs, isComplete }: Props) 
           </div>
           <Progress value={progress} className="h-2" />
 
-          <ScrollArea className="h-[400px] rounded-lg border bg-muted/30 p-3">
+          <ScrollArea className="h-[280px] sm:h-[350px] md:h-[400px] rounded-lg border bg-muted/30 p-2 sm:p-3">
             <div className="space-y-0.5 font-mono text-xs">
               {logs.map((log, i) => (
                 <motion.div

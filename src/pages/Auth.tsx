@@ -24,7 +24,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="absolute inset-0 gradient-primary opacity-[0.03]" />
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-[92vw] sm:max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl gradient-accent shadow-lg mb-4">
