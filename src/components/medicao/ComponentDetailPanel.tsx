@@ -72,7 +72,7 @@ export function ComponentDetailPanel({ componente, itemWbs, onBack, onSelectComp
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("vw_scon_componentes")
+        .from("vw_scon_componentes" as any)
         .select("componente, avanco, disciplina, total_etapas")
         .eq("item_wbs", itemWbs)
         .neq("componente", componente)
