@@ -340,6 +340,287 @@ export type Database = {
           },
         ]
       }
+      config_alertas: {
+        Row: {
+          ativo: boolean | null
+          contrato_id: string
+          descricao: string | null
+          id: string
+          severidade: string | null
+          threshold_valor: number | null
+          tipo_alerta: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          contrato_id: string
+          descricao?: string | null
+          id?: string
+          severidade?: string | null
+          threshold_valor?: number | null
+          tipo_alerta: string
+        }
+        Update: {
+          ativo?: boolean | null
+          contrato_id?: string
+          descricao?: string | null
+          id?: string
+          severidade?: string | null
+          threshold_valor?: number | null
+          tipo_alerta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_alertas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_disciplinas: {
+        Row: {
+          ativa: boolean | null
+          codigo: string
+          contrato_id: string
+          cor: string | null
+          icone: string | null
+          id: string
+          nome: string
+          nome_scon: string | null
+          ordem: number | null
+          sigla_documento: string | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          codigo: string
+          contrato_id: string
+          cor?: string | null
+          icone?: string | null
+          id?: string
+          nome: string
+          nome_scon?: string | null
+          ordem?: number | null
+          sigla_documento?: string | null
+        }
+        Update: {
+          ativa?: boolean | null
+          codigo?: string
+          contrato_id?: string
+          cor?: string | null
+          icone?: string | null
+          id?: string
+          nome?: string
+          nome_scon?: string | null
+          ordem?: number | null
+          sigla_documento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_disciplinas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_filtro_documentos: {
+        Row: {
+          acao: string | null
+          ativo: boolean | null
+          contrato_id: string
+          created_at: string | null
+          descricao: string | null
+          id: string
+          tipo: string
+          valor: string
+        }
+        Insert: {
+          acao?: string | null
+          ativo?: boolean | null
+          contrato_id: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          tipo: string
+          valor: string
+        }
+        Update: {
+          acao?: string | null
+          ativo?: boolean | null
+          contrato_id?: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          tipo?: string
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_filtro_documentos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_mapeamento_status: {
+        Row: {
+          classificacao: string
+          contrato_id: string
+          cor: string | null
+          descricao: string | null
+          id: string
+          sistema: string
+          status_original: string
+        }
+        Insert: {
+          classificacao: string
+          contrato_id: string
+          cor?: string | null
+          descricao?: string | null
+          id?: string
+          sistema: string
+          status_original: string
+        }
+        Update: {
+          classificacao?: string
+          contrato_id?: string
+          cor?: string | null
+          descricao?: string | null
+          id?: string
+          sistema?: string
+          status_original?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_mapeamento_status_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_parser_documento: {
+        Row: {
+          ativo: boolean | null
+          campos: string[]
+          contrato_id: string
+          exemplo: string | null
+          id: string
+          nome: string
+          regex_pattern: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          campos: string[]
+          contrato_id: string
+          exemplo?: string | null
+          id?: string
+          nome: string
+          regex_pattern: string
+        }
+        Update: {
+          ativo?: boolean | null
+          campos?: string[]
+          contrato_id?: string
+          exemplo?: string | null
+          id?: string
+          nome?: string
+          regex_pattern?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_parser_documento_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_regras_medicao: {
+        Row: {
+          contrato_id: string
+          descricao: string | null
+          id: string
+          regra: string
+          tipo: string | null
+          valor: string
+        }
+        Insert: {
+          contrato_id: string
+          descricao?: string | null
+          id?: string
+          regra: string
+          tipo?: string | null
+          valor: string
+        }
+        Update: {
+          contrato_id?: string
+          descricao?: string | null
+          id?: string
+          regra?: string
+          tipo?: string | null
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_regras_medicao_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_visibilidade: {
+        Row: {
+          contrato_id: string
+          disciplinas_permitidas: string[] | null
+          escopo: string
+          id: string
+          role: string
+          ver_dados_pessoais: boolean | null
+          ver_documentos_recusados: boolean | null
+          ver_historico_completo: boolean | null
+          ver_valor_financeiro: boolean | null
+        }
+        Insert: {
+          contrato_id: string
+          disciplinas_permitidas?: string[] | null
+          escopo?: string
+          id?: string
+          role: string
+          ver_dados_pessoais?: boolean | null
+          ver_documentos_recusados?: boolean | null
+          ver_historico_completo?: boolean | null
+          ver_valor_financeiro?: boolean | null
+        }
+        Update: {
+          contrato_id?: string
+          disciplinas_permitidas?: string[] | null
+          escopo?: string
+          id?: string
+          role?: string
+          ver_dados_pessoais?: boolean | null
+          ver_documentos_recusados?: boolean | null
+          ver_historico_completo?: boolean | null
+          ver_valor_financeiro?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_visibilidade_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracoes: {
         Row: {
           chave: string
@@ -1573,6 +1854,7 @@ export type Database = {
       rel_eventos: {
         Row: {
           agrupamento: string | null
+          agrupamento_ippu: string | null
           batch_id: string
           caracteristica: string | null
           comentario: string | null
@@ -1587,24 +1869,22 @@ export type Database = {
           fase: string | null
           fiscal_responsavel: string | null
           id: string
-          item_ppu: string | null
-          necessita_evidencias: string | null
+          necessita_evidencias: boolean | null
           numero_evidencias: string | null
           peso_financeiro: number | null
           peso_fisico: number | null
           qtd: number | null
-          quantidade_ponderada: number | null
-          rel_status: string | null
-          rel_status_item: string | null
           status: string | null
           subfase: string | null
           tag: string | null
-          tag_agrup: string | null
+          tag_criterio: string | null
+          tag_descricao: string | null
           um: string | null
           valor: number | null
         }
         Insert: {
           agrupamento?: string | null
+          agrupamento_ippu?: string | null
           batch_id: string
           caracteristica?: string | null
           comentario?: string | null
@@ -1619,24 +1899,22 @@ export type Database = {
           fase?: string | null
           fiscal_responsavel?: string | null
           id?: string
-          item_ppu?: string | null
-          necessita_evidencias?: string | null
+          necessita_evidencias?: boolean | null
           numero_evidencias?: string | null
           peso_financeiro?: number | null
           peso_fisico?: number | null
           qtd?: number | null
-          quantidade_ponderada?: number | null
-          rel_status?: string | null
-          rel_status_item?: string | null
           status?: string | null
           subfase?: string | null
           tag?: string | null
-          tag_agrup?: string | null
+          tag_criterio?: string | null
+          tag_descricao?: string | null
           um?: string | null
           valor?: number | null
         }
         Update: {
           agrupamento?: string | null
+          agrupamento_ippu?: string | null
           batch_id?: string
           caracteristica?: string | null
           comentario?: string | null
@@ -1651,19 +1929,16 @@ export type Database = {
           fase?: string | null
           fiscal_responsavel?: string | null
           id?: string
-          item_ppu?: string | null
-          necessita_evidencias?: string | null
+          necessita_evidencias?: boolean | null
           numero_evidencias?: string | null
           peso_financeiro?: number | null
           peso_fisico?: number | null
           qtd?: number | null
-          quantidade_ponderada?: number | null
-          rel_status?: string | null
-          rel_status_item?: string | null
           status?: string | null
           subfase?: string | null
           tag?: string | null
-          tag_agrup?: string | null
+          tag_criterio?: string | null
+          tag_descricao?: string | null
           um?: string | null
           valor?: number | null
         }
@@ -2646,29 +2921,45 @@ export type Database = {
       vw_fiscais: {
         Row: {
           aprovados: number | null
+          avg_aging_dias: number | null
+          contrato_id: string | null
           fiscal_responsavel: string | null
-          pendentes: number | null
-          total: number | null
+          total_eventos: number | null
           valor_aprovado: number | null
-          valor_pendente: number | null
+          valor_total: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rel_eventos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vw_gitec_por_ppu: {
         Row: {
-          eventos_concluidos: number | null
-          eventos_pendentes: number | null
+          aprovados: number | null
+          contrato_id: string | null
           item_ppu: string | null
-          status_aprovado: number | null
-          status_pendente: number | null
+          pendentes: number | null
           total_eventos: number | null
+          ultima_aprovacao: string | null
+          ultima_inf_execucao: string | null
           valor_aprovado: number | null
           valor_pendente: number | null
-          valor_ponderado_concluido: number | null
-          valor_ponderado_total: number | null
           valor_total: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rel_eventos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vw_itens_nao_medidos: {
         Row: {
