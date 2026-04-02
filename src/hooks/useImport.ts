@@ -641,26 +641,71 @@ const SCON_PROG_COLUMNS: Record<string, SconColDef> = {
 
 function parseSconProgDate(v: unknown): string | null {
   if (v == null || v === "") return null;
-  const n = parseFloat(String(v));
-  if (!isNaN(n) && n > 40000) {
-    return new Date((n - 25569) * 86400000).toISOString().slice(0, 10);
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    return v.toISOString().slice(0, 10);
   }
+  const s = String(v).trim();
+  if (!s) return null;
+  // Excel serial number (e.g. 46101)
+  const n = parseFloat(s);
+  if (!isNaN(n) && n > 40000 && n < 100000) {
+    const d = XLSX.SSF.parse_date_code(n);
+    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+  }
+  // "2026/03/16" or "2026-03-16"
+  const iso = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  // "16/03/2026"
+  const dmy = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
   return dateVal(v);
 }
 
 function parseSconProgTimestamp(v: unknown): string | null {
   if (v == null || v === "") return null;
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    return v.toISOString();
+  }
   const s = String(v).trim();
-  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00`;
+  if (!s) return null;
+  // Excel serial with fractional time
+  const n = parseFloat(s);
+  if (!isNaN(n) && n > 40000 && n < 100000) {
+    const dt = new Date((n - 25569) * 86400000);
+    if (!isNaN(dt.getTime())) return dt.toISOString();
+  }
+  // "23/03/2026 15:07" or "23/03/2026 15:07:30"
+  const dmy = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}T${dmy[4]}:${dmy[5]}:${dmy[6] || "00"}`;
+  // "2026-03-23T15:07:00" or "2026/03/23 15:07"
+  const ymd = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})[\sT](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (ymd) return `${ymd[1]}-${ymd[2]}-${ymd[3]}T${ymd[4]}:${ymd[5]}:${ymd[6] || "00"}`;
   return s;
+}
+
+function parseSconProgNumber(v: unknown): number {
+  if (v == null) return 0;
+  if (typeof v === "number") return isNaN(v) ? 0 : v;
+  const s = String(v).trim().replace(/\s/g, "");
+  if (!s) return 0;
+  // Handle comma as decimal separator: "18,59167" → 18.59167
+  // But if both dot and comma exist, comma is thousands: "1.234,56" → 1234.56
+  if (s.includes(",") && s.includes(".")) {
+    return parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0;
+  }
+  if (s.includes(",")) {
+    return parseFloat(s.replace(",", ".")) || 0;
+  }
+  return parseFloat(s) || 0;
 }
 
 function parseSconProgCellValue(v: unknown, type: SconColDef['type']): string | number | null {
   switch (type) {
     case 'text':     return str(v);
-    case 'number':   return num(v);
-    case 'integer':  return Math.round(num(v));
+    case 'number':   return parseSconProgNumber(v);
+    case 'integer':  return Math.round(parseSconProgNumber(v));
     case 'date':     return parseSconProgDate(v);
     case 'datetime': return parseSconProgTimestamp(v);
   }
