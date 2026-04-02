@@ -360,8 +360,41 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
 
 function extractIppuFromAgrupamento(agrup: string): string {
   if (!agrup) return "";
-  const m = agrup.match(/^([A-Z])_(\d+(?:\.\d+)*)_/);
-  return m ? `${m[1]}-${m[2]}` : "";
+  // Pattern: LETTER_NUMBERS_DESCRIPTION e.g. "B_1.1_Mobilização..."
+  const m = agrup.match(/^([A-Z])_(\d[\d.]*(?:_\d[\d.]*)*)/);
+  if (m) return `${m[1]}-${m[2]}`;
+  // ETF pattern: E_ETF_3.2.1_MO_...
+  const mETF = agrup.match(/^([A-Z])_(\w+_\d[\d.]*)/);
+  if (mETF) return `${mETF[1]}-${mETF[2].replace(/_/g, "-")}`;
+  // Fallback
+  const parts = agrup.split("_");
+  if (parts.length >= 2) return parts.slice(0, 2).join("-");
+  return agrup;
+}
+
+function extractTagParts(tag: string): { criterio: string; descricao: string } {
+  if (!tag) return { criterio: "", descricao: "" };
+  const idx = tag.indexOf("_");
+  if (idx > 0) {
+    return {
+      criterio: tag.substring(0, idx).trim(),
+      descricao: tag.substring(idx + 1).trim(),
+    };
+  }
+  return { criterio: tag, descricao: "" };
+}
+
+function parseGitecDate(val: unknown): string | null {
+  if (val == null || val === "") return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val.toISOString();
+  const s = String(val).trim();
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function parseBoolean(val: unknown): boolean {
+  return String(val || "").trim().toLowerCase() === "sim";
 }
 
 function isPivotArtifact(val: string): boolean {
