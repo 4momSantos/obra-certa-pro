@@ -227,6 +227,7 @@ export function SconExecucaoTable({ items, existingIppus, onAddItems }: Props) {
                     {row.disciplina ? <Badge variant="outline" className="text-[10px]">{row.disciplina}</Badge> : "—"}
                   </TableCell>
                   <TableCell className="text-xs text-right tabular-nums">{row.total_exec.toFixed(0)}</TableCell>
+                  <TableCell className="text-xs text-right tabular-nums font-mono">{formatCompact(row.valor_exec)}</TableCell>
                   <TableCell className="text-xs text-right tabular-nums">{(row.avanco * 100).toFixed(1)}%</TableCell>
                   <TableCell>
                     {row.status_gitec ? (
