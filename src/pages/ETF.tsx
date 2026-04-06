@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Settings, Grid3X3, Zap, BarChart3, Download, RotateCcw } from 'lucide-react';
+import { Upload, Settings, Grid3X3, Zap, BarChart3, Download, RotateCcw, History, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useETF } from '@/contexts/ETFContext';
 import ETFWizardUpload from '@/components/etf/ETFWizardUpload';
@@ -8,8 +9,11 @@ import ETFWizardEquipGrid from '@/components/etf/ETFWizardEquipGrid';
 import ETFWizardProcess from '@/components/etf/ETFWizardProcess';
 import ETFWizardResults from '@/components/etf/ETFWizardResults';
 import ETFWizardExport from '@/components/etf/ETFWizardExport';
+import ETFHistorico from '@/components/etf/ETFHistorico';
 import type { WizardStep } from '@/types/etf';
 import { dateKey } from '@/lib/etf-processing';
+
+type ETFView = 'wizard' | 'historico';
 
 const STEPS: { num: WizardStep; label: string; icon: React.ReactNode }[] = [
   { num: 1, label: 'Upload', icon: <Upload className="h-4 w-4" /> },
@@ -28,6 +32,7 @@ export default function ETF() {
     logs, progress, isProcessing, results,
     startProcessing, resetWizard,
   } = useETF();
+  const [view, setView] = useState<ETFView>('wizard');
 
   const handleConfigNext = () => {
     if (equipamentos.length > 0) {
@@ -57,16 +62,40 @@ export default function ETF() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Wizard ETF Semanal</h1>
-          <p className="text-sm text-muted-foreground mt-1">Processamento de Efetivo Técnico e Funcional</p>
+          <h1 className="text-2xl font-bold tracking-tight">ETF Semanal</h1>
+          <p className="text-sm text-muted-foreground mt-1">Processamento e histórico de Efetivo Técnico e Funcional</p>
         </div>
-        {step > 1 && (
+        {view === 'wizard' && step > 1 && (
           <Button variant="outline" size="sm" className="gap-2" onClick={resetWizard}>
             <RotateCcw className="h-3.5 w-3.5" /> Reiniciar
           </Button>
         )}
       </div>
 
+      {/* View tabs */}
+      <div className="flex gap-1 border-b">
+        <button
+          onClick={() => setView('wizard')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            view === 'wizard' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Wand2 className="h-4 w-4" /> Wizard
+        </button>
+        <button
+          onClick={() => setView('historico')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            view === 'historico' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <History className="h-4 w-4" /> Histórico
+        </button>
+      </div>
+
+      {view === 'historico' && <ETFHistorico />}
+
+      {view === 'wizard' && (
+        <>
       {/* Stepper */}
       <div className="flex gap-1">
         {STEPS.map(s => {
@@ -156,8 +185,13 @@ export default function ETF() {
           semana={config.semana}
           inicio={config.inicio}
           fim={config.fim}
+          config={config}
+          feriados={feriados}
           onBack={() => setStep(5)}
+          onGoToHistorico={() => setView('historico')}
         />
+      )}
+        </>
       )}
     </motion.div>
   );
