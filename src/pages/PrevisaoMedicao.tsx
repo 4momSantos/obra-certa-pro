@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useBMPeriodos, usePrevisaoBM, usePrevisaoResumo, usePPUElegiveis, useSconMap, useClassifMap, useProjetadoBM } from "@/hooks/usePrevisao";
 import { useSconExecucaoBM, useItensNaoMedidos } from "@/hooks/useSconExecucao";
+import { useAcompanhamentoBM } from "@/hooks/useAcompanhamento";
+import { BMTrackingTable } from "@/components/previsao/BMTrackingTable";
 import { PrevisaoKPIs } from "@/components/previsao/PrevisaoKPIs";
 import { PrevisaoResumo } from "@/components/previsao/PrevisaoResumo";
 import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
