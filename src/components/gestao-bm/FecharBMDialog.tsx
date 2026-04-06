@@ -168,6 +168,9 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
       toast.success(`${bmName} fechado com sucesso`);
       queryClient.invalidateQueries({ queryKey: ["bm-periodo"] });
       queryClient.invalidateQueries({ queryKey: ["bm-periodos"] });
+      queryClient.invalidateQueries({ queryKey: ["bm-periodo-banner", bmName] });
+      queryClient.invalidateQueries({ queryKey: ["previsao-resumo-banner", bmName] });
+      queryClient.invalidateQueries({ queryKey: ["cronograma-bm-banner", bmName] });
       queryClient.invalidateQueries({ queryKey: ["previsao"] });
       queryClient.invalidateQueries({ queryKey: ["ultimo-bm"] });
       queryClient.invalidateQueries({ queryKey: ["bm-kpis"] });

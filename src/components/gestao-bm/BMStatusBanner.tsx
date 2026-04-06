@@ -55,6 +55,27 @@ export function BMStatusBanner({ bmName }: Props) {
     },
   });
 
+  const { data: cronogramaValues } = useQuery({
+    queryKey: ["cronograma-bm-banner", bmName],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cronograma_bm_values")
+        .select("tipo, valor")
+        .eq("bm_name", bmName);
+      if (error) throw error;
+
+      const totals = { previsto: 0, realizado: 0, projetado: 0 };
+      (data || []).forEach((row: any) => {
+        const valor = Number(row.valor) || 0;
+        if (row.tipo === "Previsto") totals.previsto += valor;
+        else if (row.tipo === "Realizado") totals.realizado += valor;
+        else if (row.tipo === "Projetado") totals.projetado += valor;
+      });
+
+      return totals;
+    },
+  });
+
   const { data: totalElegiveis } = useQuery({
     queryKey: ["total-elegiveis-banner"],
     staleTime: 5 * 60_000,
@@ -149,6 +170,9 @@ export function BMStatusBanner({ bmName }: Props) {
     const valorAtivo = Number(resumo?.valor_ativo || 0);
     const postergados = Number(resumo?.postergados || 0);
     const totalItens = Number(resumo?.total_itens || 0);
+    const hasPrevisoes = totalItens > 0;
+    const cronogramaPrevisto = Number(cronogramaValues?.previsto || 0);
+    const cronogramaMedido = Number(cronogramaValues?.realizado || cronogramaValues?.projetado || 0);
     const preenchimento = totalElegiveis ? Math.round((totalItens / totalElegiveis) * 100) : 0;
 
     const diasColor = dias > 10 ? "text-emerald-600" : dias >= 5 ? "text-amber-600" : "text-destructive";
@@ -160,6 +184,9 @@ export function BMStatusBanner({ bmName }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-sm">{bmName}</span>
               <Badge className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-0">ABERTO</Badge>
+              {!hasPrevisoes && (cronogramaPrevisto > 0 || cronogramaMedido > 0) && (
+                <Badge variant="secondary" className="text-[10px]">via cronograma</Badge>
+              )}
               <span className={cn("text-xs font-medium", diasColor)}>
                 {dias} {dias === 1 ? "dia restante" : "dias restantes"}
               </span>
@@ -174,13 +201,21 @@ export function BMStatusBanner({ bmName }: Props) {
             <Calendar className="h-3 w-3 inline mr-1" />
             Período: {fmtDate(range.start)} → {fmtDate(range.end)}
           </p>
-          <p className="text-xs text-foreground">
-            <strong>{itensAtivos}</strong> itens previstos · <strong>{formatCompact(valorAtivo)}</strong> · <strong>{postergados}</strong> postergados
-          </p>
-          <div className="flex items-center gap-2 max-w-sm">
-            <Progress value={preenchimento} className="h-2 flex-1" />
-            <span className="text-[11px] tabular-nums text-muted-foreground">{preenchimento}% preenchido</span>
-          </div>
+          {hasPrevisoes ? (
+            <>
+              <p className="text-xs text-foreground">
+                <strong>{itensAtivos}</strong> itens previstos · <strong>{formatCompact(valorAtivo)}</strong> · <strong>{postergados}</strong> postergados
+              </p>
+              <div className="flex items-center gap-2 max-w-sm">
+                <Progress value={preenchimento} className="h-2 flex-1" />
+                <span className="text-[11px] tabular-nums text-muted-foreground">{preenchimento}% preenchido</span>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-foreground">
+              Cronograma importado · previsto <strong>{formatCompact(cronogramaPrevisto)}</strong> · realizado <strong>{formatCompact(cronogramaMedido)}</strong>
+            </p>
+          )}
         </div>
         <NotesPanel contexto="bm" referencia={bmName} />
         <FecharBMDialog open={fecharOpen} onClose={() => setFecharOpen(false)} bmName={bmName} />
