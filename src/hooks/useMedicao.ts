@@ -114,7 +114,10 @@ export function useMedicaoData() {
     sigemView.forEach((s: any) => { if (s.ppu) sigemMap.set(s.ppu, s); });
 
     const gitecMap = new Map<string, any>();
-    gitecView.forEach((g: any) => { if (g.item_ppu) gitecMap.set(g.item_ppu, g); });
+    gitecView.forEach((g: any) => {
+      const key = g.item_ppu || g.ppu;
+      if (key) gitecMap.set(key, g);
+    });
 
     let totalContrato = 0;
     let totalPrevisto = 0;
