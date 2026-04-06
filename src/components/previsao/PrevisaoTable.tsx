@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -155,8 +155,8 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                 const st = STATUS_STYLES[item.status] || STATUS_STYLES.previsto;
                 const isExpanded = expandedJust === item.id;
                 return (
-                  <>
-                    <TableRow key={item.id} className="group">
+                  <Fragment key={item.id}>
+                    <TableRow className="group">
                       <TableCell>
                         <Badge className={cn("text-[10px] border-0", st.bg, st.text)}>{st.label}</Badge>
                       </TableCell>
@@ -223,7 +223,7 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                       )}
                     </TableRow>
                     {isExpanded && item.justificativa && (
-                      <TableRow key={`${item.id}-just`}>
+                      <TableRow>
                         <TableCell colSpan={readonly ? 10 : 11} className={cn(
                           "py-2 pl-10 border-l-2",
                           item.status === "postergado" ? "border-amber-400 bg-amber-50/50 dark:bg-amber-950/10" :
@@ -234,7 +234,7 @@ export function PrevisaoTable({ items, readonly, bmName }: Props) {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}

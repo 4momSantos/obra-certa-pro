@@ -129,6 +129,9 @@ export function useItensNaoMedidos(bmName: string) {
     enabled: !!user && !!bmName,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<ItemNaoMedido[]> => {
+      // Extrai o número do BM atual para filtrar apenas BMs anteriores
+      const currentBmNum = parseInt(bmName.replace("BM-", ""), 10);
+
       const rows: any[] = [];
       let from = 0;
       const PAGE = 1000;
@@ -136,7 +139,7 @@ export function useItensNaoMedidos(bmName: string) {
         const { data, error } = await supabase
           .from("vw_itens_nao_medidos" as any)
           .select("*")
-          .neq("bm_name_calc", bmName) // passivos = BMs anteriores
+          .neq("bm_name_calc", bmName) // exclui o BM atual
           .range(from, from + PAGE - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -144,20 +147,28 @@ export function useItensNaoMedidos(bmName: string) {
         if (data.length < PAGE) break;
         from += PAGE;
       }
-      return rows.map((r: any) => ({
-        item_wbs: r.item_wbs || "",
-        componente: r.componente || "",
-        disciplina: r.disciplina || "",
-        bm_name_calc: r.bm_name_calc || "",
-        criterio_nome: r.criterio_nome,
-        item_criterio: r.item_criterio,
-        tag: r.tag,
-        tag_desc: r.tag_desc,
-        total_exec_geral: Number(r.total_exec_geral) || 0,
-        avanco_ponderado: Number(r.avanco_ponderado) || 0,
-        unit_valor: Number(r.unit_valor) || 0,
-        dicionario_etapa: r.dicionario_etapa,
-      }));
+
+      return rows
+        .filter(r => {
+          // Filtra apenas BMs com número MENOR que o atual (passivos de BMs anteriores)
+          if (!r.bm_name_calc) return false;
+          const num = parseInt(String(r.bm_name_calc).replace("BM-", ""), 10);
+          return !isNaN(num) && !isNaN(currentBmNum) && num < currentBmNum;
+        })
+        .map((r: any) => ({
+          item_wbs: r.item_wbs || "",
+          componente: r.componente || "",
+          disciplina: r.disciplina || "",
+          bm_name_calc: r.bm_name_calc || "",
+          criterio_nome: r.criterio_nome,
+          item_criterio: r.item_criterio,
+          tag: r.tag,
+          tag_desc: r.tag_desc,
+          total_exec_geral: Number(r.total_exec_geral) || 0,
+          avanco_ponderado: Number(r.avanco_ponderado) || 0,
+          unit_valor: Number(r.unit_valor) || 0,
+          dicionario_etapa: r.dicionario_etapa,
+        }));
     },
   });
 }

@@ -42,9 +42,12 @@ export default function PrevisaoMedicao() {
     const fechados = periodos.filter((p: any) => p.status === "fechado");
     if (fechados.length > 0) {
       const maxNum = Math.max(...fechados.map((f: any) => f.bm_number));
-      return periodos.find((p: any) => p.bm_number === maxNum + 1) || periodos[0];
+      // Tenta o próximo BM após o mais recente fechado; senão retorna o mais recente fechado
+      return periodos.find((p: any) => p.bm_number === maxNum + 1)
+        || periodos.find((p: any) => p.bm_number === maxNum)
+        || periodos[periodos.length - 1];
     }
-    return periodos[0];
+    return periodos[periodos.length - 1] || periodos[0];
   }, [periodos]);
 
   const [selectedBmName, setSelectedBmName] = useState<string | null>(null);
@@ -61,7 +64,11 @@ export default function PrevisaoMedicao() {
 
   const ppuMap = useMemo(() => {
     const m = new Map<string, any>();
-    (ppuItems || []).forEach((p: any) => m.set(p.item_ppu, p));
+    (ppuItems || []).forEach((p: any) => {
+      // Normaliza para traços para compatibilidade com item_wbs do SCON
+      const key = String(p.item_ppu).replace(/_/g, "-");
+      m.set(key, p);
+    });
     return m;
   }, [ppuItems]);
 
@@ -89,7 +96,8 @@ export default function PrevisaoMedicao() {
   const valorAtivo = enrichedItems.filter(i => i.status === "previsto" || i.status === "confirmado").reduce((s, i) => s + i.valor_previsto, 0);
   const postergados = enrichedItems.filter(i => i.status === "postergado").length;
   const valorPostergado = enrichedItems.filter(i => i.status === "postergado").reduce((s, i) => s + i.valor_previsto, 0);
-  const existingIppus = new Set(enrichedItems.map(i => i.ippu));
+  // Normaliza para traços para compatibilidade com item_wbs do SCON e item_ppu da PPU
+  const existingIppus = new Set<string>(enrichedItems.map(i => String(i.ippu).replace(/_/g, "-")));
   const hasConfirmed = itensAtivos > 0;
 
   const isLoading = loadingPeriodos || loadingPrevisoes;

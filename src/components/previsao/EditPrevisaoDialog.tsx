@@ -34,13 +34,19 @@ export function EditPrevisaoDialog({ open, onClose, item, bmName }: Props) {
   };
 
   const handleSave = () => {
+    const valorNum = Number(valor) || 0;
+    const qtdNum = Number(qtd) || 0;
+    if (valorNum <= 0) {
+      toast.error("O valor previsto deve ser maior que zero.");
+      return;
+    }
     mutation.mutate(
       {
         id: item.id,
         ippu: item.ippu,
         bmName,
-        qtd_prevista: Number(qtd) || 0,
-        valor_previsto: Number(valor) || 0,
+        qtd_prevista: qtdNum,
+        valor_previsto: valorNum,
         justificativa: comentario,
       },
       {

@@ -62,9 +62,9 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [itemData, setItemData] = useState<Map<string, SelectedItemData>>(new Map());
 
-  // Available PPUs (not already in previsao)
-  const available = useMemo(() => {
-    let items = ppuItems.filter(p => (Number(p.valor_total) || 0) > 0);
+  // Available PPUs
+  const { available, totalFiltered } = useMemo(() => {
+    let items = ppuItems.filter(p => (Number(p.valor_total) || 0) > 0 && !existingIppus.has(p.item_ppu));
     if (search) {
       const s = search.toLowerCase();
       items = items.filter(p =>
@@ -77,8 +77,12 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
         return (cl?.disciplina || p.disc || "") === discFilter;
       });
     }
-    return items.sort((a, b) => (Number(b.valor_total) || 0) - (Number(a.valor_total) || 0)).slice(0, 200);
-  }, [ppuItems, search, discFilter, classifMap]);
+    items.sort((a, b) => (Number(b.valor_total) || 0) - (Number(a.valor_total) || 0));
+    return {
+      available: items.slice(0, 200),
+      totalFiltered: items.length
+    };
+  }, [ppuItems, search, discFilter, classifMap, existingIppus]);
 
   const disciplinas = useMemo(() => {
     const set = new Set<string>();
@@ -166,7 +170,7 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
           .from("previsao_medicao")
           .insert({
             bm_name: bmName,
-            ippu: item.ippu,
+            ippu: String(item.ippu).replace(/_/g, "-"), // normaliza para traços
             responsavel_id: user.id,
             responsavel_nome: profile?.full_name || "",
             disciplina: item.disciplina || "",
@@ -183,7 +187,7 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
         await supabase.from("previsao_historico").insert({
           previsao_id: (prev as any).id,
           bm_name: bmName,
-          ippu: item.ippu,
+          ippu: String(item.ippu).replace(/_/g, "-"),
           status_anterior: "",
           status_novo: "previsto",
           justificativa: "Adicionado à previsão",
@@ -231,6 +235,7 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
         {step === 1 ? (
           <Step1
             available={available}
+            totalFiltered={totalFiltered}
             existingIppus={existingIppus}
             selected={selected}
             onToggle={toggleItem}
@@ -301,10 +306,11 @@ function StepIndicator({ n, active, done, label }: { n: number; active: boolean;
 
 // ── Step 1: Select items ───────────────────────────────────────
 function Step1({
-  available, existingIppus, selected, onToggle, search, onSearch,
+  available, totalFiltered, existingIppus, selected, onToggle, search, onSearch,
   discFilter, onDiscFilter, disciplinas, sconMap, classifMap,
 }: {
   available: PPUItem[];
+  totalFiltered: number;
   existingIppus: Set<string>;
   selected: Set<string>;
   onToggle: (ippu: string) => void;
@@ -348,6 +354,12 @@ function Step1({
         </Select>
       </div>
 
+      {totalFiltered > 200 && (
+        <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-md border border-amber-200 dark:border-amber-900/40 font-medium">
+          Mostrando os 200 itens de maior valor dos {totalFiltered} encontrados. Refine a busca ou o filtro de disciplina.
+        </div>
+      )}
+
       {/* Table */}
       <ScrollArea className="flex-1 border rounded-lg max-h-[400px]">
         <Table>
@@ -363,9 +375,9 @@ function Step1({
           </TableHeader>
           <TableBody>
             {available.map(ppu => {
-              const isExisting = existingIppus.has(ppu.item_ppu);
-              const isChecked = selected.has(ppu.item_ppu);
               const normalizedIppu = String(ppu.item_ppu).replace(/_/g, "-");
+              const isExisting = existingIppus.has(normalizedIppu);
+              const isChecked = selected.has(ppu.item_ppu);
               const scon = sconMap?.get(normalizedIppu) || 0;
               const disc = classifMap?.get(ppu.item_ppu)?.disciplina || ppu.disc || "";
 
