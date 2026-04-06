@@ -23,6 +23,7 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
   const [observacoes, setObservacoes] = useState("");
   const [confirmado, setConfirmado] = useState(false);
 
+  // Previsões manuais
   const { data: previsoes } = useQuery({
     queryKey: ["previsao-fechar", bmName],
     enabled: open,
@@ -36,12 +37,44 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
     },
   });
 
+  // Valores do cronograma importado (fallback quando não há previsões manuais)
+  const { data: cronogramaValues } = useQuery({
+    queryKey: ["cronograma-bm-fechar", bmName],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cronograma_bm_values")
+        .select("tipo, valor")
+        .eq("bm_name", bmName);
+      if (error) throw error;
+      const totals = { previsto: 0, realizado: 0, projetado: 0 };
+      (data || []).forEach((r: any) => {
+        const v = Number(r.valor) || 0;
+        if (r.tipo === "Previsto") totals.previsto += v;
+        else if (r.tipo === "Realizado") totals.realizado += v;
+        else if (r.tipo === "Projetado") totals.projetado += v;
+      });
+      return totals;
+    },
+  });
+
+  const hasPrevisoes = (previsoes || []).length > 0;
+
   const confirmados = (previsoes || []).filter((p: any) => p.status === "confirmado" || p.status === "previsto");
   const postergados = (previsoes || []).filter((p: any) => p.status === "postergado");
   const cancelados = (previsoes || []).filter((p: any) => p.status === "cancelado");
   const valorConfirmado = confirmados.reduce((s: number, p: any) => s + (Number(p.valor_previsto) || 0), 0);
   const valorPostergado = postergados.reduce((s: number, p: any) => s + (Number(p.valor_previsto) || 0), 0);
   const valorCancelado = cancelados.reduce((s: number, p: any) => s + (Number(p.valor_previsto) || 0), 0);
+
+  // Valor efetivo para o fechamento: previsões manuais ou cronograma
+  const valorMedidoEfetivo = hasPrevisoes
+    ? valorConfirmado
+    : (cronogramaValues?.realizado ?? cronogramaValues?.projetado ?? 0);
+
+  const valorPrevistoEfetivo = hasPrevisoes
+    ? valorConfirmado + valorPostergado + valorCancelado
+    : (cronogramaValues?.previsto ?? 0);
 
   const nextBMNumber = parseInt(bmName.replace("BM-", "")) + 1;
   const nextBM = "BM-" + String(nextBMNumber).padStart(2, "0");
@@ -57,50 +90,53 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
           status: "fechado",
           data_fechamento: new Date().toISOString(),
           fechado_por: user?.id,
-          valor_medido: valorConfirmado,
+          valor_medido: valorMedidoEfetivo,
+          valor_previsto: valorPrevistoEfetivo,
           observacoes: observacoes.trim(),
         } as any)
         .eq("bm_name", bmName);
       if (errBm) throw errBm;
 
-      // 2. Mark confirmados/previstos as medido
-      for (const p of confirmados) {
-        await supabase
-          .from("previsao_medicao")
-          .update({ status: "medido" } as any)
-          .eq("id", (p as any).id);
-      }
+      if (hasPrevisoes) {
+        // 2. Mark confirmados/previstos as medido
+        for (const p of confirmados) {
+          await supabase
+            .from("previsao_medicao")
+            .update({ status: "medido" } as any)
+            .eq("id", (p as any).id);
+        }
 
-      // 3. Migrate postergados
-      for (const p of postergados) {
-        const pm = p as any;
-        const { data: newPrev, error: errNew } = await supabase
-          .from("previsao_medicao")
-          .insert({
+        // 3. Migrate postergados
+        for (const p of postergados) {
+          const pm = p as any;
+          const { data: newPrev, error: errNew } = await supabase
+            .from("previsao_medicao")
+            .insert({
+              bm_name: nextBM,
+              ippu: pm.ippu,
+              responsavel_id: pm.responsavel_id,
+              responsavel_nome: pm.responsavel_nome || "",
+              disciplina: pm.disciplina || "",
+              status: "previsto",
+              qtd_prevista: pm.qtd_prevista || 0,
+              valor_previsto: pm.valor_previsto || 0,
+              justificativa: `Migrado do ${bmName}: ${pm.justificativa || ""}`,
+            } as any)
+            .select()
+            .single();
+          if (errNew) throw errNew;
+
+          await supabase.from("previsao_historico").insert({
+            previsao_id: (newPrev as any).id,
             bm_name: nextBM,
             ippu: pm.ippu,
-            responsavel_id: pm.responsavel_id,
-            responsavel_nome: pm.responsavel_nome || "",
-            disciplina: pm.disciplina || "",
-            status: "previsto",
-            qtd_prevista: pm.qtd_prevista || 0,
-            valor_previsto: pm.valor_previsto || 0,
-            justificativa: `Migrado do ${bmName}: ${pm.justificativa || ""}`,
-          } as any)
-          .select()
-          .single();
-        if (errNew) throw errNew;
-
-        await supabase.from("previsao_historico").insert({
-          previsao_id: (newPrev as any).id,
-          bm_name: nextBM,
-          ippu: pm.ippu,
-          status_anterior: "",
-          status_novo: "previsto",
-          justificativa: `Migrado automaticamente do ${bmName} (postergado)`,
-          alterado_por: user?.id,
-          alterado_por_nome: profile?.full_name || "",
-        } as any);
+            status_anterior: "",
+            status_novo: "previsto",
+            justificativa: `Migrado automaticamente do ${bmName} (postergado)`,
+            alterado_por: user?.id,
+            alterado_por_nome: profile?.full_name || "",
+          } as any);
+        }
       }
 
       // 4. Open next BM if futuro
@@ -118,7 +154,9 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
         entidade: "bm",
         referencia: bmName,
         detalhes: {
-          valor_medido: valorConfirmado,
+          fonte_dados: hasPrevisoes ? "previsao_medicao" : "cronograma",
+          valor_medido: valorMedidoEfetivo,
+          valor_previsto: valorPrevistoEfetivo,
           itens_confirmados: confirmados.length,
           itens_postergados: postergados.length,
           postergados_migrados_para: nextBM,
@@ -132,6 +170,7 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
       queryClient.invalidateQueries({ queryKey: ["bm-periodos"] });
       queryClient.invalidateQueries({ queryKey: ["previsao"] });
       queryClient.invalidateQueries({ queryKey: ["ultimo-bm"] });
+      queryClient.invalidateQueries({ queryKey: ["bm-kpis"] });
       handleClose();
     },
     onError: (err: any) => toast.error("Erro ao fechar: " + (err.message || "desconhecido")),
@@ -153,23 +192,50 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
         <div className="space-y-4">
           {/* Resumo */}
           <div className="rounded-md border p-3 space-y-1.5 bg-muted/30">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Resumo da medição</p>
-            <div className="flex justify-between text-sm">
-              <span>Itens confirmados:</span>
-              <span className="font-medium tabular-nums">{confirmados.length} · {formatCompact(valorConfirmado)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Itens postergados:</span>
-              <span className="font-medium tabular-nums text-amber-600">{postergados.length} · {formatCompact(valorPostergado)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Itens cancelados:</span>
-              <span className="font-medium tabular-nums text-destructive">{cancelados.length} · {formatCompact(valorCancelado)}</span>
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Resumo da medição
+              {!hasPrevisoes && (
+                <Badge variant="secondary" className="ml-2 text-[9px]">via cronograma</Badge>
+              )}
+            </p>
+
+            {hasPrevisoes ? (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span>Itens confirmados:</span>
+                  <span className="font-medium tabular-nums">{confirmados.length} · {formatCompact(valorConfirmado)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Itens postergados:</span>
+                  <span className="font-medium tabular-nums text-amber-600">{postergados.length} · {formatCompact(valorPostergado)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Itens cancelados:</span>
+                  <span className="font-medium tabular-nums text-destructive">{cancelados.length} · {formatCompact(valorCancelado)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span>Previsto (cronograma):</span>
+                  <span className="font-medium tabular-nums">{formatCompact(cronogramaValues?.previsto ?? 0)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Realizado (cronograma):</span>
+                  <span className="font-medium tabular-nums">{formatCompact(cronogramaValues?.realizado ?? 0)}</span>
+                </div>
+                {(cronogramaValues?.projetado ?? 0) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Projetado:</span>
+                    <span className="font-medium tabular-nums">{formatCompact(cronogramaValues?.projetado ?? 0)}</span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Postergados list */}
-          {postergados.length > 0 && (
+          {hasPrevisoes && postergados.length > 0 && (
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -187,9 +253,9 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
           )}
 
           {/* Valor total medido */}
-          <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/30 p-2.5">
+          <div className="rounded-md bg-primary/5 border border-primary/20 p-2.5">
             <p className="text-sm">
-              Valor total medido: <strong className="text-emerald-700 dark:text-emerald-400">{formatCompact(valorConfirmado)}</strong>
+              Valor total medido: <strong className="text-primary">{formatCompact(valorMedidoEfetivo)}</strong>
             </p>
           </div>
 
@@ -223,12 +289,12 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
             </label>
           </div>
 
-          {/* No previsoes warning */}
-          {(previsoes || []).length === 0 && (
-            <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30">
-              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-400">
-                Nenhuma previsão cadastrada neste BM. Deseja fechar mesmo assim?
+          {/* No data warning */}
+          {!hasPrevisoes && (cronogramaValues?.realizado ?? 0) === 0 && (cronogramaValues?.previsto ?? 0) === 0 && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-destructive/5 border border-destructive/20">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive">
+                Nenhuma previsão nem dados de cronograma encontrados para este BM.
               </p>
             </div>
           )}
