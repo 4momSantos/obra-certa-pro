@@ -460,6 +460,29 @@ function Step2({
               )}
             </div>
 
+            {/* Saldo indicator */}
+            {(() => {
+              const saldo = saldoMap?.get(item.ippu);
+              if (!saldo) return null;
+              const valorPrev = Number(item.valor_previsto) || 0;
+              const excede = valorPrev > saldo.saldo && saldo.saldo >= 0;
+              return (
+                <div className={`text-[10px] px-2 py-1.5 rounded border ${excede ? "bg-destructive/10 border-destructive/30 text-destructive" : "bg-muted/50 border-border text-muted-foreground"}`}>
+                  <div className="flex items-center justify-between">
+                    <span>Contratado: {formatCompact(saldo.valor_contratado)}</span>
+                    <span>Já medido: {formatCompact(saldo.valor_medido)}</span>
+                    <span className="font-semibold">Saldo: {formatCompact(saldo.saldo)}</span>
+                  </div>
+                  {excede && (
+                    <div className="flex items-center gap-1 mt-1 font-medium">
+                      <AlertTriangle className="h-3 w-3" />
+                      Valor previsto ({formatCompact(valorPrev)}) excede o saldo disponível
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Inputs */}
             <div className="grid grid-cols-2 gap-3">
               <div>
