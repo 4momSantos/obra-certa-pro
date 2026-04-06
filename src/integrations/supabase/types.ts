@@ -2941,7 +2941,7 @@ export type Database = {
       vw_gitec_por_ppu: {
         Row: {
           aprovados: number | null
-          contrato_id: string | null
+          eventos_concluidos: number | null
           item_ppu: string | null
           pendentes: number | null
           total_eventos: number | null
@@ -2951,15 +2951,7 @@ export type Database = {
           valor_pendente: number | null
           valor_total: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "rel_eventos_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: false
-            referencedRelation: "contratos"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vw_itens_nao_medidos: {
         Row: {
