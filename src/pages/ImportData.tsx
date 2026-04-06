@@ -32,7 +32,7 @@ const DataSourceStatus: React.FC<{
         </>
       ) : (
         <>
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTriangle className="h-4 w-4 text-destructive" />
           <span className="text-sm text-muted-foreground">Sem dados</span>
         </>
       )}
