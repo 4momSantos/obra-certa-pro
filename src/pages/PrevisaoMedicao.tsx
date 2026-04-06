@@ -208,6 +208,11 @@ export default function PrevisaoMedicao() {
             Passivos
             {passivosCount > 0 && <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">{passivosCount}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="acompanhamento" className="gap-1.5 text-xs">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Acompanhamento
+            {(acompanhamento?.length || 0) > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{acompanhamento!.length}</Badge>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scon">
