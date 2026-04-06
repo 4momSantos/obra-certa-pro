@@ -73,15 +73,16 @@ export function useMedicaoData() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const [ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView] = await Promise.all([
+      const [ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal] = await Promise.all([
         fetchAll<any>("ppu_items", "item_ppu,descricao,valor_total,valor_medido"),
         fetchAll<any>("classificacao_ppu", "item_ppu,item_gitec,fase,subfase,agrupamento,disciplina"),
         fetchAll<any>("eac_items", "ppu,previsto,realizado,valor_financeiro"),
         fetchAll<any>("vw_scon_por_ppu"),
         fetchAll<any>("vw_sigem_por_ppu"),
         fetchAll<any>("vw_gitec_por_ppu"),
+        supabase.from("sigem_documents" as any).select("*", { count: "exact", head: true }).then(r => r.count || 0),
       ]);
-      return { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView };
+      return { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal };
     },
   });
 
