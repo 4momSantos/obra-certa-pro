@@ -436,9 +436,11 @@ function Step1({
 function Step2({
   itemData,
   onUpdateField,
+  saldoMap,
 }: {
   itemData: Map<string, SelectedItemData>;
   onUpdateField: (ippu: string, field: keyof SelectedItemData, value: string) => void;
+  saldoMap?: Map<string, { qtd_contratada: number; valor_contratado: number; valor_medido: number; saldo: number }>;
 }) {
   const items = [...itemData.values()];
 
