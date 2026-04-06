@@ -27,7 +27,7 @@ const DataSourceStatus: React.FC<{
     <div className="flex items-center gap-2">
       {count > 0 ? (
         <>
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <CheckCircle2 className="h-4 w-4 text-primary" />
           <span className="text-sm font-mono font-semibold">{count.toLocaleString("pt-BR")}</span>
         </>
       ) : (
