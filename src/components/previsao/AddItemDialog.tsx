@@ -55,6 +55,7 @@ interface Props {
 export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, sconMap, classifMap }: Props) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const { data: saldoMap } = useSaldoPPU();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
