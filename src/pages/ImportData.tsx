@@ -1,10 +1,15 @@
 import React, { useState, useCallback } from "react";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, RefreshCw, Database, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadCard } from "@/components/import/UploadCard";
 import { ImportPreview } from "@/components/import/ImportPreview";
 import { ImportHistory } from "@/components/import/ImportHistory";
+import { useImportStats } from "@/hooks/useImportStats";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   parseSigemFile, parseRelEventoFile, parseSconFile, parseCronogramaFile,
   parseSconProgramacaoFile,
@@ -13,9 +18,34 @@ import {
   type ParsedSconProgRow, type CronogramaParseResult,
 } from "@/hooks/useImport";
 
+/* ── Status card for each data source ── */
+const DataSourceStatus: React.FC<{
+  label: string; count: number; icon?: React.ReactNode;
+}> = ({ label, count }) => (
+  <div className="flex items-center justify-between py-2">
+    <span className="text-sm text-muted-foreground">{label}</span>
+    <div className="flex items-center gap-2">
+      {count > 0 ? (
+        <>
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <span className="text-sm font-mono font-semibold">{count.toLocaleString("pt-BR")}</span>
+        </>
+      ) : (
+        <>
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <span className="text-sm text-muted-foreground">Sem dados</span>
+        </>
+      )}
+    </div>
+  </div>
+);
+
 const ImportData: React.FC = () => {
+  const { data: stats, isLoading: statsLoading } = useImportStats();
   const { data: existing } = useExistingCounts();
   const processImport = useProcessImport();
+
+  const [showUpload, setShowUpload] = useState(false);
 
   const [sigemFile, setSigemFile] = useState<File | null>(null);
   const [relFile, setRelFile] = useState<File | null>(null);
@@ -33,6 +63,8 @@ const ImportData: React.FC = () => {
 
   const [progressMsg, setProgressMsg] = useState("");
   const [progressPct, setProgressPct] = useState(0);
+
+  const hasData = stats && (stats.counts.sigem > 0 || stats.counts.gitec > 0 || stats.counts.scon > 0);
 
   const handleSigem = useCallback(async (f: File | null) => {
     setSigemFile(f);
@@ -111,6 +143,7 @@ const ImportData: React.FC = () => {
         setSigemRows([]); setRelRows([]); setSconRows([]); setSconProgRows([]); setCronoResult(null);
         setWarnings([]);
         setProgressMsg(""); setProgressPct(0);
+        setShowUpload(false);
       },
     });
   };
@@ -120,109 +153,142 @@ const ImportData: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold">Importar Dados</h1>
         <p className="text-sm text-muted-foreground">
-          Upload dos arquivos operacionais — atualização a cada medição
+          Gerencie os dados operacionais importados do contrato
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <UploadCard label="SIGEM" description="~22k documentos (.xlsx)" required file={sigemFile} onFile={handleSigem} />
-        <UploadCard label="Relação de Eventos (GITEC)" description="~6.5k eventos RelResumoEvento (.xlsx)" required file={relFile} onFile={handleRel} />
-        <UploadCard label="SCON (Resumido)" description="~1.5k componentes (.xlsx)" required file={sconFile} onFile={handleScon} />
-      </div>
+      {/* ── Current Data Status ── */}
+      {!statsLoading && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Estado Atual dos Dados
+              </CardTitle>
+              {stats?.lastImportAt && (
+                <Badge variant={stats.isStale ? "destructive" : "secondary"} className="text-xs gap-1">
+                  <Clock className="h-3 w-3" />
+                  Última importação: {format(new Date(stats.lastImportAt), "dd/MM/yy HH:mm", { locale: ptBR })}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <DataSourceStatus label="SIGEM (Documentos)" count={existing?.sigem ?? stats?.counts.sigem ?? 0} />
+            <DataSourceStatus label="GITEC (Eventos)" count={existing?.relEvento ?? stats?.counts.gitec ?? 0} />
+            <DataSourceStatus label="SCON (Componentes)" count={existing?.scon ?? stats?.counts.scon ?? 0} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UploadCard label="SCON Programação (Completo)" description="Detalhamento semanal — pode ter 10.000+ linhas (.xlsx)" file={sconProgFile} onFile={handleSconProg} />
-        <UploadCard label="Cronograma CR-5290" description="Cronograma financeiro (.xlsx)" file={cronoFile} onFile={handleCrono} />
-      </div>
+            {hasData && !showUpload && (
+              <div className="pt-4 border-t mt-3">
+                <p className="text-xs text-muted-foreground mb-3">
+                  Seus dados já estão carregados. Só importe novamente se tiver <strong>arquivos atualizados</strong> dos sistemas SIGEM, GITEC ou SCON.
+                  Ao re-importar, os dados anteriores da mesma fonte serão substituídos.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setShowUpload(true)} className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Atualizar Dados
+                </Button>
+              </div>
+            )}
 
-      {parsing && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Lendo arquivo...
-        </div>
+            {!hasData && !showUpload && (
+              <div className="pt-4 border-t mt-3">
+                <p className="text-xs text-muted-foreground mb-3">
+                  Nenhum dado importado ainda. Faça o upload dos arquivos operacionais para começar.
+                </p>
+                <Button size="sm" onClick={() => setShowUpload(true)} className="gap-2">
+                  <Upload className="h-4 w-4" />
+                  Importar Dados
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {existing && (existing.sigem > 0 || existing.relEvento > 0 || existing.scon > 0) && (
-        <div className="rounded-lg border border-muted bg-muted/30 p-3 text-sm text-muted-foreground">
-          Dados atuais: {existing.sigem.toLocaleString("pt-BR")} docs SIGEM, {existing.relEvento.toLocaleString("pt-BR")} eventos, {existing.scon.toLocaleString("pt-BR")} componentes.
-          Ao processar, os dados anteriores serão substituídos.
-        </div>
-      )}
-
-      {cronoResult && (
-        <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
-          <p className="text-sm font-medium">Preview do Cronograma:</p>
-          <div className="grid grid-cols-3 gap-3 text-sm text-muted-foreground">
-            <div className="font-mono">
-              <span className="font-semibold text-foreground">{cronoResult.tree.length}</span> nós na árvore
-              <span className="text-xs block">
-                ({cronoResult.tree.filter(t => t.nivel.includes("Fase")).length} fases,{" "}
-                {cronoResult.tree.filter(t => t.nivel.includes("Subfase")).length} subfases,{" "}
-                {cronoResult.tree.filter(t => t.nivel.includes("Agrupamento")).length} agrupamentos)
-              </span>
-            </div>
-            <div className="font-mono">
-              <span className="font-semibold text-foreground">{cronoResult.bmValues.length.toLocaleString("pt-BR")}</span> valores de BM
-              {(() => {
-                const bms = new Set(cronoResult.bmValues.map(b => b.bm_name));
-                return bms.size > 0 ? <span className="text-xs block">{[...bms].sort()[0]} a {[...bms].sort().pop()}</span> : null;
-              })()}
-            </div>
-            <div className="font-mono">
-              <span className="font-semibold text-foreground">{cronoResult.curvaS.length}</span> pontos Curva S
-            </div>
+      {/* ── Upload Section (collapsed by default when data exists) ── */}
+      {showUpload && (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">
+              {hasData ? "Atualizar Dados" : "Upload dos Arquivos"}
+            </h2>
+            {hasData && (
+              <Button variant="ghost" size="sm" onClick={() => setShowUpload(false)}>
+                Cancelar
+              </Button>
+            )}
           </div>
-          {cronoResult.tree.length > 0 && (
-            <div className="rounded border overflow-auto max-h-[200px]">
-              <table className="w-full text-xs">
-                <thead><tr className="bg-muted/50 text-left">
-                  <th className="px-2 py-1 font-semibold">Nível</th>
-                  <th className="px-2 py-1 font-semibold">iPPU</th>
-                  <th className="px-2 py-1 font-semibold">Nome</th>
-                  <th className="px-2 py-1 font-semibold text-right">Valor</th>
-                </tr></thead>
-                <tbody>
-                  {cronoResult.tree.slice(0, 10).map((t, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="px-2 py-1 text-muted-foreground">{t.nivel}</td>
-                      <td className="px-2 py-1 font-mono">{t.ippu || "—"}</td>
-                      <td className="px-2 py-1 truncate max-w-[200px]">{t.nome}</td>
-                      <td className="px-2 py-1 text-right font-mono">{t.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {cronoResult.tree.length > 10 && <p className="text-[10px] text-muted-foreground text-center py-1">... e mais {cronoResult.tree.length - 10}</p>}
+
+          {hasData && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-muted-foreground">
+              <AlertTriangle className="h-4 w-4 text-amber-500 inline mr-2" />
+              Ao processar novos arquivos, os dados anteriores da mesma fonte serão <strong>substituídos</strong>.
+              Importe apenas os arquivos que deseja atualizar.
             </div>
           )}
-        </div>
-      )}
 
-      <ImportPreview sigem={sigemRows} relEvento={relRows} scon={sconRows} sconProg={sconProgRows} warnings={warnings} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <UploadCard label="SIGEM" description="~22k documentos (.xlsx)" required file={sigemFile} onFile={handleSigem} />
+            <UploadCard label="Relação de Eventos (GITEC)" description="~6.5k eventos RelResumoEvento (.xlsx)" required file={relFile} onFile={handleRel} />
+            <UploadCard label="SCON (Resumido)" description="~1.5k componentes (.xlsx)" required file={sconFile} onFile={handleScon} />
+          </div>
 
-      {!processImport.isPending && (
-        <div className="space-y-2">
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={doProcess}
-            disabled={(!allLoaded && !cronoFile && !sconProgFile) || totalRows === 0}
-          >
-            <Upload className="h-5 w-5 mr-2" />
-            {allLoaded || cronoFile || sconProgFile
-              ? `▶ Processar Tudo (${totalRows.toLocaleString("pt-BR")} registros)`
-              : `Carregue os 3 arquivos (${[sigemFile, relFile, sconFile].filter(Boolean).length}/3)`
-            }
-          </Button>
-        </div>
-      )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UploadCard label="SCON Programação (Completo)" description="Detalhamento semanal (.xlsx)" file={sconProgFile} onFile={handleSconProg} />
+            <UploadCard label="Cronograma CR-5290" description="Cronograma financeiro (.xlsx)" file={cronoFile} onFile={handleCrono} />
+          </div>
 
-      {processImport.isPending && (
-        <div className="space-y-2">
-          <Progress value={progressPct} className="h-3" />
-          <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> {progressMsg}
-          </p>
-        </div>
+          {parsing && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Lendo arquivo...
+            </div>
+          )}
+
+          {cronoResult && (
+            <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
+              <p className="text-sm font-medium">Preview do Cronograma:</p>
+              <div className="grid grid-cols-3 gap-3 text-sm text-muted-foreground">
+                <div className="font-mono">
+                  <span className="font-semibold text-foreground">{cronoResult.tree.length}</span> nós na árvore
+                </div>
+                <div className="font-mono">
+                  <span className="font-semibold text-foreground">{cronoResult.bmValues.length.toLocaleString("pt-BR")}</span> valores de BM
+                </div>
+                <div className="font-mono">
+                  <span className="font-semibold text-foreground">{cronoResult.curvaS.length}</span> pontos Curva S
+                </div>
+              </div>
+            </div>
+          )}
+
+          <ImportPreview sigem={sigemRows} relEvento={relRows} scon={sconRows} sconProg={sconProgRows} warnings={warnings} />
+
+          {!processImport.isPending && (
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={doProcess}
+              disabled={(!allLoaded && !cronoFile && !sconProgFile) || totalRows === 0}
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              {allLoaded || cronoFile || sconProgFile
+                ? `▶ Processar (${totalRows.toLocaleString("pt-BR")} registros)`
+                : `Carregue os 3 arquivos (${[sigemFile, relFile, sconFile].filter(Boolean).length}/3)`
+              }
+            </Button>
+          )}
+
+          {processImport.isPending && (
+            <div className="space-y-2">
+              <Progress value={progressPct} className="h-3" />
+              <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> {progressMsg}
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       <ImportHistory />
