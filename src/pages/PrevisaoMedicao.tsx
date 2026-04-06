@@ -63,6 +63,7 @@ export default function PrevisaoMedicao() {
   const { data: projetado } = useProjetadoBM(effectiveBm);
   const { data: sconExecucao, isLoading: loadingScon } = useSconExecucaoBM(effectiveBm);
   const { data: passivos, isLoading: loadingPassivos } = useItensNaoMedidos(effectiveBm);
+  const { data: acompanhamento, isLoading: loadingAcomp } = useAcompanhamentoBM(effectiveBm);
 
   const ppuMap = useMemo(() => {
     const m = new Map<string, any>();
