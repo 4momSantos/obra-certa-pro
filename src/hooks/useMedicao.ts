@@ -194,7 +194,7 @@ export function useMedicaoData() {
       contrato: totalContrato,
       previsto: totalPrevisto,
       executadoScon: totalExecScon,
-      postadoSigem: totalPostado,
+      postadoSigem: totalPostado > 0 ? totalPostado : (sigemTotal as number),
       medidoGitec: totalMedido,
       saldo: totalContrato - totalMedido,
     };
