@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle } from "lucide-react";
+import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useBMPeriodos, usePrevisaoBM, usePrevisaoResumo, usePPUElegiveis, useSconMap, useClassifMap, useProjetadoBM } from "@/hooks/usePrevisao";
 import { useSconExecucaoBM, useItensNaoMedidos } from "@/hooks/useSconExecucao";
+import { useAcompanhamentoBM } from "@/hooks/useAcompanhamento";
+import { BMTrackingTable } from "@/components/previsao/BMTrackingTable";
 import { PrevisaoKPIs } from "@/components/previsao/PrevisaoKPIs";
 import { PrevisaoResumo } from "@/components/previsao/PrevisaoResumo";
 import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
@@ -61,6 +63,7 @@ export default function PrevisaoMedicao() {
   const { data: projetado } = useProjetadoBM(effectiveBm);
   const { data: sconExecucao, isLoading: loadingScon } = useSconExecucaoBM(effectiveBm);
   const { data: passivos, isLoading: loadingPassivos } = useItensNaoMedidos(effectiveBm);
+  const { data: acompanhamento, isLoading: loadingAcomp } = useAcompanhamentoBM(effectiveBm);
 
   const ppuMap = useMemo(() => {
     const m = new Map<string, any>();
@@ -205,6 +208,11 @@ export default function PrevisaoMedicao() {
             Passivos
             {passivosCount > 0 && <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">{passivosCount}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="acompanhamento" className="gap-1.5 text-xs">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Acompanhamento
+            {(acompanhamento?.length || 0) > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{acompanhamento!.length}</Badge>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scon">
@@ -249,6 +257,10 @@ export default function PrevisaoMedicao() {
           ) : (
             <PassivosTable items={passivos || []} onAddItems={handleBulkAdd} />
           )}
+        </TabsContent>
+
+        <TabsContent value="acompanhamento">
+          <BMTrackingTable items={acompanhamento || []} isLoading={loadingAcomp} />
         </TabsContent>
       </Tabs>
 

@@ -14,8 +14,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, CheckCircle, AlertTriangle } from "lucide-react";
 import { formatCompact } from "@/lib/format";
+import { useSaldoPPU } from "@/hooks/useAcompanhamento";
 
 interface PPUItem {
   item_ppu: string;
@@ -54,6 +55,7 @@ interface Props {
 export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, sconMap, classifMap }: Props) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const { data: saldoMap } = useSaldoPPU();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
@@ -251,6 +253,7 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
           <Step2
             itemData={itemData}
             onUpdateField={updateItemField}
+            saldoMap={saldoMap}
           />
         )}
 
@@ -433,9 +436,11 @@ function Step1({
 function Step2({
   itemData,
   onUpdateField,
+  saldoMap,
 }: {
   itemData: Map<string, SelectedItemData>;
   onUpdateField: (ippu: string, field: keyof SelectedItemData, value: string) => void;
+  saldoMap?: Map<string, { qtd_contratada: number; valor_contratado: number; valor_medido: number; saldo: number }>;
 }) {
   const items = [...itemData.values()];
 
@@ -454,6 +459,29 @@ function Step2({
                 <Badge variant="outline" className="text-[10px] shrink-0">{item.disciplina}</Badge>
               )}
             </div>
+
+            {/* Saldo indicator */}
+            {(() => {
+              const saldo = saldoMap?.get(item.ippu);
+              if (!saldo) return null;
+              const valorPrev = Number(item.valor_previsto) || 0;
+              const excede = valorPrev > saldo.saldo && saldo.saldo >= 0;
+              return (
+                <div className={`text-[10px] px-2 py-1.5 rounded border ${excede ? "bg-destructive/10 border-destructive/30 text-destructive" : "bg-muted/50 border-border text-muted-foreground"}`}>
+                  <div className="flex items-center justify-between">
+                    <span>Contratado: {formatCompact(saldo.valor_contratado)}</span>
+                    <span>Já medido: {formatCompact(saldo.valor_medido)}</span>
+                    <span className="font-semibold">Saldo: {formatCompact(saldo.saldo)}</span>
+                  </div>
+                  {excede && (
+                    <div className="flex items-center gap-1 mt-1 font-medium">
+                      <AlertTriangle className="h-3 w-3" />
+                      Valor previsto ({formatCompact(valorPrev)}) excede o saldo disponível
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Inputs */}
             <div className="grid grid-cols-2 gap-3">
