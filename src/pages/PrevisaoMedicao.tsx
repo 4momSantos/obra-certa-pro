@@ -258,6 +258,10 @@ export default function PrevisaoMedicao() {
             <PassivosTable items={passivos || []} onAddItems={handleBulkAdd} />
           )}
         </TabsContent>
+
+        <TabsContent value="acompanhamento">
+          <BMTrackingTable items={acompanhamento || []} isLoading={loadingAcomp} />
+        </TabsContent>
       </Tabs>
 
       <AddItemDialog
