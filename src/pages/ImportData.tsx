@@ -222,8 +222,8 @@ const ImportData: React.FC = () => {
           </div>
 
           {hasData && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-muted-foreground">
-              <AlertTriangle className="h-4 w-4 text-amber-500 inline mr-2" />
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-muted-foreground">
+              <AlertTriangle className="h-4 w-4 text-destructive inline mr-2" />
               Ao processar novos arquivos, os dados anteriores da mesma fonte serão <strong>substituídos</strong>.
               Importe apenas os arquivos que deseja atualizar.
             </div>
