@@ -253,6 +253,7 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
           <Step2
             itemData={itemData}
             onUpdateField={updateItemField}
+            saldoMap={saldoMap}
           />
         )}
 
