@@ -276,6 +276,13 @@ export default function PrevisaoMedicao() {
         sconMap={sconMap}
         classifMap={classifMap}
       />
+
+      <ImportPrevisaoDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        bmName={effectiveBm}
+        ppuItems={ppuItems || []}
+      />
     </motion.div>
   );
 }
