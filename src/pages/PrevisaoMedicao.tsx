@@ -347,7 +347,6 @@ function PageHeader({
         <Button onClick={onImportClick} size="sm" variant="outline" disabled={isFechado} className="gap-1">
           <Upload className="h-3.5 w-3.5" /> Importar Planilha
         </Button>
-        </Button>
         {existingBoletim ? (
           <Button size="sm" variant="outline" onClick={() => navigate(`/boletim/${effectiveBm}`)} className="gap-1">
             <FileCheck className="h-3.5 w-3.5" /> Ver Boletim
