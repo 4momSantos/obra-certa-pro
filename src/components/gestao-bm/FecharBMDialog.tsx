@@ -23,6 +23,22 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
   const [observacoes, setObservacoes] = useState("");
   const [confirmado, setConfirmado] = useState(false);
 
+  // Tarefas checklist pendentes
+  const { data: checklistPendentes } = useQuery({
+    queryKey: ["tarefas-checklist-pendentes", bmName],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("splan_tarefas" as any)
+        .select("id, titulo")
+        .eq("boletim", bmName)
+        .eq("tipo", "checklist")
+        .in("status", ["aberta", "em_andamento"]);
+      if (error) throw error;
+      return (data || []) as { id: string; titulo: string }[];
+    },
+  });
+
   // Previsões manuais
   const { data: previsoes } = useQuery({
     queryKey: ["previsao-fechar", bmName],
