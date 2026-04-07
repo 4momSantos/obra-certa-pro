@@ -37,6 +37,7 @@ export default function GestaoBM() {
       <Tabs defaultValue="por-bm" className="w-full">
         <TabsList>
           <TabsTrigger value="por-bm">Por BM</TabsTrigger>
+          <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
           <TabsTrigger value="consolidado">Visão Consolidada</TabsTrigger>
         </TabsList>
 
