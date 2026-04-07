@@ -208,6 +208,7 @@ export function useMedicaoData() {
         subfases: Array.from(subfaseSet).sort(),
         disciplinas: Array.from(discSet).sort(),
       },
+      hasOperationalData: (query.data?.gitecCount as number) > 0,
     };
   }, [query.data]);
 
