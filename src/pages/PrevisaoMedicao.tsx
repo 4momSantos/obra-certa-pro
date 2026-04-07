@@ -35,6 +35,9 @@ function formatDateBR(d: string) {
 export default function PrevisaoMedicao() {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const { connected: rtConnected } = useRealtimeInvalidation([
+    { table: "previsao_medicao", events: ["INSERT", "UPDATE", "DELETE"] as any, queryKeys: [["previsao"], ["previsao-resumo"]], showToast: true },
+  ]);
   const { data: periodos, isLoading: loadingPeriodos } = useBMPeriodos();
   const { data: ppuItems } = usePPUElegiveis();
   const { data: sconMap } = useSconMap();
