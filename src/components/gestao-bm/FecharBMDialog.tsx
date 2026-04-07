@@ -247,7 +247,14 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
       queryClient.invalidateQueries({ queryKey: ["bm-kpis"] });
       handleClose();
     },
-    onError: (err: any) => toast.error("Erro ao fechar: " + (err.message || "desconhecido")),
+    onError: (err: any) => {
+      const msg = err.message || "desconhecido";
+      if (msg.includes("snapshot")) {
+        toast.error("Erro ao gerar snapshot. BM não foi fechado.");
+      } else {
+        toast.error("Erro ao fechar: " + msg);
+      }
+    },
   });
 
   const handleClose = () => {
