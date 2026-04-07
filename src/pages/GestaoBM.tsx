@@ -35,7 +35,10 @@ export default function GestaoBM() {
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-[1400px]">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Gestão de BM</h1>
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          Gestão de BM
+          <LiveBadge connected={connected} />
+        </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
           Visão consolidada por Boletim de Medição
         </p>
