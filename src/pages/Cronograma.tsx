@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCronogramaTree, useCurvaS, useUltimoBm, useCronogramaBm } from "@/hooks/useCronogramaData";
 import { CronogramaTreeGrid } from "@/components/cronograma/CronogramaTreeGrid";
+import { CronogramaExport } from "@/components/cronograma/CronogramaExport";
 import { CurvaSCharts } from "@/components/cronograma/CurvaSCharts";
 import { CronogramaDetailSheet } from "@/components/cronograma/CronogramaDetailSheet";
 import { ComparativoTab } from "@/components/cronograma/ComparativoTab";
