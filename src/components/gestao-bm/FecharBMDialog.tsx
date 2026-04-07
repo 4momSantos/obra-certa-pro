@@ -83,6 +83,76 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
 
   const fecharMutation = useMutation({
     mutationFn: async () => {
+      // 0. Gerar snapshot imutável ANTES de fechar
+      const [boletimRes, curvaRes] = await Promise.all([
+        supabase
+          .from("boletim_itens")
+          .select("*")
+          .eq("contrato_id", null) // will match all for now
+          .or(`boletim_id.is.null`),
+        supabase
+          .from("curva_s")
+          .select("*")
+          .order("col_index", { ascending: true }),
+      ]);
+
+      // Fetch boletim_itens linked to this BM via boletins_medicao
+      const { data: boletimHeader } = await supabase
+        .from("boletins_medicao")
+        .select("id, valor_total, qtd_itens, status")
+        .eq("bm_name", bmName)
+        .maybeSingle();
+
+      let itensSnapshot: any[] = [];
+      let totalPrevisto = 0, totalSigem = 0, totalGitec = 0, totalScon = 0, totalAprovado = 0;
+      let qtdItens = 0, qtdAprovados = 0;
+
+      if (boletimHeader?.id) {
+        const { data: itens } = await supabase
+          .from("boletim_itens")
+          .select("*")
+          .eq("boletim_id", boletimHeader.id);
+        itensSnapshot = itens || [];
+        qtdItens = itensSnapshot.length;
+        for (const it of itensSnapshot) {
+          totalPrevisto += Number(it.valor_previsto) || 0;
+          totalSigem += Number(it.valor_postado_sigem) || 0;
+          totalGitec += Number(it.valor_medido_gitec) || 0;
+          totalScon += Number(it.valor_executado_scon) || 0;
+          totalAprovado += Number(it.valor_aprovado) || 0;
+          if ((Number(it.valor_aprovado) || 0) > 0) qtdAprovados++;
+        }
+      }
+
+      // Fallback: se não há boletim_itens, usar cronograma_bm_values
+      if (itensSnapshot.length === 0) {
+        totalPrevisto = valorPrevistoEfetivo;
+        totalAprovado = valorMedidoEfetivo;
+      }
+
+      const curvaSnapshot = curvaRes.data || [];
+
+      const { error: errSnapshot } = await supabase
+        .from("snapshots_medicao" as any)
+        .insert({
+          boletim: bmName,
+          bm_number: parseInt(bmName.replace("BM-", "")),
+          fechado_por: user?.id,
+          fechado_por_nome: profile?.full_name || "",
+          valor_previsto: totalPrevisto,
+          valor_sigem: totalSigem,
+          valor_gitec: totalGitec,
+          valor_scon: totalScon,
+          valor_aprovado: totalAprovado,
+          qtd_itens: qtdItens,
+          qtd_itens_aprovados: qtdAprovados,
+          itens_snapshot: itensSnapshot,
+          curva_s_snapshot: curvaSnapshot,
+          observacoes: observacoes.trim(),
+        } as any);
+
+      if (errSnapshot) throw new Error("Erro ao gerar snapshot: " + errSnapshot.message);
+
       // 1. Fechar BM
       const { error: errBm } = await supabase
         .from("bm_periodos")
@@ -161,11 +231,12 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
           itens_postergados: postergados.length,
           postergados_migrados_para: nextBM,
           observacoes: observacoes.trim(),
+          snapshot_gerado: true,
         },
       } as any);
     },
     onSuccess: () => {
-      toast.success(`${bmName} fechado com sucesso`);
+      toast.success(`${bmName} fechado. Snapshot preservado.`);
       queryClient.invalidateQueries({ queryKey: ["bm-periodo"] });
       queryClient.invalidateQueries({ queryKey: ["bm-periodos"] });
       queryClient.invalidateQueries({ queryKey: ["bm-periodo-banner", bmName] });
@@ -176,7 +247,14 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
       queryClient.invalidateQueries({ queryKey: ["bm-kpis"] });
       handleClose();
     },
-    onError: (err: any) => toast.error("Erro ao fechar: " + (err.message || "desconhecido")),
+    onError: (err: any) => {
+      const msg = err.message || "desconhecido";
+      if (msg.includes("snapshot")) {
+        toast.error("Erro ao gerar snapshot. BM não foi fechado.");
+      } else {
+        toast.error("Erro ao fechar: " + msg);
+      }
+    },
   });
 
   const handleClose = () => {
