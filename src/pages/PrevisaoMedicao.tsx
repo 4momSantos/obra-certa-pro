@@ -37,6 +37,7 @@ export default function PrevisaoMedicao() {
   const { data: sconMap } = useSconMap();
   const { data: classifMap } = useClassifMap();
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const defaultBm = useMemo(() => {
     if (!periodos) return null;
