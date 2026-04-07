@@ -344,6 +344,7 @@ function PageHeader({
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">Previsão de Medição — {effectiveBm}</h1>
+          <LiveBadge connected={rtConnected} />
           {isFechado && (
             <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
               <Lock className="h-3 w-3" /> FECHADO
