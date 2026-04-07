@@ -217,6 +217,11 @@ export default function PrevisaoMedicao() {
             Acompanhamento
             {(acompanhamento?.length || 0) > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{acompanhamento!.length}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="reconciliacao" className="gap-1.5 text-xs">
+            <GitCompareArrows className="h-3.5 w-3.5" />
+            Reconciliação
+            {passivosCount > 0 && <Badge variant="outline" className="ml-1 text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600">{passivosCount}</Badge>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scon">
