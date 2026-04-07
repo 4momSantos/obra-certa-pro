@@ -314,6 +314,9 @@ export function PPUDetailSheet({ item, onClose }: Props) {
 
               {/* ── GITEC Tab ── */}
               <TabsContent value="gitec" className="mt-4 space-y-4">
+                <div className="flex justify-end">
+                  <CrossLink to="/gitec" label="Ver Pipeline GITEC" params={{ search: item.item_ppu }} />
+                </div>
                 <KPIRow items={[
                   { label: "Total Eventos", value: rel.length },
                   { label: "Aprovados", value: relSummary.concluidos, color: "text-emerald-600" },
