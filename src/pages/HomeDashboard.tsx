@@ -18,7 +18,7 @@ const fmt = (v: number) =>
 const pct = (a: number, b: number) => (b > 0 ? ((a / b) * 100).toFixed(1) : "0") + "%";
 
 export default function HomeDashboard() {
-  const { items, kpis, isLoading } = useMedicaoData();
+  const { items, kpis, isLoading, hasOperationalData } = useMedicaoData();
   const alertCounts = useAlertCounts();
   const { data: alertRules } = useAlerts();
 
