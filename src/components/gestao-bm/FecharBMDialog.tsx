@@ -386,6 +386,23 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
             </label>
           </div>
 
+          {/* Checklist pendentes warning */}
+          {(checklistPendentes?.length ?? 0) > 0 && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-amber-700">
+                  {checklistPendentes!.length} tarefa(s) checklist pendente(s):
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {checklistPendentes!.slice(0, 5).map((t) => (
+                    <li key={t.id} className="text-[11px] text-muted-foreground">• {t.titulo}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* No data warning */}
           {!hasPrevisoes && (cronogramaValues?.realizado ?? 0) === 0 && (cronogramaValues?.previsto ?? 0) === 0 && (
             <div className="flex items-start gap-2 p-2.5 rounded-md bg-destructive/5 border border-destructive/20">
