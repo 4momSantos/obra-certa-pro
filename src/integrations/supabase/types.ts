@@ -2379,6 +2379,77 @@ export type Database = {
           },
         ]
       }
+      snapshots_medicao: {
+        Row: {
+          bm_number: number | null
+          boletim: string
+          contrato_id: string | null
+          created_at: string | null
+          curva_s_snapshot: Json | null
+          fechado_em: string
+          fechado_por: string | null
+          fechado_por_nome: string | null
+          id: string
+          itens_snapshot: Json | null
+          observacoes: string | null
+          qtd_itens: number | null
+          qtd_itens_aprovados: number | null
+          valor_aprovado: number | null
+          valor_gitec: number | null
+          valor_previsto: number | null
+          valor_scon: number | null
+          valor_sigem: number | null
+        }
+        Insert: {
+          bm_number?: number | null
+          boletim: string
+          contrato_id?: string | null
+          created_at?: string | null
+          curva_s_snapshot?: Json | null
+          fechado_em?: string
+          fechado_por?: string | null
+          fechado_por_nome?: string | null
+          id?: string
+          itens_snapshot?: Json | null
+          observacoes?: string | null
+          qtd_itens?: number | null
+          qtd_itens_aprovados?: number | null
+          valor_aprovado?: number | null
+          valor_gitec?: number | null
+          valor_previsto?: number | null
+          valor_scon?: number | null
+          valor_sigem?: number | null
+        }
+        Update: {
+          bm_number?: number | null
+          boletim?: string
+          contrato_id?: string | null
+          created_at?: string | null
+          curva_s_snapshot?: Json | null
+          fechado_em?: string
+          fechado_por?: string | null
+          fechado_por_nome?: string | null
+          id?: string
+          itens_snapshot?: Json | null
+          observacoes?: string | null
+          qtd_itens?: number | null
+          qtd_itens_aprovados?: number | null
+          valor_aprovado?: number | null
+          valor_gitec?: number | null
+          valor_previsto?: number | null
+          valor_scon?: number | null
+          valor_sigem?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snapshots_medicao_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       splan_cronograma_financeiro: {
         Row: {
           boletim: string
