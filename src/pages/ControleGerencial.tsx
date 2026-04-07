@@ -365,7 +365,7 @@ function KpiCard({ icon: Icon, label, value, sub, badge, valueClass }: {
 }
 
 function SemaforoDot({ value }: { value: number }) {
-  const color = value >= 0.95 ? "bg-emerald-500" : value >= 0.7 ? "bg-amber-500" : "bg-destructive";
+  const color = value >= 0.95 ? "bg-chart-3" : value >= 0.7 ? "bg-chart-5" : "bg-destructive";
   return <span className={`inline-block h-3 w-3 rounded-full ${color}`} />;
 }
 
