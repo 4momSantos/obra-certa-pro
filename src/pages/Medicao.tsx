@@ -15,7 +15,7 @@ import { PPUDetailSheet } from "@/components/medicao/PPUDetailSheet";
 import type { MedicaoPPU } from "@/hooks/useMedicao";
 
 export default function Medicao() {
-  const { items, kpis, filters, isLoading } = useMedicaoData();
+  const { items, kpis, filters, isLoading, hasOperationalData } = useMedicaoData();
 
   // Filters
   const [search, setSearch] = useState("");

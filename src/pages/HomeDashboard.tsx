@@ -50,8 +50,10 @@ export default function HomeDashboard() {
         <Upload className="h-16 w-16 text-muted-foreground/30" />
         <p className="text-lg font-medium">Dados de medição não encontrados</p>
         <p className="text-sm text-muted-foreground max-w-md text-center">
-          As tabelas <code className="bg-muted px-1 rounded text-xs">ppu_items</code> e <code className="bg-muted px-1 rounded text-xs">classificacao_ppu</code> estão vazias.
-          Importe os dados mestres (PPU-PREV) em Configuração, ou dados operacionais (SIGEM, GITEC, SCON) em Importar.
+          {hasOperationalData
+            ? <>Dados GITEC disponíveis mas os itens PPU ainda não foram gerados. Acesse <strong>Configuração</strong> para gerar os itens PPU a partir dos dados operacionais.</>
+            : <>As tabelas <code className="bg-muted px-1 rounded text-xs">ppu_items</code> e <code className="bg-muted px-1 rounded text-xs">classificacao_ppu</code> estão vazias. Importe os dados mestres (PPU-PREV) em Configuração, ou dados operacionais (SIGEM, GITEC, SCON) em Importar.</>
+          }
         </p>
         <div className="flex gap-2">
           <Button variant="outline" asChild><Link to="/configuracao">Configuração</Link></Button>
