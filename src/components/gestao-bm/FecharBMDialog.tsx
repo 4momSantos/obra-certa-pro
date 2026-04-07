@@ -23,6 +23,22 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
   const [observacoes, setObservacoes] = useState("");
   const [confirmado, setConfirmado] = useState(false);
 
+  // Tarefas checklist pendentes
+  const { data: checklistPendentes } = useQuery({
+    queryKey: ["tarefas-checklist-pendentes", bmName],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("splan_tarefas" as any)
+        .select("id, titulo")
+        .eq("boletim", bmName)
+        .eq("tipo", "checklist")
+        .in("status", ["aberta", "em_andamento"]);
+      if (error) throw error;
+      return (data || []) as unknown as { id: string; titulo: string }[];
+    },
+  });
+
   // Previsões manuais
   const { data: previsoes } = useQuery({
     queryKey: ["previsao-fechar", bmName],
@@ -369,6 +385,23 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
               Confirmo que os valores estão corretos e foram validados com a equipe de medição.
             </label>
           </div>
+
+          {/* Checklist pendentes warning */}
+          {(checklistPendentes?.length ?? 0) > 0 && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-amber-700">
+                  {checklistPendentes!.length} tarefa(s) checklist pendente(s):
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {checklistPendentes!.slice(0, 5).map((t) => (
+                    <li key={t.id} className="text-[11px] text-muted-foreground">• {t.titulo}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* No data warning */}
           {!hasPrevisoes && (cronogramaValues?.realizado ?? 0) === 0 && (cronogramaValues?.previsto ?? 0) === 0 && (

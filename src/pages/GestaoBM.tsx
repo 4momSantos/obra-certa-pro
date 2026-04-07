@@ -9,6 +9,7 @@ import { BmPpuDetailSheet } from "@/components/gestao-bm/BmPpuDetailSheet";
 import { BmFiscalAnalysis } from "@/components/gestao-bm/BmFiscalAnalysis";
 import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
+import { TarefasTab } from "@/components/gestao-bm/TarefasTab";
 import { allBMs } from "@/lib/bm-utils";
 
 export default function GestaoBM() {
@@ -36,6 +37,7 @@ export default function GestaoBM() {
       <Tabs defaultValue="por-bm" className="w-full">
         <TabsList>
           <TabsTrigger value="por-bm">Por BM</TabsTrigger>
+          <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
           <TabsTrigger value="consolidado">Visão Consolidada</TabsTrigger>
         </TabsList>
 
@@ -62,6 +64,11 @@ export default function GestaoBM() {
             itemPpu={detailPpu ?? ""}
             bmName={effectiveBm}
           />
+        </TabsContent>
+
+        <TabsContent value="tarefas" className="space-y-6 mt-4">
+          <BmSelector selected={selectedBm} onSelect={handleSelectBm} />
+          <TarefasTab bmName={effectiveBm} />
         </TabsContent>
 
         <TabsContent value="consolidado" className="mt-4">

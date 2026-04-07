@@ -2767,6 +2767,74 @@ export type Database = {
           },
         ]
       }
+      splan_tarefas: {
+        Row: {
+          boletim: string
+          concluida_em: string | null
+          concluida_por: string | null
+          contrato_id: string | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          id: string
+          item_ppu: string | null
+          prazo: string | null
+          prioridade: string | null
+          responsavel_id: string | null
+          responsavel_nome: string | null
+          status: string | null
+          tipo: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          boletim: string
+          concluida_em?: string | null
+          concluida_por?: string | null
+          contrato_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          item_ppu?: string | null
+          prazo?: string | null
+          prioridade?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          boletim?: string
+          concluida_em?: string | null
+          concluida_por?: string | null
+          contrato_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          item_ppu?: string | null
+          prazo?: string | null
+          prioridade?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "splan_tarefas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_log: {
         Row: {
           created_at: string | null
