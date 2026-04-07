@@ -114,8 +114,8 @@ export default function ControleGerencial() {
   }, [alertRules]);
 
   const semaforoColor = (v: number) => {
-    if (v >= 0.95) return "text-emerald-500";
-    if (v >= 0.8) return "text-amber-500";
+    if (v >= 0.95) return "text-chart-3";
+    if (v >= 0.8) return "text-chart-5";
     return "text-destructive";
   };
 
