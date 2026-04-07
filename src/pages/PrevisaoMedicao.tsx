@@ -24,6 +24,8 @@ import { ImportPrevisaoDialog } from "@/components/previsao/ImportPrevisaoDialog
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
+import { LiveBadge } from "@/components/shared/LiveBadge";
 
 function formatDateBR(d: string) {
   const dt = new Date(d);
@@ -33,6 +35,9 @@ function formatDateBR(d: string) {
 export default function PrevisaoMedicao() {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const { connected: rtConnected } = useRealtimeInvalidation([
+    { table: "previsao_medicao", events: ["INSERT", "UPDATE", "DELETE"] as any, queryKeys: [["previsao"], ["previsao-resumo"]], showToast: true },
+  ]);
   const { data: periodos, isLoading: loadingPeriodos } = useBMPeriodos();
   const { data: ppuItems } = usePPUElegiveis();
   const { data: sconMap } = useSconMap();
@@ -339,6 +344,7 @@ function PageHeader({
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">Previsão de Medição — {effectiveBm}</h1>
+          <LiveBadge connected={rtConnected} />
           {isFechado && (
             <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
               <Lock className="h-3 w-3" /> FECHADO

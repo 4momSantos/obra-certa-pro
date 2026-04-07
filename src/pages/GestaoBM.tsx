@@ -11,6 +11,13 @@ import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
 import { TarefasTab } from "@/components/gestao-bm/TarefasTab";
 import { allBMs } from "@/lib/bm-utils";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
+import { LiveBadge } from "@/components/shared/LiveBadge";
+
+const RT_CONFIGS = [
+  { table: "bm_periodos", events: ["INSERT", "UPDATE"] as any, queryKeys: [["bm-periodos"], ["bm-data"]], showToast: true },
+  { table: "boletins_medicao", events: ["INSERT", "UPDATE"] as any, queryKeys: [["boletins"], ["boletim"]], showToast: true },
+];
 
 export default function GestaoBM() {
   const bms = allBMs();
@@ -19,6 +26,7 @@ export default function GestaoBM() {
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
   const effectiveBm = selectedBm ?? bms[0]?.name ?? "BM-01";
+  const { connected } = useRealtimeInvalidation(RT_CONFIGS);
 
   const handleSelectBm = (bm: string) => {
     setSelectedBm(bm);
@@ -28,7 +36,10 @@ export default function GestaoBM() {
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-[1400px]">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Gestão de BM</h1>
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          Gestão de BM
+          <LiveBadge connected={connected} />
+        </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
           Visão consolidada por Boletim de Medição
         </p>
