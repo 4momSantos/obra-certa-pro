@@ -87,6 +87,7 @@ export function AppSidebar() {
       icon: LayoutDashboard,
       items: [
         { label: "Dashboard Geral", path: "/", icon: LayoutDashboard },
+        { label: "Controle Gerencial", path: "/controle-gerencial", icon: BarChart3 },
         {
           label: "Dashboards Salvos", path: "/dashboards", icon: FolderOpen,
           badge: () => dashCount ? <BadgePill variant="muted">{dashCount}</BadgePill> : null,

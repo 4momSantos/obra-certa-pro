@@ -62,6 +62,7 @@ const AppRoutes = () => {
           <Route path="/dashboards/:id/view" element={<DashboardView />} />
           <Route path="/tv" element={<TVMode />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/controle-gerencial" element={<ControleGerencial />} />
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/curva-s" element={<CurvaS />} />
           <Route path="/bm" element={<DetalhamentoBM />} />
