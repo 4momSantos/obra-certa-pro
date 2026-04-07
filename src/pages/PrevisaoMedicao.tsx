@@ -162,6 +162,7 @@ export default function PrevisaoMedicao() {
         onAddClick={() => setAddOpen(true)}
         onImportClick={() => setImportOpen(true)}
         hasConfirmed={hasConfirmed}
+        rtConnected={rtConnected}
       />
 
       {/* KPIs */}
