@@ -40,6 +40,7 @@ import GestaoBM from "@/pages/GestaoBM";
 import AuditLog from "@/pages/AuditLog";
 import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
+import ControleGerencial from "@/pages/ControleGerencial";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const AppRoutes = () => {
           <Route path="/dashboards/:id/view" element={<DashboardView />} />
           <Route path="/tv" element={<TVMode />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/controle-gerencial" element={<ControleGerencial />} />
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/curva-s" element={<CurvaS />} />
           <Route path="/bm" element={<DetalhamentoBM />} />
