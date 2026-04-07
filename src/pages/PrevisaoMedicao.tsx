@@ -21,6 +21,7 @@ import { ReconciliacaoTab } from "@/components/previsao/ReconciliacaoTab";
 import { useGerarBoletim, useBoletim } from "@/hooks/useBoletim";
 import { toast } from "sonner";
 import { ImportPrevisaoDialog } from "@/components/previsao/ImportPrevisaoDialog";
+import { CrossLink } from "@/components/shared/CrossLink";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
