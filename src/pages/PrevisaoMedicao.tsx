@@ -24,6 +24,8 @@ import { ImportPrevisaoDialog } from "@/components/previsao/ImportPrevisaoDialog
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
+import { LiveBadge } from "@/components/shared/LiveBadge";
 
 function formatDateBR(d: string) {
   const dt = new Date(d);
