@@ -35,7 +35,7 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
         .eq("tipo", "checklist")
         .in("status", ["aberta", "em_andamento"]);
       if (error) throw error;
-      return (data || []) as { id: string; titulo: string }[];
+      return (data || []) as unknown as { id: string; titulo: string }[];
     },
   });
 
