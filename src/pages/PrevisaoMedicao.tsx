@@ -282,7 +282,7 @@ export default function PrevisaoMedicao() {
 
 // ── Header sub-component ───────────────────────────────────────────
 function PageHeader({
-  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, hasConfirmed,
+  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, onImportClick, hasConfirmed,
 }: {
   effectiveBm: string;
   periodos: any[] | undefined;
@@ -290,6 +290,7 @@ function PageHeader({
   isFechado: boolean;
   onSelectBm: (v: string) => void;
   onAddClick: () => void;
+  onImportClick: () => void;
   hasConfirmed: boolean;
 }) {
   const navigate = useNavigate();
