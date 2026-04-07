@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3 } from "lucide-react";
+import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +19,7 @@ import { PassivosTable } from "@/components/previsao/PassivosTable";
 import { AddItemDialog } from "@/components/previsao/AddItemDialog";
 import { useGerarBoletim, useBoletim } from "@/hooks/useBoletim";
 import { toast } from "sonner";
+import { ImportPrevisaoDialog } from "@/components/previsao/ImportPrevisaoDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ export default function PrevisaoMedicao() {
   const { data: sconMap } = useSconMap();
   const { data: classifMap } = useClassifMap();
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const defaultBm = useMemo(() => {
     if (!periodos) return null;
@@ -152,6 +154,7 @@ export default function PrevisaoMedicao() {
         isFechado={isFechado}
         onSelectBm={setSelectedBmName}
         onAddClick={() => setAddOpen(true)}
+        onImportClick={() => setImportOpen(true)}
         hasConfirmed={hasConfirmed}
       />
 
@@ -273,13 +276,20 @@ export default function PrevisaoMedicao() {
         sconMap={sconMap}
         classifMap={classifMap}
       />
+
+      <ImportPrevisaoDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        bmName={effectiveBm}
+        ppuItems={ppuItems || []}
+      />
     </motion.div>
   );
 }
 
 // ── Header sub-component ───────────────────────────────────────────
 function PageHeader({
-  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, hasConfirmed,
+  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, onImportClick, hasConfirmed,
 }: {
   effectiveBm: string;
   periodos: any[] | undefined;
@@ -287,6 +297,7 @@ function PageHeader({
   isFechado: boolean;
   onSelectBm: (v: string) => void;
   onAddClick: () => void;
+  onImportClick: () => void;
   hasConfirmed: boolean;
 }) {
   const navigate = useNavigate();
@@ -339,6 +350,9 @@ function PageHeader({
         </Select>
         <Button onClick={onAddClick} size="sm" disabled={isFechado} className="gap-1">
           <Plus className="h-3.5 w-3.5" /> Adicionar Item
+        </Button>
+        <Button onClick={onImportClick} size="sm" variant="outline" disabled={isFechado} className="gap-1">
+          <Upload className="h-3.5 w-3.5" /> Importar Planilha
         </Button>
         {existingBoletim ? (
           <Button size="sm" variant="outline" onClick={() => navigate(`/boletim/${effectiveBm}`)} className="gap-1">
