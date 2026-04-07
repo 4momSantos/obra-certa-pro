@@ -112,7 +112,7 @@ const App = () => (
       <AuthProvider>
         <CronogramaProvider>
           <ETFProvider>
-            <Toaster />
+            
             <Sonner />
             <BrowserRouter>
               <AppRoutes />
