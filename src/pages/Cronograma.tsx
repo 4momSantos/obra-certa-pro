@@ -17,6 +17,7 @@ import { ForecastTab } from "@/components/cronograma/ForecastTab";
 import { formatCompact } from "@/lib/format";
 import { Link } from "react-router-dom";
 import type { CronoTreeNode } from "@/hooks/useCronogramaData";
+import { CrossLink } from "@/components/shared/CrossLink";
 
 export default function Cronograma() {
   const { data: tree, isLoading: loadingTree } = useCronogramaTree();
@@ -97,7 +98,10 @@ export default function Cronograma() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Cronograma EAP — Acompanhamento Financeiro</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">Cronograma EAP — Acompanhamento Financeiro</h1>
+          <CrossLink to="/curva-s" label="Ver Curva S" />
+        </div>
         <p className="text-sm text-muted-foreground mt-1">
           Árvore EAP hierárquica com valores por BM
           {ultimoBm ? ` — Último BM com realizado: BM-${String(ultimoBm).padStart(2, "0")}` : ""}
