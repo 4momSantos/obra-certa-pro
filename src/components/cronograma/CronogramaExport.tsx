@@ -32,12 +32,12 @@ export function CronogramaExport({ tree, bmData, curvaS, ultimoBm }: Props) {
 
       // --- Aba Cronograma ---
       const ws = wb.addWorksheet("Cronograma");
-      const headerFill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A5F" } };
-      const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-      const greyFill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
-      const borderThin: Partial<ExcelJS.Borders> = {
-        top: { style: "thin" }, bottom: { style: "thin" },
-        left: { style: "thin" }, right: { style: "thin" },
+      const headerFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF1E3A5F" } };
+      const headerFont = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+      const greyFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF0F0F0" } };
+      const borderThin = {
+        top: { style: "thin" as const }, bottom: { style: "thin" as const },
+        left: { style: "thin" as const }, right: { style: "thin" as const },
       };
       const moneyFmt = '#,##0.00';
 
