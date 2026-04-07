@@ -344,6 +344,8 @@ function PageHeader({
               <Lock className="h-3 w-3" /> FECHADO
             </Badge>
           )}
+          <CrossLink to="/gestao-bm" label="Ver Medição" />
+          <CrossLink to="/cronograma" label="Ver Cronograma" />
         </div>
         <p className="text-sm text-muted-foreground">
           {selectedPeriodo
