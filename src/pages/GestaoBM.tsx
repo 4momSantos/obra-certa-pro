@@ -26,6 +26,7 @@ export default function GestaoBM() {
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
   const effectiveBm = selectedBm ?? bms[0]?.name ?? "BM-01";
+  const { connected } = useRealtimeInvalidation(RT_CONFIGS);
 
   const handleSelectBm = (bm: string) => {
     setSelectedBm(bm);
