@@ -66,6 +66,11 @@ export default function GestaoBM() {
           />
         </TabsContent>
 
+        <TabsContent value="tarefas" className="space-y-6 mt-4">
+          <BmSelector selected={selectedBm} onSelect={handleSelectBm} />
+          <TarefasTab bmName={effectiveBm} />
+        </TabsContent>
+
         <TabsContent value="consolidado" className="mt-4">
           <BmConsolidatedTree />
         </TabsContent>
