@@ -324,7 +324,7 @@ export default function ControleGerencial() {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
-                <CheckCircle className="h-6 w-6 text-emerald-500" />
+                <CheckCircle className="h-6 w-6 text-chart-3" />
                 <p className="text-xs">Nenhuma tarefa pendente</p>
               </div>
             )}
