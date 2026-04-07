@@ -250,9 +250,91 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
           snapshot_gerado: true,
         },
       } as any);
+
+      // 6. Best-effort: atualizar cronograma_bm_values com Realizado
+      let itensAtualizadosCrono = 0;
+      try {
+        if (itensSnapshot.length > 0) {
+          // Buscar batch_id existente para este bm_name
+          const { data: existingCrono } = await supabase
+            .from("cronograma_bm_values")
+            .select("batch_id")
+            .eq("bm_name", bmName)
+            .limit(1);
+          const batchId = existingCrono?.[0]?.batch_id;
+
+          if (batchId) {
+            // Buscar mapa ippu -> tree_id de cronograma_tree
+            const ippus = itensSnapshot.map((it: any) => it.ippu).filter(Boolean);
+            const { data: treeRows } = await supabase
+              .from("cronograma_tree")
+              .select("id, ippu")
+              .in("ippu", ippus);
+            const treeMap = new Map((treeRows || []).map((r: any) => [r.ippu, r.id]));
+
+            for (const item of itensSnapshot) {
+              const ippu = item.ippu;
+              const valorAprovado = Number(item.valor_aprovado) || 0;
+              if (!ippu || valorAprovado === 0) continue;
+
+              const treeId = treeMap.get(ippu) || null;
+
+              // Verificar se já existe registro Realizado para este bm_name + ippu
+              const { data: existing } = await supabase
+                .from("cronograma_bm_values")
+                .select("id")
+                .eq("bm_name", bmName)
+                .eq("tipo", "Realizado")
+                .eq("ippu", ippu)
+                .maybeSingle();
+
+              if (existing?.id) {
+                await supabase
+                  .from("cronograma_bm_values")
+                  .update({ valor: valorAprovado } as any)
+                  .eq("id", existing.id);
+              } else {
+                await supabase
+                  .from("cronograma_bm_values")
+                  .insert({
+                    batch_id: batchId,
+                    bm_name: bmName,
+                    bm_number: parseInt(bmName.replace("BM-", "")),
+                    tipo: "Realizado",
+                    valor: valorAprovado,
+                    ippu,
+                    tree_id: treeId,
+                  } as any);
+              }
+              itensAtualizadosCrono++;
+            }
+
+            // Audit log do cronograma
+            await supabase.from("audit_log").insert({
+              user_id: user?.id,
+              user_nome: profile?.full_name || "",
+              acao: "fechamento_bm_cronograma",
+              entidade: "cronograma",
+              referencia: bmName,
+              detalhes: {
+                bm: bmName,
+                itens_atualizados: itensAtualizadosCrono,
+              },
+            } as any);
+          }
+        }
+      } catch (cronErr: any) {
+        console.warn("Cronograma não atualizado:", cronErr);
+        // Will show warning toast in onSuccess
+      }
+
+      return { itensAtualizadosCrono };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success(`${bmName} fechado. Snapshot preservado.`);
+      if (result && result.itensAtualizadosCrono === 0) {
+        // No items were updated - might be no boletim_itens or no batch
+      }
       queryClient.invalidateQueries({ queryKey: ["bm-periodo"] });
       queryClient.invalidateQueries({ queryKey: ["bm-periodos"] });
       queryClient.invalidateQueries({ queryKey: ["bm-periodo-banner", bmName] });
@@ -261,6 +343,7 @@ export function FecharBMDialog({ open, onClose, bmName }: Props) {
       queryClient.invalidateQueries({ queryKey: ["previsao"] });
       queryClient.invalidateQueries({ queryKey: ["ultimo-bm"] });
       queryClient.invalidateQueries({ queryKey: ["bm-kpis"] });
+      queryClient.invalidateQueries({ queryKey: ["cronograma"] });
       handleClose();
     },
     onError: (err: any) => {
