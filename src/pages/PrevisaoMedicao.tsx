@@ -17,6 +17,7 @@ import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
 import { SconExecucaoTable } from "@/components/previsao/SconExecucaoTable";
 import { PassivosTable } from "@/components/previsao/PassivosTable";
 import { AddItemDialog } from "@/components/previsao/AddItemDialog";
+import { ReconciliacaoTab } from "@/components/previsao/ReconciliacaoTab";
 import { useGerarBoletim, useBoletim } from "@/hooks/useBoletim";
 import { toast } from "sonner";
 import { ImportPrevisaoDialog } from "@/components/previsao/ImportPrevisaoDialog";
