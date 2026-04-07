@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3, Upload } from "lucide-react";
+import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3, Upload, GitCompareArrows } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,7 @@ import { PrevisaoTable } from "@/components/previsao/PrevisaoTable";
 import { SconExecucaoTable } from "@/components/previsao/SconExecucaoTable";
 import { PassivosTable } from "@/components/previsao/PassivosTable";
 import { AddItemDialog } from "@/components/previsao/AddItemDialog";
+import { ReconciliacaoTab } from "@/components/previsao/ReconciliacaoTab";
 import { useGerarBoletim, useBoletim } from "@/hooks/useBoletim";
 import { toast } from "sonner";
 import { ImportPrevisaoDialog } from "@/components/previsao/ImportPrevisaoDialog";
@@ -216,6 +217,11 @@ export default function PrevisaoMedicao() {
             Acompanhamento
             {(acompanhamento?.length || 0) > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{acompanhamento!.length}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="reconciliacao" className="gap-1.5 text-xs">
+            <GitCompareArrows className="h-3.5 w-3.5" />
+            Reconciliação
+            {passivosCount > 0 && <Badge variant="outline" className="ml-1 text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600">{passivosCount}</Badge>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scon">
@@ -264,6 +270,17 @@ export default function PrevisaoMedicao() {
 
         <TabsContent value="acompanhamento">
           <BMTrackingTable items={acompanhamento || []} isLoading={loadingAcomp} />
+        </TabsContent>
+
+        <TabsContent value="reconciliacao">
+          <ReconciliacaoTab
+            items={passivos || []}
+            isLoading={loadingPassivos}
+            periodos={periodos || []}
+            defaultBm={effectiveBm}
+            ppuMap={ppuMap}
+            classifMap={classifMap}
+          />
         </TabsContent>
       </Tabs>
 
