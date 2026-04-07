@@ -11,6 +11,13 @@ import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
 import { TarefasTab } from "@/components/gestao-bm/TarefasTab";
 import { allBMs } from "@/lib/bm-utils";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
+import { LiveBadge } from "@/components/shared/LiveBadge";
+
+const RT_CONFIGS = [
+  { table: "bm_periodos", events: ["INSERT", "UPDATE"] as any, queryKeys: [["bm-periodos"], ["bm-data"]], showToast: true },
+  { table: "boletins_medicao", events: ["INSERT", "UPDATE"] as any, queryKeys: [["boletins"], ["boletim"]], showToast: true },
+];
 
 export default function GestaoBM() {
   const bms = allBMs();
