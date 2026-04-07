@@ -162,6 +162,7 @@ export default function PrevisaoMedicao() {
         onAddClick={() => setAddOpen(true)}
         onImportClick={() => setImportOpen(true)}
         hasConfirmed={hasConfirmed}
+        rtConnected={rtConnected}
       />
 
       {/* KPIs */}
@@ -311,7 +312,7 @@ export default function PrevisaoMedicao() {
 
 // ── Header sub-component ───────────────────────────────────────────
 function PageHeader({
-  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, onImportClick, hasConfirmed,
+  effectiveBm, periodos, selectedPeriodo, isFechado, onSelectBm, onAddClick, onImportClick, hasConfirmed, rtConnected,
 }: {
   effectiveBm: string;
   periodos: any[] | undefined;
@@ -321,6 +322,7 @@ function PageHeader({
   onAddClick: () => void;
   onImportClick: () => void;
   hasConfirmed: boolean;
+  rtConnected: boolean;
 }) {
   const navigate = useNavigate();
   const gerarBoletim = useGerarBoletim();
