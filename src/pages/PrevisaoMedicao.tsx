@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3 } from "lucide-react";
+import { ClipboardList, Plus, Lock, FileCheck, Loader2, Activity, AlertTriangle, BarChart3, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
