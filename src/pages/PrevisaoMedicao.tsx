@@ -271,6 +271,17 @@ export default function PrevisaoMedicao() {
         <TabsContent value="acompanhamento">
           <BMTrackingTable items={acompanhamento || []} isLoading={loadingAcomp} />
         </TabsContent>
+
+        <TabsContent value="reconciliacao">
+          <ReconciliacaoTab
+            items={passivos || []}
+            isLoading={loadingPassivos}
+            periodos={periodos || []}
+            defaultBm={effectiveBm}
+            ppuMap={ppuMap}
+            classifMap={classifMap}
+          />
+        </TabsContent>
       </Tabs>
 
       <AddItemDialog
