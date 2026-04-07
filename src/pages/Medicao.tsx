@@ -15,7 +15,7 @@ import { PPUDetailSheet } from "@/components/medicao/PPUDetailSheet";
 import type { MedicaoPPU } from "@/hooks/useMedicao";
 
 export default function Medicao() {
-  const { items, kpis, filters, isLoading } = useMedicaoData();
+  const { items, kpis, filters, isLoading, hasOperationalData } = useMedicaoData();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -66,8 +66,10 @@ export default function Medicao() {
         <Upload className="h-16 w-16 text-muted-foreground/30" />
         <p className="text-lg font-medium text-foreground">Dados de medição não encontrados</p>
         <p className="text-sm text-muted-foreground max-w-md text-center">
-          A tabela <code className="bg-muted px-1 rounded text-xs">ppu_items</code> está vazia.
-          Importe os dados mestres (PPU-PREV) na página de Configuração primeiro.
+          {hasOperationalData
+            ? <>Dados GITEC disponíveis mas os itens PPU ainda não foram gerados. Acesse <strong>Configuração</strong> para gerar os itens PPU a partir dos dados operacionais.</>
+            : <>A tabela <code className="bg-muted px-1 rounded text-xs">ppu_items</code> está vazia. Importe os dados mestres (PPU-PREV) na página de Configuração primeiro.</>
+          }
         </p>
         <div className="flex gap-2">
           <Button variant="outline" asChild><Link to="/configuracao">Configuração</Link></Button>
