@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCronogramaTree, useCurvaS, useUltimoBm, useCronogramaBm } from "@/hooks/useCronogramaData";
 import { CronogramaTreeGrid } from "@/components/cronograma/CronogramaTreeGrid";
+import { CronogramaExport } from "@/components/cronograma/CronogramaExport";
 import { CurvaSCharts } from "@/components/cronograma/CurvaSCharts";
 import { CronogramaDetailSheet } from "@/components/cronograma/CronogramaDetailSheet";
 import { ComparativoTab } from "@/components/cronograma/ComparativoTab";
@@ -17,7 +18,6 @@ import { ForecastTab } from "@/components/cronograma/ForecastTab";
 import { formatCompact } from "@/lib/format";
 import { Link } from "react-router-dom";
 import type { CronoTreeNode } from "@/hooks/useCronogramaData";
-import { CrossLink } from "@/components/shared/CrossLink";
 
 export default function Cronograma() {
   const { data: tree, isLoading: loadingTree } = useCronogramaTree();
@@ -97,15 +97,15 @@ export default function Cronograma() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2">
+      <div className="flex items-start justify-between gap-4">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight">Cronograma EAP — Acompanhamento Financeiro</h1>
-          <CrossLink to="/curva-s" label="Ver Curva S" />
+          <p className="text-sm text-muted-foreground mt-1">
+            Árvore EAP hierárquica com valores por BM
+            {ultimoBm ? ` — Último BM com realizado: BM-${String(ultimoBm).padStart(2, "0")}` : ""}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          Árvore EAP hierárquica com valores por BM
-          {ultimoBm ? ` — Último BM com realizado: BM-${String(ultimoBm).padStart(2, "0")}` : ""}
-        </p>
+        <CronogramaExport tree={tree} bmData={bmData || []} curvaS={curvaS || []} ultimoBm={ultimoBm || 0} />
       </div>
 
       {/* KPI Cards */}
