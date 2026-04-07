@@ -57,7 +57,11 @@ const GitecPipeline: React.FC = () => {
   return (
     <div className="space-y-6 py-6 px-4 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pipeline GITEC</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Pipeline GITEC</h1>
+          <CrossLink to="/previsao" label="Ver Previsão" />
+          <CrossLink to="/cronograma" label="Ver Cronograma" />
+        </div>
         <Button variant="outline" size="sm" asChild>
           <Link to="/import"><Upload className="h-4 w-4 mr-2" /> Importar</Link>
         </Button>
