@@ -17,6 +17,7 @@ import {
   useGitecStats, useGitecEvents, useGitecByIPPU, useGitecFiscais,
   defaultFilters, type GitecFilters,
 } from "@/hooks/useGitec";
+import { CrossLink } from "@/components/shared/CrossLink";
 
 const GitecPipeline: React.FC = () => {
   const [filters, setFilters] = useState<GitecFilters>(defaultFilters);

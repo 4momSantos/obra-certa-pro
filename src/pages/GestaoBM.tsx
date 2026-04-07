@@ -11,6 +11,7 @@ import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
 import { TarefasTab } from "@/components/gestao-bm/TarefasTab";
 import { allBMs } from "@/lib/bm-utils";
+import { CrossLink } from "@/components/shared/CrossLink";
 
 export default function GestaoBM() {
   const bms = allBMs();

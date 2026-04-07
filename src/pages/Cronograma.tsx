@@ -17,6 +17,7 @@ import { ForecastTab } from "@/components/cronograma/ForecastTab";
 import { formatCompact } from "@/lib/format";
 import { Link } from "react-router-dom";
 import type { CronoTreeNode } from "@/hooks/useCronogramaData";
+import { CrossLink } from "@/components/shared/CrossLink";
 
 export default function Cronograma() {
   const { data: tree, isLoading: loadingTree } = useCronogramaTree();

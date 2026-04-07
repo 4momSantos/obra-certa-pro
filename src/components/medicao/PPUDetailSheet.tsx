@@ -222,6 +222,9 @@ export function PPUDetailSheet({ item, onClose }: Props) {
                 <TabsTrigger value="gitec" className="gap-1">
                   GITEC {rel.length > 0 && <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 ml-1">{rel.length}</Badge>}
                 </TabsTrigger>
+                {activeTab === "gitec" && rel.length > 0 && (
+                  <CrossLink to="/gitec" label="Ver Pipeline GITEC" params={{ search: item.item_ppu }} />
+                )}
                 <TabsTrigger value="sigem" className="gap-1">
                   SIGEM {sigem.length > 0 && <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 ml-1">{sigem.length}</Badge>}
                 </TabsTrigger>
