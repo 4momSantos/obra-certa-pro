@@ -184,20 +184,25 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconPro
         {/* REL_EVENTO tab */}
         {relEvento.length > 0 && (
           <TabsContent value="rel" className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <KpiCard label="Total Eventos" value={relEvento.length.toLocaleString("pt-BR")} />
-              <KpiCard label="iPPU Extraídos" value={relKpis.distinctIppu} color="text-primary" />
+              <KpiCard label="Aprovado" value={`${relKpis.byStatus["Aprovado"]?.count ?? 0} — R$ ${((relKpis.byStatus["Aprovado"]?.valor ?? 0) / 1e6).toFixed(2)}M`} color="text-emerald-600" />
+              <KpiCard label="Pend. Verificação" value={`${relKpis.byStatus["Pendente de Verificação"]?.count ?? 0} — R$ ${((relKpis.byStatus["Pendente de Verificação"]?.valor ?? 0) / 1e6).toFixed(2)}M`} color="text-amber-600" />
+              <KpiCard label="Pend. Aprovação" value={`${relKpis.byStatus["Pendente de Aprovação"]?.count ?? 0} — R$ ${((relKpis.byStatus["Pendente de Aprovação"]?.valor ?? 0) / 1e6).toFixed(2)}M`} color="text-orange-600" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <KpiCard label="Valor Total" value={`R$ ${(relKpis.valTotal / 1e6).toFixed(2)}M`} color="text-primary" />
+              <KpiCard label="iPPU Extraídos" value={relKpis.distinctIppu} />
               <KpiCard label="Critérios" value={relKpis.distinctCriterio} />
               <KpiCard label="Fiscais" value={relKpis.distinctFiscal} />
-              <KpiCard label="Valor Total" value={`R$ ${(relKpis.valTotal / 1e6).toFixed(2)}M`} color="text-primary" />
             </div>
             <StatusBar items={
               Object.entries(relKpis.byStatus)
-                .sort((a, b) => b[1] - a[1])
+                .sort((a, b) => b[1].count - a[1].count)
                 .slice(0, 6)
-                .map(([ label, count ], i) => ({
-                  label,
-                  count,
+                .map(([ label, data ], i) => ({
+                  label: `${label} (${data.count})`,
+                  count: data.count,
                   color: ["bg-emerald-500", "bg-amber-500", "bg-blue-500", "bg-orange-500", "bg-destructive", "bg-muted-foreground/50"][i] || "bg-muted-foreground/50",
                 }))
             } />
