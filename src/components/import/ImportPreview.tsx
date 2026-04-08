@@ -100,12 +100,16 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconPro
     <div className="space-y-4">
       {warnings.length > 0 && (
         <div className="space-y-2">
-          {warnings.map((w, i) => (
-            <Alert key={i} variant="destructive" className="py-2">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-sm">{w}</AlertDescription>
-            </Alert>
-          ))}
+          {warnings.map((w, i) => {
+            const isInfo = w.startsWith("📊") || w.startsWith("💰") || w.startsWith("🔍");
+            const isWarning = w.startsWith("⚠") || w.startsWith("  Exemplos");
+            return (
+              <Alert key={i} variant={isWarning ? "destructive" : "default"} className={`py-2 ${isInfo ? "border-primary/30 bg-primary/5" : ""}`}>
+                {!isInfo && <AlertTriangle className="h-4 w-4" />}
+                <AlertDescription className="text-sm">{w}</AlertDescription>
+              </Alert>
+            );
+          })}
         </div>
       )}
 
