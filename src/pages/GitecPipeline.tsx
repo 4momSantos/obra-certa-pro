@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useGitec";
 
 const GitecPipeline: React.FC = () => {
+  const { contratoAtivo } = useContrato();
   const [filters, setFilters] = useState<GitecFilters>(defaultFilters);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [selectedPPU, setSelectedPPU] = useState<{ item_ppu: string; item_gitec: string } | null>(null);
