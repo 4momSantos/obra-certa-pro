@@ -126,7 +126,7 @@ const ImportData: React.FC = () => {
     setParsing(false);
   }, []);
 
-  const allLoaded = !!sigemFile && !!relFile && !!sconFile;
+  const anyFileLoaded = !!sigemFile || !!relFile || !!sconFile || !!sconProgFile || !!cronoFile;
   const cronoRows = cronoResult ? cronoResult.tree.length + cronoResult.bmValues.length + cronoResult.curvaS.length : 0;
   const totalRows = sigemRows.length + relRows.length + sconRows.length + sconProgRows.length + cronoRows;
 
