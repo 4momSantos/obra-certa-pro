@@ -31,11 +31,11 @@ const kpis = (s: GitecStats, valorContratual?: number) => {
   return base;
 };
 
-export const GitecKPIs: React.FC<Props> = ({ stats, loading }) => {
+export const GitecKPIs: React.FC<Props> = ({ stats, loading, valorContratual }) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 8 }).map((_, i) => (
           <Card key={i}><CardContent className="p-4"><Skeleton className="h-12 w-full" /></CardContent></Card>
         ))}
       </div>
@@ -43,9 +43,11 @@ export const GitecKPIs: React.FC<Props> = ({ stats, loading }) => {
   }
   if (!stats) return null;
 
+  const items = kpis(stats, valorContratual);
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {kpis(stats).map((k, i) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {items.map((k, i) => (
         <Card key={i}>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">{k.label}</p>

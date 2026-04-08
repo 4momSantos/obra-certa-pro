@@ -13,6 +13,7 @@ import { GitecDetailSheet } from "@/components/gitec/GitecDetailSheet";
 import { FiscaisTab } from "@/components/gitec/FiscaisTab";
 import { AgrupamentosTab } from "@/components/gitec/AgrupamentosTab";
 import { PPUDetailSheet } from "@/components/medicao/PPUDetailSheet";
+import { useContrato } from "@/contexts/ContratoContext";
 import {
   useGitecStats, useGitecEvents, useGitecByIPPU, useGitecFiscais,
   defaultFilters, type GitecFilters,
