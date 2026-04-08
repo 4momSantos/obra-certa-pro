@@ -164,6 +164,12 @@ export interface ParsedSigemRow {
   ppu: string;
   status_gitec: string;
   documento_revisao: string;
+  nivel2: string;
+  nivel3: string;
+  tipo: string;
+  dias_corridos_wf: number;
+  status_workflow: string;
+  proposito_emissao: string;
 }
 
 export interface ParsedRelEventoRow {
@@ -310,9 +316,17 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
       try {
         const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4, defval: "" });
+        const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         const warnings: string[] = [];
-        const headers = (raw[0] || []).map(h => str(h));
+
+        // Dynamic header detection — find row containing "Documento" in first cols
+        let headerIdx = 0;
+        for (let i = 0; i < Math.min(raw.length, 20); i++) {
+          const rowHeaders = (raw[i] || []).map(h => normalizeHeader(str(h)));
+          if (rowHeaders.some(rh => rh === "documento")) { headerIdx = i; break; }
+        }
+        const headers = (raw[headerIdx] || []).map(h => str(h));
+        warnings.push(`SIGEM: cabeçalho na linha ${headerIdx + 1}: ${headers.slice(0, 15).join(" | ")}`);
 
         const cDoc = findCol(headers, "documento");
         const cRev = findCol(headers, "revisão", "revisao", "rev");
@@ -323,22 +337,35 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
         const cStaCorr = findCol(headers, "status correto", "status_correto");
         const cStaGitec = findCol(headers, "status gitec", "status_gitec");
         const cDocRev = findCol(headers, "documento_revisao", "documento revisão", "doc_rev");
+        const cNivel2 = findCol(headers, "nível 2", "nivel 2", "nivel2");
+        const cNivel3 = findCol(headers, "nível 3", "nivel 3", "nivel3");
+        const cTipo = findCol(headers, "tipo de documento", "tipo");
+        const cDiasWf = findCol(headers, "dias corridos em workflow", "dias corridos", "dias_corridos_wf");
+        const cStaWf = findCol(headers, "status workflow", "status_workflow");
+        const cPropEmis = findCol(headers, "propósito de emissão", "proposito de emissao", "proposito_emissao", "propósito emissão");
 
-        if (cDoc < 0) warnings.push("Coluna 'Documento' não encontrada no cabeçalho SIGEM");
-        if (cStaCorr < 0) warnings.push("Coluna STATUS CORRETO não encontrada — usando Status");
-        warnings.push(`Cabeçalhos SIGEM detectados: ${headers.slice(0, 15).join(", ")}`);
+        if (cDoc < 0) warnings.push("⚠ Coluna 'Documento' não encontrada no cabeçalho SIGEM");
+        if (cStaCorr < 0) warnings.push("ℹ Coluna STATUS CORRETO não encontrada — usando Status");
+
+        // Debug column mapping
+        const colMap: Record<string, number> = { cDoc, cRev, cInc, cTit, cSta, cUp, cStaCorr, cStaGitec, cDocRev, cNivel2, cNivel3, cTipo, cDiasWf, cStaWf, cPropEmis };
+        const foundCols = Object.entries(colMap).filter(([, v]) => v >= 0).map(([k, v]) => `${k}=${v}`);
+        const notFoundCols = Object.entries(colMap).filter(([, v]) => v < 0).map(([k]) => k);
+        warnings.push(`Colunas mapeadas (${foundCols.length}): ${foundCols.join(", ")}`);
+        if (notFoundCols.length) warnings.push(`⚠ Colunas não encontradas: ${notFoundCols.join(", ")}`);
 
         let noDoc = 0;
         const rows: ParsedSigemRow[] = [];
-        for (let i = 1; i < raw.length; i++) {
+        for (let i = headerIdx + 1; i < raw.length; i++) {
           const r = raw[i];
           if (!r || r.length === 0) continue;
           const documento = str(cell(r, cDoc >= 0 ? cDoc : 0));
           if (!documento) { noDoc++; continue; }
           const status = str(cell(r, cSta));
+          const revisao = str(cell(r, cRev));
           rows.push({
             documento,
-            revisao: str(cell(r, cRev)),
+            revisao,
             incluido_em: str(cell(r, cInc)),
             titulo: str(cell(r, cTit)),
             status,
@@ -346,10 +373,34 @@ export function parseSigemFile(file: File): Promise<{ rows: ParsedSigemRow[]; wa
             status_correto: cStaCorr >= 0 ? (str(cell(r, cStaCorr)) || status) : status,
             ppu: "",
             status_gitec: str(cell(r, cStaGitec)),
-            documento_revisao: str(cell(r, cDocRev)),
+            documento_revisao: cDocRev >= 0 ? str(cell(r, cDocRev)) : (documento && revisao ? `${documento}_${revisao}` : documento),
+            nivel2: str(cell(r, cNivel2)),
+            nivel3: str(cell(r, cNivel3)),
+            tipo: str(cell(r, cTipo)),
+            dias_corridos_wf: Math.round(num(cell(r, cDiasWf))),
+            status_workflow: str(cell(r, cStaWf)),
+            proposito_emissao: str(cell(r, cPropEmis)),
           });
         }
+
+        // Diagnostic warnings
         if (noDoc > 0) warnings.push(`${noDoc} linhas sem Documento (ignoradas)`);
+        const uniqueDocs = new Set(rows.map(r => r.documento));
+        warnings.push(`📊 SIGEM: ${rows.length.toLocaleString("pt-BR")} registros (${uniqueDocs.size.toLocaleString("pt-BR")} documentos únicos)`);
+
+        // Status breakdown
+        const statusCounts: Record<string, number> = {};
+        for (const r of rows) {
+          const s = r.status_correto || r.status || "Sem Status";
+          statusCounts[s] = (statusCounts[s] || 0) + 1;
+        }
+        const statusLines = Object.entries(statusCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([s, c]) => `${s}: ${c}`)
+          .join(" | ");
+        warnings.push(`📋 Por status: ${statusLines}`);
+
         resolve({ rows, warnings });
       } catch (err) { reject(err); }
     };
