@@ -126,7 +126,7 @@ const ImportData: React.FC = () => {
     setParsing(false);
   }, []);
 
-  const allLoaded = !!sigemFile && !!relFile && !!sconFile;
+  const anyFileLoaded = !!sigemFile || !!relFile || !!sconFile || !!sconProgFile || !!cronoFile;
   const cronoRows = cronoResult ? cronoResult.tree.length + cronoResult.bmValues.length + cronoResult.curvaS.length : 0;
   const totalRows = sigemRows.length + relRows.length + sconRows.length + sconProgRows.length + cronoRows;
 
@@ -270,12 +270,12 @@ const ImportData: React.FC = () => {
               size="lg"
               className="w-full"
               onClick={doProcess}
-              disabled={(!allLoaded && !cronoFile && !sconProgFile) || totalRows === 0}
+              disabled={!anyFileLoaded || totalRows === 0}
             >
               <Upload className="h-5 w-5 mr-2" />
-              {allLoaded || cronoFile || sconProgFile
+              {anyFileLoaded
                 ? `▶ Processar (${totalRows.toLocaleString("pt-BR")} registros)`
-                : `Carregue os 3 arquivos (${[sigemFile, relFile, sconFile].filter(Boolean).length}/3)`
+                : `Selecione pelo menos um arquivo para importar`
               }
             </Button>
           )}
