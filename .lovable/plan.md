@@ -1,36 +1,46 @@
 
 
-## Problem
+## Problema
 
-Data is imported into `rel_eventos` successfully (6,490 rows), but the GITEC Pipeline page shows "Sem dados" because:
+O valor contratual real é **R$ 915.377.248,92**, mas o pipeline GITEC mostra apenas **R$ 276M** (soma dos eventos no `rel_eventos`). Isso porque:
 
-1. **RLS blocks reads**: `rel_eventos` SELECT policy requires `contrato_id = ANY(user_contrato_ids())`, but imported rows have `contrato_id = NULL`
-2. All `useGitec` hooks (`useGitecStats`, `useGitecEvents`, `useGitecEventDetail`) query `rel_eventos` and get 0 rows back
-3. The `useExistingCounts` query also returns 0 for `rel_eventos` count
+1. A tabela `contratos` está **vazia** — não tem o valor de referência cadastrado
+2. Os KPIs do GITEC mostram apenas a soma dos eventos importados, sem comparar com o valor contratual
+3. Não existe um KPI de "% Medido" para contextualizar o progresso
 
-## Fix (2 steps)
+## Plano
 
-### Step 1 — Migration: Fix `rel_eventos` SELECT RLS policy
+### Passo 1 — Cadastrar o contrato na base de dados
 
-Drop the restrictive `read_contrato` policy and replace it with an open authenticated-read policy, matching every other data table in the project:
+Inserir um registro na tabela `contratos` com o valor contratual correto:
 
 ```sql
-DROP POLICY IF EXISTS "read_contrato" ON public.rel_eventos;
-CREATE POLICY "read_auth" ON public.rel_eventos
-  FOR SELECT TO authenticated
-  USING (true);
+INSERT INTO contratos (codigo, nome, valor_contratual, ativo)
+VALUES ('CONTRATO-01', 'Contrato Principal', 915377248.92, true);
 ```
 
-This is safe — all other data tables (`gitec_events`, `documents`, `scon_components`, `ppu_items`, etc.) already use `USING (true)` for authenticated SELECT.
+Isso também desbloqueia o `ContratoContext` que já busca essa tabela e expõe `contratoAtivo.valor_contratual`.
 
-### Step 2 — No code changes needed
+### Passo 2 — Adicionar KPI "Valor Contratual" e "% Medido" no pipeline
 
-The hooks in `useGitec.ts` already query `rel_eventos` with the correct column names (`etapa`, `status`, `valor`, `agrupamento_ippu`, `fiscal_responsavel`, etc.). Once RLS allows reads, all KPIs, events table, fiscal rankings, and detail views will populate automatically.
+Atualizar `GitecKPIs.tsx` para receber o valor contratual (via props do `ContratoContext`) e mostrar:
 
-## Impact
+- **Valor Contratual**: R$ 915,4M
+- **% Medido (Aprovado)**: R$ 212,5M / R$ 915,4M = **23,2%**
 
-- GITEC Pipeline page will show all 6,490 events with KPIs, funnel, and rankings
-- Import stats sidebar will show correct count
-- Medição cross-references via `vw_gitec_por_ppu` (if it reads from `rel_eventos`) will also work
-- No code changes required — only a database policy update
+### Passo 3 — Conectar o ContratoContext na página GitecPipeline
+
+Atualizar `GitecPipeline.tsx` para consumir `useContrato()` e passar `contratoAtivo.valor_contratual` ao componente `GitecKPIs`.
+
+### Arquivos alterados
+
+| Arquivo | Mudança |
+|---------|---------|
+| Migration SQL | INSERT do contrato com valor R$ 915.377.248,92 |
+| `src/components/gitec/GitecKPIs.tsx` | Adicionar KPI "Valor Contratual" e "% Medido" |
+| `src/pages/GitecPipeline.tsx` | Importar `useContrato` e passar valor ao KPIs |
+
+### Resultado esperado
+
+O pipeline GITEC mostrará 7 KPIs (em vez de 6), incluindo o valor contratual como referência e o percentual aprovado (~23%) para contextualizar que os R$ 276M de eventos representam ~30% do contrato total.
 
