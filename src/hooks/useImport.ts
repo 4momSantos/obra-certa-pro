@@ -456,6 +456,9 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
 
         let noKey = 0;
         let pivotSkipped = 0;
+        let totalDataRows = 0;
+        const noKeySamples: string[] = [];
+        const valorSamples: { raw: unknown; parsed: number }[] = [];
         const rows: ParsedRelEventoRow[] = [];
         for (let i = headerIdx + 1; i < raw.length; i++) {
           const r = raw[i];
@@ -465,15 +468,37 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
           const firstVal = str(r[0] || "");
           if (isPivotArtifact(firstVal)) { pivotSkipped++; continue; }
 
+          totalDataRows++;
+
           const agrupamento = str(cell(r, cAgrup));
           const tag = str(cell(r, cTag));
           const agrupamento_ippu = extractIppuFromAgrupamento(agrupamento);
           const tagParts = extractTagParts(tag);
 
-          if (!agrupamento_ippu && !tag && !agrupamento) { noKey++; continue; }
+          const estrutura = str(cell(r, cEstrutura));
+          const etapa = str(cell(r, cEtapa));
+          const valor = num(cell(r, cValor));
+          const status = str(cell(r, cStatus));
+
+          // Relaxed filter: accept row if it has any meaningful field
+          const hasKey = !!(agrupamento_ippu || tag || agrupamento);
+          const hasMeaningfulData = valor > 0 || !!estrutura || !!etapa || !!status;
+
+          if (!hasKey && !hasMeaningfulData) {
+            noKey++;
+            if (noKeySamples.length < 3) {
+              noKeySamples.push(`Linha ${i + 1}: agrup="${agrupamento}" tag="${tag}" valor=${valor} etapa="${etapa}"`);
+            }
+            continue;
+          }
+
+          // Collect raw vs parsed value samples for diagnostics
+          if (valorSamples.length < 3 && cValor >= 0) {
+            valorSamples.push({ raw: r[cValor], parsed: valor });
+          }
 
           rows.push({
-            estrutura: str(cell(r, cEstrutura)),
+            estrutura,
             fase: str(cell(r, cFase)),
             subfase: str(cell(r, cSubfase)),
             agrupamento,
@@ -481,7 +506,7 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             tag,
             qtd: num(cell(r, cQtd)),
             um: str(cell(r, cUm)),
-            etapa: str(cell(r, cEtapa)),
+            etapa,
             peso_fisico: num(cell(r, cPesoFis)),
             peso_financeiro: num(cell(r, cPesoFin)),
             data_execucao: parseGitecDate(cell(r, cDataExec)),
@@ -491,8 +516,8 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             numero_evidencias: str(cell(r, cNumEvid)),
             data_aprovacao: parseGitecDate(cell(r, cDataAprov)),
             fiscal_responsavel: str(cell(r, cFiscal)),
-            status: str(cell(r, cStatus)),
-            valor: num(cell(r, cValor)),
+            status,
+            valor,
             comentario: str(cell(r, cComent)),
             agrupamento_ippu,
             tag_criterio: tagParts.criterio,
@@ -503,7 +528,23 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             console.log("[REL_EVENTO] Primeira linha:", { etapa: r0.etapa, status: r0.status, valor: r0.valor, tag: r0.tag, agrupamento_ippu: r0.agrupamento_ippu, agrupamento: r0.agrupamento });
           }
         }
-        if (noKey > 0) warnings.push(`${noKey} linhas sem Item PPU, TAG nem Agrupamento (ignoradas)`);
+
+        // Diagnostic warnings
+        warnings.push(`📊 REL_EVENTO: ${totalDataRows} linhas lidas → ${rows.length} importadas, ${noKey} descartadas, ${pivotSkipped} pivot/resumo`);
+        if (rows.length > 0) {
+          const somaTotal = rows.reduce((s, r) => s + r.valor, 0);
+          warnings.push(`💰 Soma total dos valores: R$ ${(somaTotal / 1e6).toFixed(2)}M (${rows.length} eventos)`);
+        }
+        if (valorSamples.length > 0) {
+          const sampleStr = valorSamples.map((s, i) => `[${i + 1}] bruto="${s.raw}" → R$ ${s.parsed.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" | ");
+          warnings.push(`🔍 Amostra de valores: ${sampleStr}`);
+        }
+        if (noKey > 0) {
+          warnings.push(`⚠ ${noKey} linhas descartadas (sem chave e sem dados significativos)`);
+          if (noKeySamples.length > 0) {
+            warnings.push(`  Exemplos descartados: ${noKeySamples.join(" ; ")}`);
+          }
+        }
         if (pivotSkipped > 0) warnings.push(`${pivotSkipped} linhas de resumo/pivot ignoradas`);
         resolve({ rows, warnings });
       } catch (err) { reject(err); }
