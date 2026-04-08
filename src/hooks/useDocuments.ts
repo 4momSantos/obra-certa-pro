@@ -28,7 +28,7 @@ export function useDocumentStats() {
     queryFn: async (): Promise<DocStats> => {
       const [docsRes, gitecRes] = await Promise.all([
         supabase.from("sigem_documents").select("id, status_correto, documento"),
-        supabase.from("gitec_events").select("evidencias, valor"),
+        supabase.from("rel_eventos").select("numero_evidencias, valor"),
       ]);
       if (docsRes.error) throw docsRes.error;
       const docs = docsRes.data ?? [];
@@ -49,7 +49,7 @@ export function useDocumentStats() {
       let recusadosComGitec = 0;
       let valorGitecImpactado = 0;
       for (const ge of gitecEvents) {
-        const evids = (ge.evidencias ?? "").split(";").map((s: string) => s.trim()).filter(Boolean);
+        const evids = (ge.numero_evidencias ?? "").split(";").map((s: string) => s.trim()).filter(Boolean);
         for (const ev of evids) {
           if (recusadoDocs.has(ev)) {
             recusadosComGitec++;
@@ -104,13 +104,13 @@ export function useDocuments(filters: DocFilters, limit = 100) {
         hasRecusa: d.status_correto === "Recusado",
       }));
 
-      // Enrich with GITEC info
+      // Enrich with GITEC info via rel_eventos
       const docNums = docs.map(d => d.documento);
-      const { data: gitecData } = await supabase.from("gitec_events").select("evidencias");
+      const { data: gitecData } = await supabase.from("rel_eventos").select("numero_evidencias");
 
       const gitecMap = new Map<string, number>();
       for (const ge of gitecData ?? []) {
-        const evids = (ge.evidencias ?? "").split(";").map((s: string) => s.trim()).filter(Boolean);
+        const evids = (ge.numero_evidencias ?? "").split(";").map((s: string) => s.trim()).filter(Boolean);
         for (const ev of evids) {
           if (docNums.includes(ev)) gitecMap.set(ev, (gitecMap.get(ev) ?? 0) + 1);
         }
@@ -155,10 +155,10 @@ export function useRecusados() {
       if (error) throw error;
       if (!recusados || recusados.length === 0) return [];
 
-      const { data: gitecEvents } = await supabase.from("gitec_events").select("evidencias, valor");
+      const { data: gitecEvents } = await supabase.from("rel_eventos").select("numero_evidencias, valor");
       const gitecMap = new Map<string, { count: number; valor: number }>();
       for (const ge of gitecEvents ?? []) {
-        const evids = (ge.evidencias ?? "").split(";").map((s: string) => s.trim()).filter(Boolean);
+        const evids = (ge.numero_evidencias ?? "").split(";").map((s: string) => s.trim()).filter(Boolean);
         for (const ev of evids) {
           const cur = gitecMap.get(ev) ?? { count: 0, valor: 0 };
           cur.count++;
@@ -188,7 +188,7 @@ export function useDocumentDetail(documento: string | null) {
     queryFn: async () => {
       const [docRes, gitecRes] = await Promise.all([
         supabase.from("sigem_documents").select("*").eq("documento", documento!).order("revisao", { ascending: false }),
-        supabase.from("gitec_events").select("*").ilike("evidencias", `%${documento!}%`).limit(50),
+        supabase.from("rel_eventos").select("*").ilike("numero_evidencias", `%${documento!}%`).limit(50),
       ]);
       const allRevisions = docRes.data ?? [];
       return {
