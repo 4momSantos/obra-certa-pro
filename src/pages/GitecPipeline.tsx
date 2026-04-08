@@ -13,12 +13,14 @@ import { GitecDetailSheet } from "@/components/gitec/GitecDetailSheet";
 import { FiscaisTab } from "@/components/gitec/FiscaisTab";
 import { AgrupamentosTab } from "@/components/gitec/AgrupamentosTab";
 import { PPUDetailSheet } from "@/components/medicao/PPUDetailSheet";
+import { useContrato } from "@/contexts/ContratoContext";
 import {
   useGitecStats, useGitecEvents, useGitecByIPPU, useGitecFiscais,
   defaultFilters, type GitecFilters,
 } from "@/hooks/useGitec";
 
 const GitecPipeline: React.FC = () => {
+  const { contratoAtivo } = useContrato();
   const [filters, setFilters] = useState<GitecFilters>(defaultFilters);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [selectedPPU, setSelectedPPU] = useState<{ item_ppu: string; item_gitec: string } | null>(null);
@@ -63,7 +65,7 @@ const GitecPipeline: React.FC = () => {
         </Button>
       </div>
 
-      <GitecKPIs stats={stats} loading={loadingStats} />
+      <GitecKPIs stats={stats} loading={loadingStats} valorContratual={contratoAtivo?.valor_contratual} />
       <GitecFunnel stats={stats} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
