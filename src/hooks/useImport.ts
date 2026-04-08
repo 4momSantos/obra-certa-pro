@@ -549,11 +549,24 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         }
 
         // Diagnostic warnings
+        const statusCounts: Record<string, { count: number; valor: number }> = {};
+        for (const r of rows) {
+          const s = r.status || "Sem Status";
+          if (!statusCounts[s]) statusCounts[s] = { count: 0, valor: 0 };
+          statusCounts[s].count++;
+          statusCounts[s].valor += r.valor;
+        }
         warnings.push(`📊 REL_EVENTO: ${totalDataRows} linhas lidas → ${rows.length} importadas, ${noKey} descartadas, ${pivotSkipped} pivot/resumo`);
         if (rows.length > 0) {
           const somaTotal = rows.reduce((s, r) => s + r.valor, 0);
           warnings.push(`💰 Soma total dos valores: R$ ${(somaTotal / 1e6).toFixed(2)}M (${rows.length} eventos)`);
         }
+        // Status breakdown
+        const statusLines = Object.entries(statusCounts)
+          .sort((a, b) => b[1].count - a[1].count)
+          .map(([s, v]) => `${s}: ${v.count} (R$ ${(v.valor / 1e6).toFixed(2)}M)`)
+          .join(" | ");
+        warnings.push(`📋 Por status: ${statusLines}`);
         if (valorSamples.length > 0) {
           const sampleStr = valorSamples.map((s, i) => `[${i + 1}] bruto="${s.raw}" → R$ ${s.parsed.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" | ");
           warnings.push(`🔍 Amostra de valores: ${sampleStr}`);
