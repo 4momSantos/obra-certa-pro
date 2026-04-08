@@ -459,7 +459,7 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         const cDataInf = findCol(headers, "data inf", "data_inf_execucao", "data inf. exec", "data inf. execução");
         const cExecPor = findCol(headers, "executado por", "executado_por");
         const cNecEvid = findCol(headers, "necessita evidencia", "necessita evidência", "necessita_evidencias", "necessita evidências");
-        const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero_evidencias", "evidência", "número evidências");
+        const cNumEvid = findCol(headers, "numero evidencia", "número evidência", "numero evidencias", "número evidências", "numero_evidencias");
         const cDataAprov = findCol(headers, "data de aprovação", "data aprovação", "data_aprovacao");
         const cFiscal = findCol(headers, "fiscal responsável", "fiscal responsavel", "fiscal_responsavel", "fiscal");
         const cStatus = findCol(headers, "status", "status evento");
