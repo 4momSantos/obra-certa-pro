@@ -1,50 +1,31 @@
 
+Objetivo: corrigir o módulo GITEC para que a pipeline mostre os totais reais de eventos por status sem “sumir” com registros por causa do parse, e para que os filtros da tela não contaminem a leitura executiva dos números.
 
-## Diagnóstico: Filtros na Importação REL_EVENTO
+Plano
 
-### Problema identificado
+1. Corrigir o parse do REL_EVENTO
+- Revisar `parseRelEventoFile` em `src/hooks/useImport.ts`.
+- Normalizar os campos críticos no parse, principalmente:
+  - `status` → mapear variações para apenas 3 grupos principais: `Aprovado`, `Pendente de Aprovação`, `Pendente de Verificação`
+  - `etapa` → normalizar espaços, acentos e variantes como `Concluída`
+- Manter o parser permissivo para não descartar eventos válidos só porque TAG/iPPU vieram vazios.
+- Melhorar os warnings para mostrar claramente:
+  - total lido
+  - total importado
+  - total descartado
+  - contagem por status normalizado
+  - soma financeira por status normalizado
 
-O parser `parseRelEventoFile` tem **3 filtros** que podem estar descartando linhas ou distorcendo valores:
+2. Separar “visão executiva” de “tabela filtrável”
+- Ajustar `useGitecStats` em `src/hooks/useGitec.ts` para sempre calcular KPIs e funil sobre a base inteira importada, sem depender dos filtros visuais da tabela.
+- Garantir que os totais de:
+  - Aprovado
+  - Pendente de Aprovação
+  - Pendente de Verificação
+  sejam calculados apenas com status normalizado.
+- Se existirem status fora do padrão, eles entram em “Outros” para diagnóstico, em vez de serem perdidos silenciosamente.
 
-1. **Filtro de chave (linha 473)**: Descarta linhas onde `agrupamento_ippu`, `tag` e `agrupamento` são todos vazios. Se eventos legítimos não tiverem esses campos preenchidos, são ignorados silenciosamente.
-
-2. **Filtro de pivot (linha 466)**: Descarta linhas cujo primeiro valor contenha "rótulos de", "total geral", etc. Pode acidentalmente filtrar eventos reais se o texto coincidir.
-
-3. **Parser de números `num()` (linha 19-48)**: Converte valores monetários. Se o formato do Excel for ambíguo (ex: `1.234,56` vs `1,234.56`), pode interpretar errado.
-
-### Plano de Correção
-
-#### Passo 1 — Adicionar log de diagnóstico na importação
-
-Modificar `parseRelEventoFile` para registrar nos warnings:
-- Quantas linhas foram lidas no total
-- Quantas foram descartadas por cada filtro (`noKey`, `pivotSkipped`)
-- Amostra dos primeiros valores descartados (para o usuário validar)
-- O valor da primeira e última linha importada (para conferir com a planilha)
-
-#### Passo 2 — Relaxar o filtro de chave
-
-Atualmente exige `agrupamento_ippu || tag || agrupamento`. Mudar para aceitar qualquer linha que tenha pelo menos **um campo significativo** (ex: `valor > 0`, ou `estrutura` preenchida, ou `etapa` preenchida), evitando descartar eventos válidos que simplesmente não têm TAG.
-
-#### Passo 3 — Melhorar diagnóstico do `num()`
-
-Adicionar nos warnings uma amostra do valor bruto vs. valor parseado para as primeiras 3 linhas, para que o usuário possa confirmar se a conversão está correta (ex: "Valor bruto: '1.234.567,89' → parseado: 1234567.89").
-
-#### Passo 4 — Exibir resumo pós-parse mais detalhado
-
-No `ImportPreview`, mostrar:
-- Total de linhas lidas vs. importadas
-- Soma total dos valores parseados (para conferir antes de gravar)
-- Linhas descartadas por filtro
-
-### Arquivos alterados
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/hooks/useImport.ts` | Relaxar filtro de chave, adicionar logs de diagnóstico no parser REL_EVENTO, incluir amostra de valores nos warnings |
-| `src/components/import/ImportPreview.tsx` | Exibir soma total dos valores e contagem de linhas descartadas |
-
-### Resultado esperado
-
-Na próxima importação, o sistema mostrará um resumo detalhado antes de processar, permitindo ao usuário conferir se os valores e a contagem de eventos conferem com a planilha original. Eventos que antes eram descartados por falta de TAG/agrupamento serão mantidos.
-
+3. Ajustar a tela Pipeline para não parecer que “filtra os números”
+- Em `src/pages/GitecPipeline.tsx`, manter filtros aplicados somente à lista de eventos.
+- Deixar claro na interface que:
+  - KPIs e funil = base total importada
