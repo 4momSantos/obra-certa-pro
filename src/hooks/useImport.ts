@@ -164,6 +164,12 @@ export interface ParsedSigemRow {
   ppu: string;
   status_gitec: string;
   documento_revisao: string;
+  nivel2: string;
+  nivel3: string;
+  tipo: string;
+  dias_corridos_wf: number;
+  status_workflow: string;
+  proposito_emissao: string;
 }
 
 export interface ParsedRelEventoRow {
