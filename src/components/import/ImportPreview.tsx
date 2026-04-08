@@ -53,8 +53,13 @@ export const ImportPreview: React.FC<Props> = ({ sigem, relEvento, scon, sconPro
   }, [sigem]);
 
   const relKpis = useMemo(() => {
-    const byStatus: Record<string, number> = {};
-    relEvento.forEach(r => { byStatus[r.status || "Outros"] = (byStatus[r.status || "Outros"] || 0) + 1; });
+    const byStatus: Record<string, { count: number; valor: number }> = {};
+    relEvento.forEach(r => {
+      const s = r.status || "Outros";
+      if (!byStatus[s]) byStatus[s] = { count: 0, valor: 0 };
+      byStatus[s].count++;
+      byStatus[s].valor += r.valor;
+    });
     const valTotal = relEvento.reduce((s, r) => s + r.valor, 0);
     const distinctIppu = new Set(relEvento.map(r => r.agrupamento_ippu).filter(Boolean)).size;
     const distinctCriterio = new Set(relEvento.map(r => r.tag_criterio).filter(Boolean)).size;
