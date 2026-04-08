@@ -1,46 +1,50 @@
 
 
-## Problema
+## Diagnóstico: Filtros na Importação REL_EVENTO
 
-O valor contratual real é **R$ 915.377.248,92**, mas o pipeline GITEC mostra apenas **R$ 276M** (soma dos eventos no `rel_eventos`). Isso porque:
+### Problema identificado
 
-1. A tabela `contratos` está **vazia** — não tem o valor de referência cadastrado
-2. Os KPIs do GITEC mostram apenas a soma dos eventos importados, sem comparar com o valor contratual
-3. Não existe um KPI de "% Medido" para contextualizar o progresso
+O parser `parseRelEventoFile` tem **3 filtros** que podem estar descartando linhas ou distorcendo valores:
 
-## Plano
+1. **Filtro de chave (linha 473)**: Descarta linhas onde `agrupamento_ippu`, `tag` e `agrupamento` são todos vazios. Se eventos legítimos não tiverem esses campos preenchidos, são ignorados silenciosamente.
 
-### Passo 1 — Cadastrar o contrato na base de dados
+2. **Filtro de pivot (linha 466)**: Descarta linhas cujo primeiro valor contenha "rótulos de", "total geral", etc. Pode acidentalmente filtrar eventos reais se o texto coincidir.
 
-Inserir um registro na tabela `contratos` com o valor contratual correto:
+3. **Parser de números `num()` (linha 19-48)**: Converte valores monetários. Se o formato do Excel for ambíguo (ex: `1.234,56` vs `1,234.56`), pode interpretar errado.
 
-```sql
-INSERT INTO contratos (codigo, nome, valor_contratual, ativo)
-VALUES ('CONTRATO-01', 'Contrato Principal', 915377248.92, true);
-```
+### Plano de Correção
 
-Isso também desbloqueia o `ContratoContext` que já busca essa tabela e expõe `contratoAtivo.valor_contratual`.
+#### Passo 1 — Adicionar log de diagnóstico na importação
 
-### Passo 2 — Adicionar KPI "Valor Contratual" e "% Medido" no pipeline
+Modificar `parseRelEventoFile` para registrar nos warnings:
+- Quantas linhas foram lidas no total
+- Quantas foram descartadas por cada filtro (`noKey`, `pivotSkipped`)
+- Amostra dos primeiros valores descartados (para o usuário validar)
+- O valor da primeira e última linha importada (para conferir com a planilha)
 
-Atualizar `GitecKPIs.tsx` para receber o valor contratual (via props do `ContratoContext`) e mostrar:
+#### Passo 2 — Relaxar o filtro de chave
 
-- **Valor Contratual**: R$ 915,4M
-- **% Medido (Aprovado)**: R$ 212,5M / R$ 915,4M = **23,2%**
+Atualmente exige `agrupamento_ippu || tag || agrupamento`. Mudar para aceitar qualquer linha que tenha pelo menos **um campo significativo** (ex: `valor > 0`, ou `estrutura` preenchida, ou `etapa` preenchida), evitando descartar eventos válidos que simplesmente não têm TAG.
 
-### Passo 3 — Conectar o ContratoContext na página GitecPipeline
+#### Passo 3 — Melhorar diagnóstico do `num()`
 
-Atualizar `GitecPipeline.tsx` para consumir `useContrato()` e passar `contratoAtivo.valor_contratual` ao componente `GitecKPIs`.
+Adicionar nos warnings uma amostra do valor bruto vs. valor parseado para as primeiras 3 linhas, para que o usuário possa confirmar se a conversão está correta (ex: "Valor bruto: '1.234.567,89' → parseado: 1234567.89").
+
+#### Passo 4 — Exibir resumo pós-parse mais detalhado
+
+No `ImportPreview`, mostrar:
+- Total de linhas lidas vs. importadas
+- Soma total dos valores parseados (para conferir antes de gravar)
+- Linhas descartadas por filtro
 
 ### Arquivos alterados
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migration SQL | INSERT do contrato com valor R$ 915.377.248,92 |
-| `src/components/gitec/GitecKPIs.tsx` | Adicionar KPI "Valor Contratual" e "% Medido" |
-| `src/pages/GitecPipeline.tsx` | Importar `useContrato` e passar valor ao KPIs |
+| `src/hooks/useImport.ts` | Relaxar filtro de chave, adicionar logs de diagnóstico no parser REL_EVENTO, incluir amostra de valores nos warnings |
+| `src/components/import/ImportPreview.tsx` | Exibir soma total dos valores e contagem de linhas descartadas |
 
 ### Resultado esperado
 
-O pipeline GITEC mostrará 7 KPIs (em vez de 6), incluindo o valor contratual como referência e o percentual aprovado (~23%) para contextualizar que os R$ 276M de eventos representam ~30% do contrato total.
+Na próxima importação, o sistema mostrará um resumo detalhado antes de processar, permitindo ao usuário conferir se os valores e a contagem de eventos conferem com a planilha original. Eventos que antes eram descartados por falta de TAG/agrupamento serão mantidos.
 
