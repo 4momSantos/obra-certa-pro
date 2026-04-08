@@ -1,45 +1,36 @@
 
 
-## Plan: Enrich Visão Consolidada with KPIs, Charts, Filters & Drill-down
+## Problem
 
-### Problem
-The "Visão Consolidada" tab currently shows only a raw tree table with no summary metrics, no charts, and no interactive filtering — making it hard to get an overview or drill into specific areas.
+Data is imported into `rel_eventos` successfully (6,490 rows), but the GITEC Pipeline page shows "Sem dados" because:
 
-### What changes
+1. **RLS blocks reads**: `rel_eventos` SELECT policy requires `contrato_id = ANY(user_contrato_ids())`, but imported rows have `contrato_id = NULL`
+2. All `useGitec` hooks (`useGitecStats`, `useGitecEvents`, `useGitecEventDetail`) query `rel_eventos` and get 0 rows back
+3. The `useExistingCounts` query also returns 0 for `rel_eventos` count
 
-**1. KPI Cards row at the top**
-- 6 compact cards above the tree: Valor Contrato, Total Previsto, Total Projetado, Total Realizado, Saldo (Valor - Realizado), % Avanço (Realizado/Valor)
-- Each card shows value + percentage, colored by status (green when on track, amber/red when behind)
-- Derived from the already-computed `totals` in `BmConsolidatedTree`
+## Fix (2 steps)
 
-**2. Summary charts section (collapsible)**
-- **Donut chart**: Distribution of Realizado by Fase (shows which phases consume the budget)
-- **Stacked bar chart**: Previsto vs Projetado vs Realizado per Fase (horizontal bars, top 10)
-- Uses Recharts (already in the project). Collapsible via a toggle button to save space
-- Data derived from the `tree` (fase-level aggregations) — no new queries
+### Step 1 — Migration: Fix `rel_eventos` SELECT RLS policy
 
-**3. Filter toolbar**
-- **Fase filter**: Select dropdown to filter the tree to a single Fase
-- **Semáforo filter**: Toggle buttons (medido / executado / previsto / futuro) to show only agrupamentos with that status
-- **Saldo filter**: Toggle to show only items where saldo > 0 (pending work)
-- Filters apply to the existing tree + update the KPI totals dynamically
+Drop the restrictive `read_contrato` policy and replace it with an open authenticated-read policy, matching every other data table in the project:
 
-**4. Interactive row click → detail panel**
-- Clicking a **Fase** row: shows a mini summary card below the row with totals + a small bar chart of its subfases
-- Clicking an **Agrupamento** row: keeps existing behavior (AgrupamentoDetail inline) but also opens the `BmPpuDetailSheet` on double-click or via a button
-- Clicking a **Subfase** row: shows aggregated KPIs for that subfase inline
+```sql
+DROP POLICY IF EXISTS "read_contrato" ON public.rel_eventos;
+CREATE POLICY "read_auth" ON public.rel_eventos
+  FOR SELECT TO authenticated
+  USING (true);
+```
 
-### Files to modify
+This is safe — all other data tables (`gitec_events`, `documents`, `scon_components`, `ppu_items`, etc.) already use `USING (true)` for authenticated SELECT.
 
-| File | Changes |
-|------|---------|
-| `src/components/gestao-bm/BmConsolidatedTree.tsx` | Add KPI cards section, chart section, filter toolbar, interactive drill-down on fase/subfase rows |
+### Step 2 — No code changes needed
 
-### Technical details
+The hooks in `useGitec.ts` already query `rel_eventos` with the correct column names (`etapa`, `status`, `valor`, `agrupamento_ippu`, `fiscal_responsavel`, etc.). Once RLS allows reads, all KPIs, events table, fiscal rankings, and detail views will populate automatically.
 
-- **KPI cards**: Render a grid of `Card` components above the search bar using the existing `totals` memo, extended with saldo and % avanço
-- **Charts**: Add a `useState<boolean>` for chart visibility toggle. Donut uses `PieChart` from Recharts with fase data. Bar chart uses `BarChart` horizontal layout
-- **Filters**: Three new state vars: `faseFilter: string`, `semaforoFilter: string[]`, `saldoOnly: boolean`. Applied in a new `useMemo` that wraps the existing `filterTree` result
-- **Fase detail inline**: When a fase row is expanded, render a summary row (`<tr colSpan={8}>`) with 3 mini-KPI badges + a small horizontal bar of subfase breakdown
-- All data is client-side from the existing `useCronogramaTree` hook — no new database queries needed
+## Impact
+
+- GITEC Pipeline page will show all 6,490 events with KPIs, funnel, and rankings
+- Import stats sidebar will show correct count
+- Medição cross-references via `vw_gitec_por_ppu` (if it reads from `rel_eventos`) will also work
+- No code changes required — only a database policy update
 
