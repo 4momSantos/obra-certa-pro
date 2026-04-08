@@ -2318,15 +2318,21 @@ export type Database = {
           batch_id: string
           contrato_id: string | null
           created_at: string | null
+          dias_corridos_wf: number | null
           documento: string
           documento_revisao: string | null
           id: string
           incluido_em: string | null
+          nivel2: string | null
+          nivel3: string | null
           ppu: string | null
+          proposito_emissao: string | null
           revisao: string | null
           status: string | null
           status_correto: string | null
           status_gitec: string | null
+          status_workflow: string | null
+          tipo: string | null
           titulo: string | null
           up: string | null
         }
@@ -2334,15 +2340,21 @@ export type Database = {
           batch_id: string
           contrato_id?: string | null
           created_at?: string | null
+          dias_corridos_wf?: number | null
           documento: string
           documento_revisao?: string | null
           id?: string
           incluido_em?: string | null
+          nivel2?: string | null
+          nivel3?: string | null
           ppu?: string | null
+          proposito_emissao?: string | null
           revisao?: string | null
           status?: string | null
           status_correto?: string | null
           status_gitec?: string | null
+          status_workflow?: string | null
+          tipo?: string | null
           titulo?: string | null
           up?: string | null
         }
@@ -2350,15 +2362,21 @@ export type Database = {
           batch_id?: string
           contrato_id?: string | null
           created_at?: string | null
+          dias_corridos_wf?: number | null
           documento?: string
           documento_revisao?: string | null
           id?: string
           incluido_em?: string | null
+          nivel2?: string | null
+          nivel3?: string | null
           ppu?: string | null
+          proposito_emissao?: string | null
           revisao?: string | null
           status?: string | null
           status_correto?: string | null
           status_gitec?: string | null
+          status_workflow?: string | null
+          tipo?: string | null
           titulo?: string | null
           up?: string | null
         }
