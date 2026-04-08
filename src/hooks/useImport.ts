@@ -397,6 +397,25 @@ function parseBoolean(val: unknown): boolean {
   return String(val || "").trim().toLowerCase() === "sim";
 }
 
+/** Normalize GITEC status to canonical groups */
+function normalizeGitecStatus(raw: string): string {
+  const s = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (s.includes("aprovado") && !s.includes("pendente")) return "Aprovado";
+  if (s.includes("pendente") && (s.includes("verificac") || s.includes("verific"))) return "Pendente de Verificação";
+  if (s.includes("pendente") && s.includes("aprovac")) return "Pendente de Aprovação";
+  if (s.includes("conclu")) return "Aprovado"; // Concluído maps to Aprovado
+  if (raw.trim()) return raw.trim(); // keep original if no match
+  return "";
+}
+
+/** Normalize etapa */
+function normalizeGitecEtapa(raw: string): string {
+  const s = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (s.includes("conclu")) return "Concluída";
+  if (raw.trim()) return raw.trim();
+  return "";
+}
+
 function isPivotArtifact(val: string): boolean {
   const low = val.toLowerCase();
   return low.includes("rótulos de") || low.includes("rotulos de") ||
@@ -506,7 +525,7 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             tag,
             qtd: num(cell(r, cQtd)),
             um: str(cell(r, cUm)),
-            etapa,
+            etapa: normalizeGitecEtapa(etapa),
             peso_fisico: num(cell(r, cPesoFis)),
             peso_financeiro: num(cell(r, cPesoFin)),
             data_execucao: parseGitecDate(cell(r, cDataExec)),
@@ -516,7 +535,7 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
             numero_evidencias: str(cell(r, cNumEvid)),
             data_aprovacao: parseGitecDate(cell(r, cDataAprov)),
             fiscal_responsavel: str(cell(r, cFiscal)),
-            status,
+            status: normalizeGitecStatus(status),
             valor,
             comentario: str(cell(r, cComent)),
             agrupamento_ippu,
@@ -530,11 +549,24 @@ export function parseRelEventoFile(file: File): Promise<{ rows: ParsedRelEventoR
         }
 
         // Diagnostic warnings
+        const statusCounts: Record<string, { count: number; valor: number }> = {};
+        for (const r of rows) {
+          const s = r.status || "Sem Status";
+          if (!statusCounts[s]) statusCounts[s] = { count: 0, valor: 0 };
+          statusCounts[s].count++;
+          statusCounts[s].valor += r.valor;
+        }
         warnings.push(`📊 REL_EVENTO: ${totalDataRows} linhas lidas → ${rows.length} importadas, ${noKey} descartadas, ${pivotSkipped} pivot/resumo`);
         if (rows.length > 0) {
           const somaTotal = rows.reduce((s, r) => s + r.valor, 0);
           warnings.push(`💰 Soma total dos valores: R$ ${(somaTotal / 1e6).toFixed(2)}M (${rows.length} eventos)`);
         }
+        // Status breakdown
+        const statusLines = Object.entries(statusCounts)
+          .sort((a, b) => b[1].count - a[1].count)
+          .map(([s, v]) => `${s}: ${v.count} (R$ ${(v.valor / 1e6).toFixed(2)}M)`)
+          .join(" | ");
+        warnings.push(`📋 Por status: ${statusLines}`);
         if (valorSamples.length > 0) {
           const sampleStr = valorSamples.map((s, i) => `[${i + 1}] bruto="${s.raw}" → R$ ${s.parsed.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" | ");
           warnings.push(`🔍 Amostra de valores: ${sampleStr}`);
