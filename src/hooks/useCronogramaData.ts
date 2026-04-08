@@ -70,36 +70,132 @@ export function useCronogramaTree() {
         if (r.item_wbs) sconMap.set(normalizePpu(r.item_wbs), r);
       });
 
-      return (treeRes.data || []).map((d: any) => {
-        const ippu = normalizePpu(d.ippu || "");
+      // If cronograma_tree has data, use it directly
+      if ((treeRes.data || []).length > 0) {
+        return (treeRes.data || []).map((d: any) => {
+          const ippu = normalizePpu(d.ippu || "");
+          const g = gitecMap.get(ippu);
+          const s = sconMap.get(ippu);
+          const totalPrev = Number(d.total_previsto_bm) || 0;
+
+          let semaforo: "medido" | "executado" | "previsto" | "futuro" = "futuro";
+          if (g && Number(g.valor_aprovado) > 0) semaforo = "medido";
+          else if (s && Number(s.avg_avanco) > 0) semaforo = "executado";
+          else if (totalPrev > 0) semaforo = "previsto";
+
+          return {
+            id: d.id,
+            nivel: d.nivel,
+            ippu,
+            nome: d.nome || "",
+            valor: Number(d.valor) || 0,
+            acumulado: Number(d.acumulado) || 0,
+            saldo: Number(d.saldo) || 0,
+            fase_nome: d.fase_nome || "",
+            subfase_nome: d.subfase_nome || "",
+            sort_order: d.sort_order || 0,
+            total_previsto_bm: totalPrev,
+            total_projetado_bm: Number(d.total_projetado_bm) || 0,
+            total_realizado_bm: Number(d.total_realizado_bm) || 0,
+            semaforo,
+            scon_avg_avanco: s ? Number(s.avg_avanco) || 0 : undefined,
+            scon_total: s ? Number(s.total_componentes) || 0 : undefined,
+          };
+        });
+      }
+
+      // --- FALLBACK: build tree from ppu_items + gitec_events ---
+      const [ppuRes, gitecEventsRes] = await Promise.all([
+        supabase
+          .from("ppu_items")
+          .select("id, item_ppu, fase, subfase, agrupamento, valor_total, valor_medido")
+          .neq("fase", "")
+          .not("fase", "is", null),
+        supabase
+          .from("gitec_events")
+          .select("ippu, valor, status"),
+      ]);
+      if (ppuRes.error) throw ppuRes.error;
+
+      // Build GITEC realized map: ippu → sum(valor) where Aprovado
+      const gitecRealizadoMap = new Map<string, number>();
+      (gitecEventsRes.data || []).forEach((ev: any) => {
+        if (!ev.ippu || ev.status !== "Aprovado") return;
+        const key = normalizePpu(ev.ippu);
+        gitecRealizadoMap.set(key, (gitecRealizadoMap.get(key) || 0) + (Number(ev.valor) || 0));
+      });
+
+      const nodes: CronoTreeNode[] = [];
+      const faseMap = new Map<string, { valor: number; realizado: number; medido: number; sortMin: number }>();
+      let sortCounter = 0;
+
+      // Create agrupamento-level nodes
+      (ppuRes.data || []).forEach((p: any) => {
+        const ippu = normalizePpu(p.item_ppu || "");
+        const fase = (p.fase || "").trim();
+        const valorTotal = Number(p.valor_total) || 0;
+        const valorMedido = Number(p.valor_medido) || 0;
+        const realizadoGitec = gitecRealizadoMap.get(ippu) || 0;
         const g = gitecMap.get(ippu);
         const s = sconMap.get(ippu);
-        const totalPrev = Number(d.total_previsto_bm) || 0;
 
         let semaforo: "medido" | "executado" | "previsto" | "futuro" = "futuro";
-        if (g && Number(g.valor_aprovado) > 0) semaforo = "medido";
+        if (realizadoGitec > 0 || (g && Number(g.valor_aprovado) > 0)) semaforo = "medido";
         else if (s && Number(s.avg_avanco) > 0) semaforo = "executado";
-        else if (totalPrev > 0) semaforo = "previsto";
+        else if (valorTotal > 0) semaforo = "previsto";
 
-        return {
-          id: d.id,
-          nivel: d.nivel,
+        sortCounter++;
+        nodes.push({
+          id: p.id,
+          nivel: "5 - Agrupamento",
           ippu,
-          nome: d.nome || "",
-          valor: Number(d.valor) || 0,
-          acumulado: Number(d.acumulado) || 0,
-          saldo: Number(d.saldo) || 0,
-          fase_nome: d.fase_nome || "",
-          subfase_nome: d.subfase_nome || "",
-          sort_order: d.sort_order || 0,
-          total_previsto_bm: totalPrev,
-          total_projetado_bm: Number(d.total_projetado_bm) || 0,
-          total_realizado_bm: Number(d.total_realizado_bm) || 0,
+          nome: (p.agrupamento || p.item_ppu || "").replace(/_/g, " "),
+          valor: valorTotal,
+          acumulado: valorMedido,
+          saldo: valorTotal - valorMedido,
+          fase_nome: fase,
+          subfase_nome: (p.subfase || "").trim(),
+          sort_order: sortCounter,
+          total_previsto_bm: valorTotal,
+          total_projetado_bm: 0,
+          total_realizado_bm: realizadoGitec || valorMedido,
           semaforo,
           scon_avg_avanco: s ? Number(s.avg_avanco) || 0 : undefined,
           scon_total: s ? Number(s.total_componentes) || 0 : undefined,
-        };
+        });
+
+        // Accumulate for fase parent
+        const prev = faseMap.get(fase) || { valor: 0, realizado: 0, medido: 0, sortMin: sortCounter };
+        prev.valor += valorTotal;
+        prev.realizado += realizadoGitec || valorMedido;
+        prev.medido += valorMedido;
+        prev.sortMin = Math.min(prev.sortMin, sortCounter);
+        faseMap.set(fase, prev);
       });
+
+      // Create fase-level parent nodes
+      const faseNodes: CronoTreeNode[] = [];
+      faseMap.forEach((agg, faseName) => {
+        faseNodes.push({
+          id: `fase-${faseName}`,
+          nivel: "3 - Fase",
+          ippu: "",
+          nome: faseName,
+          valor: agg.valor,
+          acumulado: agg.medido,
+          saldo: agg.valor - agg.medido,
+          fase_nome: faseName,
+          subfase_nome: "",
+          sort_order: agg.sortMin - 0.5,
+          total_previsto_bm: agg.valor,
+          total_projetado_bm: 0,
+          total_realizado_bm: agg.realizado,
+          semaforo: agg.realizado > 0 ? "medido" : agg.valor > 0 ? "previsto" : "futuro",
+        });
+      });
+
+      // Merge and sort
+      return [...faseNodes, ...nodes].sort((a, b) => a.sort_order - b.sort_order);
     },
   });
 }
