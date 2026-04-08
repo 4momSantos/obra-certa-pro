@@ -47,8 +47,18 @@ export interface GitecStats {
   valPendVerif: number;
   pendAprov: number;
   valPendAprov: number;
+  outros: number;
+  valOutros: number;
   agingMedio: number;
   agingMaximo: number;
+}
+
+function normalizeStatus(s: string): string {
+  const low = (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (low.includes("aprovado") && !low.includes("pendente")) return "Aprovado";
+  if (low.includes("pendente") && (low.includes("verificac") || low.includes("verific"))) return "Pendente de Verificação";
+  if (low.includes("pendente") && low.includes("aprovac")) return "Pendente de Aprovação";
+  return s || "Outros";
 }
 
 export function useGitecStats() {
@@ -74,24 +84,29 @@ export function useGitecStats() {
       }
 
       if (rows.length === 0)
-        return { total: 0, concluidos: 0, valConcluidos: 0, pendentes: 0, valPendentes: 0, aprovados: 0, valAprovado: 0, pendVerif: 0, valPendVerif: 0, pendAprov: 0, valPendAprov: 0, agingMedio: 0, agingMaximo: 0 };
+        return { total: 0, concluidos: 0, valConcluidos: 0, pendentes: 0, valPendentes: 0, aprovados: 0, valAprovado: 0, pendVerif: 0, valPendVerif: 0, pendAprov: 0, valPendAprov: 0, outros: 0, valOutros: 0, agingMedio: 0, agingMaximo: 0 };
 
       let concluidos = 0, valConcluidos = 0, pendentes = 0, valPendentes = 0;
       let aprovados = 0, valAprovado = 0, pendVerif = 0, valPendVerif = 0, pendAprov = 0, valPendAprov = 0;
+      let outros = 0, valOutros = 0;
       const agings: number[] = [];
 
       for (const r of rows) {
         const v = Number(r.valor) || 0;
-        if (r.etapa === "Concluída") { concluidos++; valConcluidos += v; }
+        const etapaLow = ((r.etapa || "") as string).toLowerCase();
+        if (etapaLow.includes("conclu")) { concluidos++; valConcluidos += v; }
         else { pendentes++; valPendentes += v; }
 
-        if (r.status === "Aprovado") { aprovados++; valAprovado += v; }
-        else if (r.status === "Pendente de Verificação") {
+        const ns = normalizeStatus(r.status);
+        if (ns === "Aprovado") { aprovados++; valAprovado += v; }
+        else if (ns === "Pendente de Verificação") {
           pendVerif++; valPendVerif += v;
           if (r.data_inf_execucao) agings.push(calcAging(r.data_inf_execucao));
-        } else if (r.status === "Pendente de Aprovação") {
+        } else if (ns === "Pendente de Aprovação") {
           pendAprov++; valPendAprov += v;
           if (r.data_inf_execucao) agings.push(calcAging(r.data_inf_execucao));
+        } else {
+          outros++; valOutros += v;
         }
       }
 
@@ -102,6 +117,7 @@ export function useGitecStats() {
         aprovados, valAprovado,
         pendVerif, valPendVerif,
         pendAprov, valPendAprov,
+        outros, valOutros,
         agingMedio: agings.length ? Math.round(agings.reduce((a, b) => a + b, 0) / agings.length) : 0,
         agingMaximo: agings.length ? Math.max(...agings) : 0,
       };

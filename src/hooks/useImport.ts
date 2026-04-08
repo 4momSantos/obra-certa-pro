@@ -397,6 +397,25 @@ function parseBoolean(val: unknown): boolean {
   return String(val || "").trim().toLowerCase() === "sim";
 }
 
+/** Normalize GITEC status to canonical groups */
+function normalizeGitecStatus(raw: string): string {
+  const s = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (s.includes("aprovado") && !s.includes("pendente")) return "Aprovado";
+  if (s.includes("pendente") && (s.includes("verificac") || s.includes("verific"))) return "Pendente de Verificação";
+  if (s.includes("pendente") && s.includes("aprovac")) return "Pendente de Aprovação";
+  if (s.includes("conclu")) return "Aprovado"; // Concluído maps to Aprovado
+  if (raw.trim()) return raw.trim(); // keep original if no match
+  return "";
+}
+
+/** Normalize etapa */
+function normalizeGitecEtapa(raw: string): string {
+  const s = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (s.includes("conclu")) return "Concluída";
+  if (raw.trim()) return raw.trim();
+  return "";
+}
+
 function isPivotArtifact(val: string): boolean {
   const low = val.toLowerCase();
   return low.includes("rótulos de") || low.includes("rotulos de") ||
