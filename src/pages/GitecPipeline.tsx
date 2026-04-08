@@ -65,7 +65,7 @@ const GitecPipeline: React.FC = () => {
         </Button>
       </div>
 
-      <GitecKPIs stats={stats} loading={loadingStats} />
+      <GitecKPIs stats={stats} loading={loadingStats} valorContratual={contratoAtivo?.valor_contratual} />
       <GitecFunnel stats={stats} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
