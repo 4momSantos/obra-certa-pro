@@ -457,8 +457,7 @@ function Step1({
       )}
 
       {/* Table with proper scroll */}
-      <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
-        <ScrollArea className="h-full max-h-[340px]">
+      <div className="flex-1 min-h-0 border rounded-lg overflow-y-auto max-h-[50vh]">
           <Table>
             <TableHeader>
               <TableRow>
