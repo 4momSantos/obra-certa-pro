@@ -7,6 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area, ReferenceLine, CartesianGrid,
 } from "recharts";
+import { buildGitecToPpuLookup, aggregateGitecByPpu } from "@/lib/ppu-match";
 
 const fmtBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
@@ -60,13 +61,13 @@ function BarChartByPPU({ bmName }: { bmName: string }) {
     staleTime: 300_000,
   });
 
-  // 2. PPU items
+  // 2. PPU items (with item_gitec for dual match)
   const { data: ppuItems } = useQuery({
     queryKey: ["ppu-items-full"],
     queryFn: async () => {
       const { data } = await supabase
         .from("ppu_items")
-        .select("item_ppu, descricao, valor_total")
+        .select("item_ppu, item_gitec, descricao, valor_total")
         .order("item_ppu");
       return data ?? [];
     },
@@ -90,28 +91,34 @@ function BarChartByPPU({ bmName }: { bmName: string }) {
     staleTime: 30_000,
   });
 
-  const chartData = useMemo(() => {
-    if (!ppuItems || !gitecBmData) return [];
+  // Build dual-match lookup
+  const ppuLookup = useMemo(
+    () => (ppuItems ? buildGitecToPpuLookup(ppuItems) : null),
+    [ppuItems]
+  );
 
-    // Aggregate GITEC by iPPU
-    const gitecMap: Record<string, number> = {};
-    for (const e of gitecBmData) {
-      if (e.ippu) gitecMap[e.ippu] = (gitecMap[e.ippu] ?? 0) + (e.valor ?? 0);
-    }
+  const chartData = useMemo(() => {
+    if (!ppuItems || !gitecBmData || !ppuLookup) return [];
+
+    // Aggregate GITEC by PPU using dual match
+    const { byPpu } = aggregateGitecByPpu(
+      gitecBmData.map((e) => ({ ippu: e.ippu, valor: e.valor })),
+      ppuLookup
+    );
 
     // Build chart data — only items with GITEC in period
     const rows = ppuItems
-      .filter((p) => (gitecMap[p.item_ppu] ?? 0) > 0)
+      .filter((p) => (byPpu[p.item_ppu] ?? 0) > 0)
       .map((p) => ({
         name: (p.descricao ?? p.item_ppu)?.substring(0, 25) || p.item_ppu,
         contratual: p.valor_total ?? 0,
-        gitec_bm: gitecMap[p.item_ppu] ?? 0,
+        gitec_bm: byPpu[p.item_ppu] ?? 0,
       }))
       .sort((a, b) => b.gitec_bm - a.gitec_bm)
       .slice(0, 15);
 
     return rows;
-  }, [ppuItems, gitecBmData]);
+  }, [ppuItems, gitecBmData, ppuLookup]);
 
   if (isLoading) return <Skeleton className="h-[300px] w-full rounded-lg" />;
 

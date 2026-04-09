@@ -12,9 +12,11 @@ import { formatCompact } from "@/lib/format";
 import { ConsolidatedKPIs } from "./consolidated/ConsolidatedKPIs";
 import { ConsolidatedCharts } from "./consolidated/ConsolidatedCharts";
 import { cn } from "@/lib/utils";
+import { buildGitecToPpuLookup, aggregateGitecByPpu } from "@/lib/ppu-match";
 
 interface PpuItem {
   item_ppu: string;
+  item_gitec: string | null;
   descricao: string;
   fase: string;
   subfase: string;
@@ -48,10 +50,11 @@ export function BmConsolidatedTree() {
     queryFn: async () => {
       const { data } = await supabase
         .from("ppu_items")
-        .select("item_ppu, descricao, fase, subfase, disc, valor_total")
+        .select("item_ppu, item_gitec, descricao, fase, subfase, disc, valor_total")
         .order("item_ppu");
       return (data ?? []).map((p) => ({
         item_ppu: p.item_ppu,
+        item_gitec: p.item_gitec ?? null,
         descricao: p.descricao ?? "",
         fase: (p.fase ?? "").trim() || "Sem fase",
         subfase: (p.subfase ?? "").trim(),
@@ -109,9 +112,22 @@ export function BmConsolidatedTree() {
   });
 
   // Build tree: fase → items
+  // Build dual-match lookup
+  const ppuLookup = useMemo(
+    () => (ppuItems ? buildGitecToPpuLookup(ppuItems) : null),
+    [ppuItems]
+  );
+
+  // Aggregate GITEC by PPU using dual match
+  const gitecAgg = useMemo(() => {
+    if (!ppuLookup || !gitecData) return { byPpu: {} as Record<string, number>, orphanTotal: 0, orphanCount: 0 };
+    const events = Object.entries(gitecData).flatMap(([ippu, valor]) => [{ ippu, valor }]);
+    return aggregateGitecByPpu(events, ppuLookup);
+  }, [gitecData, ppuLookup]);
+
   const tree = useMemo(() => {
     if (!ppuItems) return [];
-    const gitec = gitecData ?? {};
+    const { byPpu } = gitecAgg;
     const faseMap = new Map<string, TreeGroup>();
 
     for (const p of ppuItems) {
@@ -126,7 +142,7 @@ export function BmConsolidatedTree() {
         });
       }
       const fase = faseMap.get(p.fase)!;
-      const gitecVal = gitec[p.item_ppu] ?? 0;
+      const gitecVal = byPpu[p.item_ppu] ?? 0;
       fase.valor_total += p.valor_total;
       fase.gitec_aprovado += gitecVal;
       fase.children.push({
@@ -143,7 +159,7 @@ export function BmConsolidatedTree() {
     }
     groups.sort((a, b) => b.valor_total - a.valor_total);
     return groups;
-  }, [ppuItems, gitecData]);
+  }, [ppuItems, gitecAgg]);
 
   // Filter
   const filteredTree = useMemo(() => {
