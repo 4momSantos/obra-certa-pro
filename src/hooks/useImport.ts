@@ -1178,7 +1178,7 @@ export function useExistingCounts() {
     queryFn: async () => {
       const [s, r, c] = await Promise.all([
         supabase.from("sigem_documents").select("id", { count: "exact", head: true }),
-        supabase.from("rel_eventos").select("id", { count: "exact", head: true }),
+        supabase.from("gitec_events").select("id", { count: "exact", head: true }),
         supabase.from("scon_components").select("id", { count: "exact", head: true }),
       ]);
       return {
@@ -1298,9 +1298,24 @@ export function useProcessImport() {
         results.push(`${sigemRows.length.toLocaleString("pt-BR")} docs SIGEM`);
       }
 
-      // REL_EVENTO
+      // REL_EVENTO → gitec_events (unified GITEC table)
       if (relEventoRows.length > 0 && relEventoFile) {
-        await processSource("rel_evento", "rel_eventos", relEventoRows, relEventoFile, "REL_EVENTO");
+        const gitecMapped = relEventoRows.map(r => ({
+          agrupamento: r.agrupamento || "",
+          ippu: r.agrupamento_ippu || null,
+          tag: r.tag || "",
+          etapa: r.etapa || "",
+          status: r.status || "",
+          valor: r.valor || 0,
+          data_execucao: r.data_execucao ? r.data_execucao.slice(0, 10) : null,
+          data_inf_execucao: r.data_inf_execucao ? r.data_inf_execucao.slice(0, 10) : null,
+          data_aprovacao: r.data_aprovacao ? r.data_aprovacao.slice(0, 10) : null,
+          executado_por: r.executado_por || "",
+          fiscal: r.fiscal_responsavel || "",
+          evidencias: r.numero_evidencias || "",
+          comentario: r.comentario || "",
+        }));
+        await processSource("rel_evento", "gitec_events", gitecMapped, relEventoFile, "REL_EVENTO");
         processed += relEventoRows.length;
         results.push(`${relEventoRows.length.toLocaleString("pt-BR")} eventos`);
       }

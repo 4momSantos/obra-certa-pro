@@ -73,7 +73,7 @@ export function useGitecStats() {
       const PAGE = 1000;
       while (true) {
         const { data, error } = await supabase
-          .from("rel_eventos")
+          .from("gitec_events")
           .select("etapa, status, valor, data_inf_execucao")
           .range(from, from + PAGE - 1);
         if (error) throw error;
@@ -164,15 +164,15 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GitecEvent[]> => {
       let q = supabase
-        .from("rel_eventos")
-        .select("id, agrupamento_ippu, tag, etapa, status, valor, peso_fisico, data_execucao, data_inf_execucao, data_aprovacao, executado_por, fiscal_responsavel, numero_evidencias")
+        .from("gitec_events")
+        .select("id, ippu, tag, etapa, status, valor, data_execucao, data_inf_execucao, data_aprovacao, executado_por, fiscal, evidencias")
         .order("valor", { ascending: false })
         .limit(limit);
 
       if (filters.status !== "all") q = q.eq("status", filters.status);
-      if (filters.fiscal !== "all") q = q.eq("fiscal_responsavel", filters.fiscal);
+      if (filters.fiscal !== "all") q = q.eq("fiscal", filters.fiscal);
       if (filters.search) {
-        q = q.or(`tag.ilike.%${filters.search}%,agrupamento_ippu.ilike.%${filters.search}%,fiscal_responsavel.ilike.%${filters.search}%`);
+        q = q.or(`tag.ilike.%${filters.search}%,ippu.ilike.%${filters.search}%,fiscal.ilike.%${filters.search}%`);
       }
 
       const { data, error } = await q;
@@ -180,9 +180,11 @@ export function useGitecEvents(filters: GitecFilters, limit = 100) {
 
       let rows = (data ?? []).map(r => ({
         ...r,
-        item_ppu: r.agrupamento_ippu,
+        item_ppu: r.ippu || "",
         valor: Number(r.valor) || 0,
-        quantidade_ponderada: Number(r.peso_fisico) || 0,
+        quantidade_ponderada: 0,
+        fiscal_responsavel: r.fiscal || "",
+        numero_evidencias: r.evidencias || "",
         aging: calcAging(r.data_inf_execucao),
       }));
 
@@ -266,11 +268,11 @@ export function useGitecEventDetail(eventId: string | null) {
     queryKey: [GITEC_KEY, "detail", eventId],
     enabled: !!eventId,
     queryFn: async () => {
-      const { data: event, error } = await supabase.from("rel_eventos").select("*").eq("id", eventId!).maybeSingle();
+      const { data: event, error } = await supabase.from("gitec_events").select("*").eq("id", eventId!).maybeSingle();
       if (error) throw error;
       if (!event) return null;
 
-      const evidenceNums = (event.numero_evidencias ?? "")
+      const evidenceNums = (event.evidencias ?? "")
         .split(";")
         .map((s: string) => s.trim())
         .filter(Boolean);
@@ -290,6 +292,10 @@ export function useGitecEventDetail(eventId: string | null) {
 
       return {
         ...event,
+        // Map gitec_events fields to expected interface
+        agrupamento_ippu: event.ippu || "",
+        fiscal_responsavel: event.fiscal || "",
+        numero_evidencias: event.evidencias || "",
         valor: Number(event.valor) || 0,
         aging: calcAging(event.data_inf_execucao),
         evidenceNums,
