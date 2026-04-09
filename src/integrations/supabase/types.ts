@@ -378,6 +378,44 @@ export type Database = {
           },
         ]
       }
+      config_column_mappings: {
+        Row: {
+          contrato_id: string | null
+          created_at: string
+          header_row: number
+          id: string
+          mappings: Json
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          contrato_id?: string | null
+          created_at?: string
+          header_row?: number
+          id?: string
+          mappings?: Json
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          contrato_id?: string | null
+          created_at?: string
+          header_row?: number
+          id?: string
+          mappings?: Json
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_column_mappings_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       config_disciplinas: {
         Row: {
           ativa: boolean | null
