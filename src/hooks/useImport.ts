@@ -917,6 +917,11 @@ export function parseSconProgramacaoFile(file: File): Promise<{ rows: ParsedScon
             row[def.field] = parseSconProgCellValue(cell(r, colIdx), def.type);
           }
 
+          // Normalize item_wbs field
+          if (row.item_wbs && typeof row.item_wbs === "string") {
+            row.item_wbs = normalizeItemWBS(row.item_wbs);
+          }
+
           rows.push(row as unknown as ParsedSconProgRow);
         }
 
