@@ -11,7 +11,6 @@
 export interface PpuMatchItem {
   item_ppu: string;
   item_gitec?: string | null;
-  [key: string]: unknown;
 }
 
 export interface PpuLookup<T extends PpuMatchItem> {
