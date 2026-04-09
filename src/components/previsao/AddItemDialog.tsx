@@ -240,6 +240,10 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
     setStep(1);
     setSearch("");
     setDiscFilter("all");
+    setFaseFilter("all");
+    setSubfaseFilter("all");
+    setAgrupFilter("all");
+    setValorMinFilter("");
     setSelected(new Set());
     setItemData(new Map());
     onClose();
