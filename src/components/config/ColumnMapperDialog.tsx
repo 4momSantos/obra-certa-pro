@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CheckCircle2, AlertCircle } from "lucide-react";
@@ -125,9 +125,9 @@ export default function ColumnMapperDialog({
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
           {/* Mapping table */}
-          <ScrollArea className="max-h-[300px] border rounded-md">
+          <div className="max-h-[300px] overflow-y-auto border rounded-md">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead className="text-xs w-[200px]">Campo</TableHead>
                   <TableHead className="text-xs">Coluna do Arquivo</TableHead>
@@ -174,7 +174,7 @@ export default function ColumnMapperDialog({
                 ))}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
 
           {/* Preview */}
           {previewFields.length > 0 && (
@@ -182,9 +182,9 @@ export default function ColumnMapperDialog({
               <p className="text-xs font-medium text-muted-foreground">
                 Preview (primeiras 5 linhas)
               </p>
-              <ScrollArea className="max-h-[180px] border rounded-md">
+              <div className="max-h-[180px] overflow-y-auto border rounded-md">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-background">
                     <TableRow>
                       {previewFields.map(f => (
                         <TableHead key={f.key} className="text-[10px] whitespace-nowrap px-2 py-1">
@@ -205,7 +205,7 @@ export default function ColumnMapperDialog({
                     ))}
                   </TableBody>
                 </Table>
-              </ScrollArea>
+              </div>
             </div>
           )}
 
