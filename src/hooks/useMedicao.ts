@@ -91,7 +91,7 @@ export function useMedicaoData() {
   const result = useMemo(() => {
     if (!query.data) return { items: [] as MedicaoPPU[], kpis: null as MedicaoKPIs | null, filters: { fases: [] as string[], subfases: [] as string[], disciplinas: [] as string[] } };
 
-    const { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal } = query.data;
+    const { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal, contratoRow } = query.data;
 
     // Build lookup maps
     const classifMap = new Map<string, any>();
