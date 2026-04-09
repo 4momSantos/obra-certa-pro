@@ -23,6 +23,7 @@ interface PPUItem {
   descricao: string;
   fase: string;
   subfase: string;
+  agrupamento: string;
   disc: string;
   valor_total: number;
   preco_unit: number;
