@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { bmRange } from "@/lib/bm-utils";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
 } from "@/components/ui/table";
@@ -9,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 const fmtBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
@@ -19,19 +20,18 @@ const fmtBRL = (v: number) =>
 const fmtCompact = (v: number) =>
   new Intl.NumberFormat("pt-BR", { notation: "compact", compactDisplay: "short", style: "currency", currency: "BRL" }).format(v);
 
-type SortKey = "item_ppu" | "previsto" | "projetado" | "executado" | "gitec_aprovado" | "gitec_pendente" | "gap";
+type SortKey = "item_ppu" | "valor_contratual" | "gitec_bm" | "gitec_acum" | "avanco";
 
 interface PpuRow {
   item_ppu: string;
   descricao: string;
   disciplina: string;
-  previsto: number;
-  projetado: number;
-  executado: number;
-  gitec_aprovado: number;
-  gitec_pendente: number;
-  gap: number;
-  semaforo: "medido" | "processo" | "previsto" | "futuro";
+  fase: string;
+  valor_contratual: number;
+  gitec_bm: number;
+  gitec_acum: number;
+  avanco: number;
+  semaforo: "medido" | "pendente" | "sem_evento";
 }
 
 interface Props {
@@ -42,154 +42,133 @@ interface Props {
 
 export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("gap");
+  const [sortKey, setSortKey] = useState<SortKey>("gitec_bm");
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(0);
+  const [onlyWithMedicao, setOnlyWithMedicao] = useState(false);
   const PAGE_SIZE = 20;
 
-  const { data: cronoData, isLoading: cronoLoading } = useQuery({
-    queryKey: ["bm-crono-ippu", bmName],
+  // 1. BM period
+  const { data: bmPeriodo } = useQuery({
+    queryKey: ["bm-periodo", bmName],
     queryFn: async () => {
       const { data } = await supabase
-        .from("vw_cronograma_bm_por_ippu")
-        .select("ippu, previsto, projetado, realizado")
-        .eq("bm_name", bmName);
-      return data ?? [];
+        .from("bm_periodos")
+        .select("periodo_inicio, periodo_fim")
+        .eq("bm_name", bmName)
+        .single();
+      return data;
     },
-    staleTime: 30_000,
+    staleTime: 300_000,
   });
 
-  // 3 sources for descriptions: cronograma_tree, classificacao_ppu, ppu_items
-  const { data: treeNames } = useQuery({
-    queryKey: ["crono-tree-names"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("cronograma_tree")
-        .select("ippu, nome")
-        .neq("ippu", "")
-        .not("ippu", "is", null);
-      return data ?? [];
-    },
-    staleTime: 120_000,
-  });
-
-  const { data: classifData } = useQuery({
-    queryKey: ["classif-ppu-disc"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("classificacao_ppu")
-        .select("item_ppu, disciplina");
-      return data ?? [];
-    },
-    staleTime: 120_000,
-  });
-
-  const { data: ppuItems } = useQuery({
-    queryKey: ["ppu-items-desc"],
+  // 2. PPU items
+  const { data: ppuItems, isLoading: ppuLoading } = useQuery({
+    queryKey: ["ppu-items-full"],
     queryFn: async () => {
       const { data } = await supabase
         .from("ppu_items")
-        .select("item_ppu, descricao, disc")
-        .limit(2000);
+        .select("item_ppu, descricao, fase, disc, valor_total")
+        .order("item_ppu");
       return data ?? [];
     },
-    staleTime: 120_000,
+    staleTime: 300_000,
   });
 
-  // Use gitec_by_ippu view instead of raw aggregation
-  const { data: gitecByPpu } = useQuery({
-    queryKey: ["gitec-by-ippu-view"],
+  // 3. GITEC in BM period
+  const { data: gitecBmData } = useQuery({
+    queryKey: ["gitec-bm-period", bmName],
+    enabled: !!bmPeriodo,
     queryFn: async () => {
+      if (!bmPeriodo) return [];
       const { data } = await supabase
-        .from("gitec_by_ippu")
-        .select("ippu, val_aprovado, val_pend_verif, val_pend_aprov");
-      const agg: Record<string, { approved: number; pending: number; hasEvents: boolean }> = {};
-      for (const e of data ?? []) {
-        agg[e.ippu ?? ""] = {
-          approved: e.val_aprovado ?? 0,
-          pending: (e.val_pend_verif ?? 0) + (e.val_pend_aprov ?? 0),
-          hasEvents: true,
-        };
-      }
-      return agg;
+        .from("gitec_events")
+        .select("ippu, valor, status, data_execucao")
+        .eq("status", "Aprovado")
+        .gte("data_execucao", bmPeriodo.periodo_inicio)
+        .lte("data_execucao", bmPeriodo.periodo_fim);
+      return data ?? [];
     },
     staleTime: 30_000,
   });
 
+  // 4. GITEC accumulated until end of BM
+  const { data: gitecAcumData } = useQuery({
+    queryKey: ["gitec-acum", bmName],
+    enabled: !!bmPeriodo,
+    queryFn: async () => {
+      if (!bmPeriodo) return [];
+      const { data } = await supabase
+        .from("gitec_events")
+        .select("ippu, valor, status")
+        .eq("status", "Aprovado")
+        .lte("data_execucao", bmPeriodo.periodo_fim);
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  // 5. Status filter — GITEC events with specific status in period
   const { data: filteredIppus } = useQuery({
     queryKey: ["gitec-filter-ippus", bmName, statusFilter],
-    enabled: !!statusFilter,
+    enabled: !!statusFilter && !!bmPeriodo,
     queryFn: async () => {
-      const range = bmRange(bmName);
-      const start = range.start.toISOString().split("T")[0];
-      const end = range.end.toISOString().split("T")[0];
+      if (!bmPeriodo) return new Set<string>();
       const { data: events } = await supabase
         .from("gitec_events")
         .select("ippu")
         .eq("status", statusFilter!)
-        .gte("data_execucao", start)
-        .lte("data_execucao", end);
-      return new Set((events ?? []).map((e) => e.ippu));
+        .gte("data_execucao", bmPeriodo.periodo_inicio)
+        .lte("data_execucao", bmPeriodo.periodo_fim);
+      return new Set((events ?? []).map((e) => e.ippu).filter(Boolean) as string[]);
     },
     staleTime: 30_000,
   });
 
-  // Build ppuMap with fallback: ppu_items > cronograma_tree for desc, classificacao_ppu for disc
-  const ppuMap = useMemo(() => {
-    const m: Record<string, { descricao: string; disc: string }> = {};
-    // Layer 1: cronograma_tree names
-    for (const t of treeNames ?? []) {
-      if (t.ippu) m[t.ippu] = { descricao: t.nome ?? "", disc: "" };
+  // Aggregate GITEC by iPPU
+  const gitecByIppu = useMemo(() => {
+    const bmMap: Record<string, number> = {};
+    for (const e of gitecBmData ?? []) {
+      if (e.ippu) bmMap[e.ippu] = (bmMap[e.ippu] ?? 0) + (e.valor ?? 0);
     }
-    // Layer 2: classificacao_ppu disciplines
-    for (const c of classifData ?? []) {
-      if (c.item_ppu) {
-        if (!m[c.item_ppu]) m[c.item_ppu] = { descricao: "", disc: "" };
-        m[c.item_ppu].disc = c.disciplina ?? "";
-      }
+    const acumMap: Record<string, number> = {};
+    for (const e of gitecAcumData ?? []) {
+      if (e.ippu) acumMap[e.ippu] = (acumMap[e.ippu] ?? 0) + (e.valor ?? 0);
     }
-    // Layer 3: ppu_items overrides (highest priority)
-    for (const p of ppuItems ?? []) {
-      if (p.item_ppu) {
-        const existing = m[p.item_ppu] ?? { descricao: "", disc: "" };
-        m[p.item_ppu] = {
-          descricao: p.descricao || existing.descricao,
-          disc: p.disc || existing.disc,
-        };
-      }
-    }
-    return m;
-  }, [treeNames, classifData, ppuItems]);
+    return { bmMap, acumMap };
+  }, [gitecBmData, gitecAcumData]);
 
   const rows: PpuRow[] = useMemo(() => {
-    return (cronoData ?? []).map((c) => {
-      const ippu = c.ippu ?? "";
-      const info = ppuMap[ippu] ?? { descricao: "", disc: "" };
-      const gitec = gitecByPpu?.[ippu] ?? { approved: 0, pending: 0, hasEvents: false };
-      const executado = c.realizado ?? 0;
+    return (ppuItems ?? []).map((p) => {
+      const ippu = p.item_ppu;
+      const valorContratual = p.valor_total ?? 0;
+      const gitecBm = gitecByIppu.bmMap[ippu] ?? 0;
+      const gitecAcum = gitecByIppu.acumMap[ippu] ?? 0;
+      const avanco = valorContratual > 0 ? (gitecAcum / valorContratual) * 100 : 0;
 
-      let semaforo: PpuRow["semaforo"] = "futuro";
-      if (gitec.approved > 0) semaforo = "medido";
-      else if (gitec.hasEvents) semaforo = "processo";
-      else if ((c.previsto ?? 0) > 0) semaforo = "previsto";
+      let semaforo: PpuRow["semaforo"] = "sem_evento";
+      if (gitecBm > 0) semaforo = "medido";
+      else if (gitecAcum > 0) semaforo = "pendente";
 
       return {
         item_ppu: ippu,
-        descricao: info.descricao,
-        disciplina: info.disc,
-        previsto: c.previsto ?? 0,
-        projetado: c.projetado ?? 0,
-        executado,
-        gitec_aprovado: gitec.approved,
-        gitec_pendente: gitec.pending,
-        gap: executado - gitec.approved,
+        descricao: p.descricao ?? "",
+        disciplina: p.disc ?? "",
+        fase: p.fase ?? "",
+        valor_contratual: valorContratual,
+        gitec_bm: gitecBm,
+        gitec_acum: gitecAcum,
+        avanco,
         semaforo,
       };
     });
-  }, [cronoData, ppuMap, gitecByPpu]);
+  }, [ppuItems, gitecByIppu]);
 
   const filtered = useMemo(() => {
     let result = rows;
+    if (onlyWithMedicao) {
+      result = result.filter((r) => r.gitec_bm > 0);
+    }
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -206,7 +185,7 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
       return sortAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
     });
     return result;
-  }, [rows, search, statusFilter, filteredIppus, sortKey, sortAsc]);
+  }, [rows, search, statusFilter, filteredIppus, sortKey, sortAsc, onlyWithMedicao]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -214,14 +193,11 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
   const totals = useMemo(() => {
     return filtered.reduce(
       (acc, r) => ({
-        previsto: acc.previsto + r.previsto,
-        projetado: acc.projetado + r.projetado,
-        executado: acc.executado + r.executado,
-        gitec_aprovado: acc.gitec_aprovado + r.gitec_aprovado,
-        gitec_pendente: acc.gitec_pendente + r.gitec_pendente,
-        gap: acc.gap + r.gap,
+        valor_contratual: acc.valor_contratual + r.valor_contratual,
+        gitec_bm: acc.gitec_bm + r.gitec_bm,
+        gitec_acum: acc.gitec_acum + r.gitec_acum,
       }),
-      { previsto: 0, projetado: 0, executado: 0, gitec_aprovado: 0, gitec_pendente: 0, gap: 0 }
+      { valor_contratual: 0, gitec_bm: 0, gitec_acum: 0 }
     );
   }, [filtered]);
 
@@ -233,10 +209,9 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
 
   const semaforoIcon = (s: PpuRow["semaforo"]) => {
     switch (s) {
-      case "medido": return <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" title="Medido" />;
-      case "processo": return <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500" title="Em processo" />;
-      case "previsto": return <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" title="Previsto" />;
-      default: return <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/30" title="Futuro" />;
+      case "medido": return <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" title="Medido neste BM" />;
+      case "pendente": return <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500" title="Medido em BMs anteriores" />;
+      default: return <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/30" title="Sem medição GITEC" />;
     }
   };
 
@@ -249,7 +224,7 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
     </TableHead>
   );
 
-  if (cronoLoading) {
+  if (ppuLoading) {
     return (
       <div className="space-y-2">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -273,6 +248,14 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
               className="pl-8 h-8 text-xs"
             />
           </div>
+          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
+            <Switch
+              checked={onlyWithMedicao}
+              onCheckedChange={(v) => { setOnlyWithMedicao(v); setPage(0); }}
+              className="h-4 w-7"
+            />
+            Apenas com medição
+          </label>
           <span className="text-[10px] text-muted-foreground">{filtered.length} itens</span>
         </div>
 
@@ -289,18 +272,16 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
                 </TableHead>
                 <TableHead className="text-[11px] px-2">Descrição</TableHead>
                 <TableHead className="text-[11px] px-2 hidden lg:table-cell">Disc.</TableHead>
-                <SortHeader label="Previsto" k="previsto" />
-                <SortHeader label="Projetado" k="projetado" className="hidden md:table-cell" />
-                <SortHeader label="Executado" k="executado" />
-                <SortHeader label="GITEC Aprov." k="gitec_aprovado" />
-                <SortHeader label="GITEC Pend." k="gitec_pendente" className="hidden md:table-cell" />
-                <SortHeader label="Gap" k="gap" />
+                <SortHeader label="Valor Contratual" k="valor_contratual" />
+                <SortHeader label="GITEC no BM" k="gitec_bm" />
+                <SortHeader label="GITEC Acum." k="gitec_acum" className="hidden md:table-cell" />
+                <SortHeader label="% Avanço" k="avanco" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Nenhum item encontrado para este BM.
                   </TableCell>
                 </TableRow>
@@ -331,22 +312,31 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-blue-500 px-2">
-                      <span className="hidden sm:inline">{fmtBRL(r.previsto)}</span>
-                      <span className="sm:hidden">{fmtCompact(r.previsto)}</span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-purple-500 px-2 hidden md:table-cell">{fmtBRL(r.projetado)}</TableCell>
-                    <TableCell className="text-right font-mono text-xs text-emerald-500 px-2">
-                      <span className="hidden sm:inline">{fmtBRL(r.executado)}</span>
-                      <span className="sm:hidden">{fmtCompact(r.executado)}</span>
+                      <span className="hidden sm:inline">{fmtBRL(r.valor_contratual)}</span>
+                      <span className="sm:hidden">{fmtCompact(r.valor_contratual)}</span>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-emerald-600 font-semibold px-2">
-                      <span className="hidden sm:inline">{fmtBRL(r.gitec_aprovado)}</span>
-                      <span className="sm:hidden">{fmtCompact(r.gitec_aprovado)}</span>
+                      {r.gitec_bm > 0 ? (
+                        <>
+                          <span className="hidden sm:inline">{fmtBRL(r.gitec_bm)}</span>
+                          <span className="sm:hidden">{fmtCompact(r.gitec_bm)}</span>
+                        </>
+                      ) : "—"}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-amber-500 px-2 hidden md:table-cell">{fmtBRL(r.gitec_pendente)}</TableCell>
-                    <TableCell className={cn("text-right font-mono text-xs font-semibold px-2", r.gap > 0 ? "text-destructive" : "text-emerald-500")}>
-                      <span className="hidden sm:inline">{fmtBRL(Math.abs(r.gap))}</span>
-                      <span className="sm:hidden">{fmtCompact(Math.abs(r.gap))}</span>
+                    <TableCell className="text-right font-mono text-xs text-emerald-500 px-2 hidden md:table-cell">
+                      {r.gitec_acum > 0 ? fmtBRL(r.gitec_acum) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right px-2 w-24">
+                      {r.avanco > 0 ? (
+                        <div className="flex items-center gap-1.5">
+                          <Progress value={Math.min(r.avanco, 100)} className="h-1.5 flex-1" />
+                          <span className="text-[10px] font-mono text-muted-foreground w-10 text-right">
+                            {r.avanco.toFixed(1)}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -357,13 +347,11 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
                 <TableRow className="font-semibold text-xs">
                   <TableCell colSpan={3} className="text-right px-2 lg:hidden">Total</TableCell>
                   <TableCell colSpan={4} className="text-right px-2 hidden lg:table-cell">Total</TableCell>
-                  <TableCell className="text-right font-mono text-blue-500 px-2">{fmtBRL(totals.previsto)}</TableCell>
-                  <TableCell className="text-right font-mono text-purple-500 px-2 hidden md:table-cell">{fmtBRL(totals.projetado)}</TableCell>
-                  <TableCell className="text-right font-mono text-emerald-500 px-2">{fmtBRL(totals.executado)}</TableCell>
-                  <TableCell className="text-right font-mono text-emerald-600 px-2">{fmtBRL(totals.gitec_aprovado)}</TableCell>
-                  <TableCell className="text-right font-mono text-amber-500 px-2 hidden md:table-cell">{fmtBRL(totals.gitec_pendente)}</TableCell>
-                  <TableCell className={cn("text-right font-mono px-2", totals.gap > 0 ? "text-destructive" : "text-emerald-500")}>
-                    {fmtBRL(Math.abs(totals.gap))}
+                  <TableCell className="text-right font-mono text-blue-500 px-2">{fmtBRL(totals.valor_contratual)}</TableCell>
+                  <TableCell className="text-right font-mono text-emerald-600 px-2">{fmtBRL(totals.gitec_bm)}</TableCell>
+                  <TableCell className="text-right font-mono text-emerald-500 px-2 hidden md:table-cell">{fmtBRL(totals.gitec_acum)}</TableCell>
+                  <TableCell className="text-right font-mono text-muted-foreground px-2">
+                    {totals.valor_contratual > 0 ? (totals.gitec_acum / totals.valor_contratual * 100).toFixed(1) + "%" : "—"}
                   </TableCell>
                 </TableRow>
               </TableFooter>
