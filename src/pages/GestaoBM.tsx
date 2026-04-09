@@ -20,12 +20,11 @@ const RT_CONFIGS = [
 ];
 
 export default function GestaoBM() {
-  const bms = allBMs();
   const [selectedBm, setSelectedBm] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
-  const effectiveBm = selectedBm ?? bms[0]?.name ?? "BM-01";
+  const effectiveBm = selectedBm ?? "BM-10";
   const { connected } = useRealtimeInvalidation(RT_CONFIGS);
 
   const handleSelectBm = (bm: string) => {

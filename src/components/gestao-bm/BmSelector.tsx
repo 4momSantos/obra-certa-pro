@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { allBMs, bmRange } from "@/lib/bm-utils";
+import { bmRange } from "@/lib/bm-utils";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,25 +11,20 @@ interface Props {
 }
 
 export function BmSelector({ selected, onSelect }: Props) {
-  const { data: ultimoBm, isLoading } = useQuery({
-    queryKey: ["ultimo-bm"],
+  const { data: periodos, isLoading } = useQuery({
+    queryKey: ["bm-periodos-selector"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("vw_ultimo_bm_realizado")
-        .select("ultimo_bm")
-        .single();
-      return data?.ultimo_bm ?? 0;
+      const { data, error } = await supabase
+        .from("bm_periodos")
+        .select("bm_name, bm_number, status")
+        .order("bm_number", { ascending: true });
+      if (error) throw error;
+      return data || [];
     },
     staleTime: 60_000,
   });
 
-  const bms = allBMs();
-  const currentBm = (ultimoBm ?? 0) + 1;
-
-  // Auto-select current BM on load
-  const effectiveBm = selected ?? `BM-${String(currentBm).padStart(2, "0")}`;
-
-  if (isLoading) {
+  if (isLoading || !periodos) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-10 w-full" />
@@ -38,21 +33,24 @@ export function BmSelector({ selected, onSelect }: Props) {
     );
   }
 
+  // Auto-select the "aberto" BM, fallback to first
+  const bmAberto = periodos.find((p) => p.status === "aberto");
+  const effectiveBm = selected ?? bmAberto?.bm_name ?? periodos[0]?.bm_name ?? "BM-01";
   const selectedRange = bmRange(effectiveBm);
 
   return (
     <div className="space-y-2">
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-thin">
-        {bms.map((bm) => {
-          const isDone = bm.number <= (ultimoBm ?? 0);
-          const isCurrent = bm.number === currentBm;
-          const isFuture = bm.number > currentBm;
-          const isSelected = bm.name === effectiveBm;
+        {periodos.map((bm) => {
+          const status = bm.status || "futuro";
+          const isSelected = bm.bm_name === effectiveBm;
+          const isDone = status === "fechado";
+          const isOpen = status === "aberto";
 
           return (
             <button
-              key={bm.name}
-              onClick={() => onSelect(bm.name)}
+              key={bm.bm_name}
+              onClick={() => onSelect(bm.bm_name)}
               className={cn(
                 "shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-md text-[11px] font-mono font-medium transition-all border",
                 isSelected
@@ -60,13 +58,13 @@ export function BmSelector({ selected, onSelect }: Props) {
                   : "",
                 isDone
                   ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
-                  : isCurrent
-                    ? "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 animate-pulse"
+                  : isOpen
+                    ? "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400 animate-pulse"
                     : "bg-muted/50 text-muted-foreground/60 border-border/50"
               )}
             >
               {isDone && <Check className="h-3 w-3" />}
-              {bm.name.replace("BM-", "")}
+              {bm.bm_name.replace("BM-", "")}
             </button>
           );
         })}
