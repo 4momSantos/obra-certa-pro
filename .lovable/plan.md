@@ -1,33 +1,27 @@
 
 
-# Fix useCobertura + Import Counts
+# Fix: Scrollbar na tabela do AddItemDialog
 
-## Changes
+## Problema
+O `ScrollArea` na tabela de seleção de itens PPU tem `max-h-[340px]`, mas o Radix ScrollArea precisa que o **Viewport** tenha altura restrita para ativar o scroll. O `h-full` no Viewport herda do Root, mas o Root com `max-h` nem sempre propaga corretamente a altura fixa necessária.
 
-### 1. `src/hooks/useSconViews.ts` — useCobertura fallback to ppu_items
+## Solução
+Substituir o `ScrollArea` do Radix por um `div` com `overflow-y-auto` nativo, que funciona de forma mais confiável com tabelas. Aumentar também a altura máxima para aproveitar melhor o espaço do dialog.
 
-Replace the query to `vw_cronograma_tree_completo` (lines 48-52) with a query to `ppu_items` directly:
+### Arquivo: `src/components/previsao/AddItemDialog.tsx`
+- **Linha 460-524**: Trocar o wrapper `ScrollArea` por um `div` com `overflow-y-auto` e `max-h-[50vh]`
+- Manter os headers sticky como estão
 
-```typescript
-const { data: tree, error: treeErr } = await supabase
-  .from("ppu_items")
-  .select("item_ppu, agrupamento, valor_total, valor_medido")
-  .not("item_ppu", "is", null);
+```tsx
+// Antes (linha 460-461):
+<div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+  <ScrollArea className="h-full max-h-[340px]">
+
+// Depois:
+<div className="flex-1 min-h-0 border rounded-lg overflow-y-auto max-h-[50vh]">
 ```
 
-Map fields to match existing logic:
-- `item_ppu` → `ippu`
-- `agrupamento` → `nome`
-- `valor_total` → `valor`
-- `valor_medido` → `total_realizado_bm`
+E remover o `</ScrollArea>` correspondente na linha 524.
 
-The rest of the function (SCON enrichment, semaforo logic, aggregation) stays identical.
+Isso garante scroll nativo visível com a barra do browser, mais confiável que o Radix ScrollArea para tabelas.
 
-### 2. `src/hooks/useImport.ts` — Add scon_programacao count
-
-In `useExistingCounts` (line 1193), add a 4th parallel query:
-
-```typescript
-const [s, r, c, sp] = await Promise.all([
-  supabase.from("sigem_documents").select("id", { count: "exact", head: true }),
-  supabase.from("gitec_events").select("id", { count: "exact
