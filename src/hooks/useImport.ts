@@ -62,6 +62,15 @@ function dateVal(v: unknown): string | null {
   return s.slice(0, 10);
 }
 
+/** Normalize ItemWBS: add "B-" prefix if missing (RNEST convention) */
+function normalizeItemWBS(wbs: string): string {
+  if (!wbs) return "";
+  const s = wbs.trim();
+  if (/^[A-Z]-/.test(s)) return s;
+  if (/^\d/.test(s)) return "B-" + s;
+  return s;
+}
+
 /** Find column index by fuzzy-matching header names */
 function normalizeHeader(value: string): string {
   return str(value)
