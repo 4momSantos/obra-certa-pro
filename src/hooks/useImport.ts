@@ -692,7 +692,7 @@ export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warn
             classe: str(cell(r, cClasse)),
             disciplina: str(cell(r, cDisc)),
             tipo: str(cell(r, cTipo)),
-            item_wbs,
+            item_wbs: normalizeItemWBS(item_wbs),
             tag,
             tag_desc: str(cell(r, cTagDesc)),
             qtde_etapa: num(cell(r, cQtdEtapa)),
