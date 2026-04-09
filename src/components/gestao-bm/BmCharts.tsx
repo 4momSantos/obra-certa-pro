@@ -1,6 +1,6 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { bmRange } from "@/lib/bm-utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -46,61 +46,82 @@ export function BmCharts({ bmName }: Props) {
 // ── Bar Chart by PPU ──────────────────────────────────────────────────────────
 
 function BarChartByPPU({ bmName }: { bmName: string }) {
-  const range = bmRange(bmName);
-  const startStr = range.start.toISOString().split("T")[0];
-  const endStr = range.end.toISOString().split("T")[0];
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["bm-chart-ppu", bmName],
+  // 1. BM period
+  const { data: bmPeriodo } = useQuery({
+    queryKey: ["bm-periodo", bmName],
     queryFn: async () => {
-      // Cronograma data per PPU
-      const { data: crono } = await supabase
-        .from("vw_cronograma_bm_por_ippu")
-        .select("ippu, previsto, projetado, realizado")
-        .eq("bm_name", bmName);
-
-      // GITEC approved per PPU
-      const { data: gitec } = await supabase
-        .from("gitec_events")
-        .select("ippu, valor, status")
-        .gte("data_execucao", startStr)
-        .lte("data_execucao", endStr);
-
-      const gitecMap: Record<string, number> = {};
-      for (const e of gitec ?? []) {
-        if (e.status === "Aprovado" && e.ippu) {
-          gitecMap[e.ippu] = (gitecMap[e.ippu] ?? 0) + (e.valor ?? 0);
-        }
-      }
-
-      const rows = (crono ?? []).map((c) => ({
-        ppu: c.ippu ?? "",
-        previsto: c.previsto ?? 0,
-        projetado: c.projetado ?? 0,
-        executado: c.realizado ?? 0,
-        gitec: gitecMap[c.ippu ?? ""] ?? 0,
-      }));
-
-      rows.sort((a, b) => b.previsto - a.previsto);
-      return rows.slice(0, 15);
+      const { data } = await supabase
+        .from("bm_periodos")
+        .select("periodo_inicio, periodo_fim")
+        .eq("bm_name", bmName)
+        .single();
+      return data;
     },
     staleTime: 300_000,
   });
 
+  // 2. PPU items
+  const { data: ppuItems } = useQuery({
+    queryKey: ["ppu-items-full"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ppu_items")
+        .select("item_ppu, descricao, valor_total")
+        .order("item_ppu");
+      return data ?? [];
+    },
+    staleTime: 300_000,
+  });
+
+  // 3. GITEC in BM period
+  const { data: gitecBmData, isLoading } = useQuery({
+    queryKey: ["gitec-bm-period", bmName],
+    enabled: !!bmPeriodo,
+    queryFn: async () => {
+      if (!bmPeriodo) return [];
+      const { data } = await supabase
+        .from("gitec_events")
+        .select("ippu, valor, status")
+        .eq("status", "Aprovado")
+        .gte("data_execucao", bmPeriodo.periodo_inicio)
+        .lte("data_execucao", bmPeriodo.periodo_fim);
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  const chartData = useMemo(() => {
+    if (!ppuItems || !gitecBmData) return [];
+
+    // Aggregate GITEC by iPPU
+    const gitecMap: Record<string, number> = {};
+    for (const e of gitecBmData) {
+      if (e.ippu) gitecMap[e.ippu] = (gitecMap[e.ippu] ?? 0) + (e.valor ?? 0);
+    }
+
+    // Build chart data — only items with GITEC in period
+    const rows = ppuItems
+      .filter((p) => (gitecMap[p.item_ppu] ?? 0) > 0)
+      .map((p) => ({
+        name: (p.descricao ?? p.item_ppu)?.substring(0, 25) || p.item_ppu,
+        contratual: p.valor_total ?? 0,
+        gitec_bm: gitecMap[p.item_ppu] ?? 0,
+      }))
+      .sort((a, b) => b.gitec_bm - a.gitec_bm)
+      .slice(0, 15);
+
+    return rows;
+  }, [ppuItems, gitecBmData]);
+
   if (isLoading) return <Skeleton className="h-[300px] w-full rounded-lg" />;
 
-  if (!data || data.length === 0) {
+  if (chartData.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground border rounded-lg">
-        Sem dados para este BM.
+        Sem medição GITEC neste período.
       </div>
     );
   }
-
-  const chartData = data.map((d) => ({
-    ...d,
-    ppu: d.ppu.length > 12 ? d.ppu.slice(0, 12) + "…" : d.ppu,
-  }));
 
   return (
     <div className="border rounded-lg p-3 bg-card">
@@ -108,17 +129,15 @@ function BarChartByPPU({ bmName }: { bmName: string }) {
         <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-          <YAxis type="category" dataKey="ppu" width={90} tick={{ fontSize: 10, fontFamily: "monospace" }} stroke="hsl(var(--muted-foreground))" />
+          <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
           <Tooltip
             formatter={(v: number, name: string) => [fmtBRL(v), name]}
             contentStyle={{ fontSize: 11, background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-            labelStyle={{ fontFamily: "monospace", fontWeight: 700 }}
+            labelStyle={{ fontWeight: 700 }}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Bar dataKey="previsto" name="Previsto" fill="hsl(217, 91%, 60%)" radius={[0, 0, 0, 0]} barSize={14} />
-          <Bar dataKey="projetado" name="Projetado" fill="hsl(271, 91%, 65%)" barSize={14} />
-          <Bar dataKey="executado" name="Executado" fill="hsl(142, 71%, 45%)" barSize={14} />
-          <Bar dataKey="gitec" name="GITEC Aprov." fill="hsl(152, 82%, 35%)" barSize={14} />
+          <Bar dataKey="contratual" name="Valor Contratual" fill="hsl(217, 91%, 60%)" radius={[0, 0, 0, 0]} barSize={14} />
+          <Bar dataKey="gitec_bm" name="GITEC no BM" fill="hsl(142, 71%, 45%)" barSize={14} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -159,8 +178,9 @@ function EvolutionChart({ bmName }: { bmName: string }) {
     );
   }
 
-  // Find the label for the selected BM to draw reference line
-  const bmLabel = data.find((_, i) => i + 1 === bmNumber)?.label;
+  // BM-N maps to col_index N+1
+  const bmColIndex = bmNumber + 1;
+  const bmLabel = data.find((d) => d.index === bmColIndex)?.label;
 
   return (
     <div className="border rounded-lg p-3 bg-card">
