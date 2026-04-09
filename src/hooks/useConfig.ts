@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { FieldDef, FIELDS_BY_SOURCE, PPU_FIELDS, CLASSIF_FIELDS, EAC_FIELDS, CRITERIO_FIELDS } from "@/lib/config-fields";
 
 // ── Helpers ──
 
