@@ -83,12 +83,25 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
         return (cl?.disciplina || p.disc || "") === discFilter;
       });
     }
+    if (faseFilter !== "all") {
+      items = items.filter(p => (p.fase || "") === faseFilter);
+    }
+    if (subfaseFilter !== "all") {
+      items = items.filter(p => (p.subfase || "") === subfaseFilter);
+    }
+    if (agrupFilter !== "all") {
+      items = items.filter(p => (p.agrupamento || "") === agrupFilter);
+    }
+    if (valorMinFilter) {
+      const min = Number(valorMinFilter) || 0;
+      items = items.filter(p => (Number(p.valor_total) || 0) >= min);
+    }
     items.sort((a, b) => (Number(b.valor_total) || 0) - (Number(a.valor_total) || 0));
     return {
       available: items.slice(0, 200),
       totalFiltered: items.length
     };
-  }, [ppuItems, search, discFilter, classifMap, existingIppus]);
+  }, [ppuItems, search, discFilter, faseFilter, subfaseFilter, agrupFilter, valorMinFilter, classifMap, existingIppus]);
 
   const disciplinas = useMemo(() => {
     const set = new Set<string>();
@@ -98,6 +111,13 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
     });
     return [...set].sort();
   }, [ppuItems, classifMap]);
+
+  const fases = useMemo(() => [...new Set(ppuItems.map(p => p.fase).filter(Boolean))].sort(), [ppuItems]);
+  const subfases = useMemo(() => {
+    const items = faseFilter !== "all" ? ppuItems.filter(p => p.fase === faseFilter) : ppuItems;
+    return [...new Set(items.map(p => p.subfase).filter(Boolean))].sort();
+  }, [ppuItems, faseFilter]);
+  const agrupamentos = useMemo(() => [...new Set(ppuItems.map(p => p.agrupamento).filter(Boolean))].sort(), [ppuItems]);
 
   const toggleItem = useCallback((ippu: string) => {
     setSelected(prev => {
