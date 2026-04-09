@@ -41,11 +41,27 @@ export function useAllRelEventos() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rel_eventos")
-        .select("*");
-      if (error) throw error;
-      return data || [];
+      const rows: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("gitec_events")
+          .select("*")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        // Map gitec_events fields to expected interface
+        rows.push(...data.map(r => ({
+          ...r,
+          agrupamento_ippu: r.ippu || "",
+          fiscal_responsavel: r.fiscal || "",
+          numero_evidencias: r.evidencias || "",
+        })));
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return rows;
     },
   });
 }

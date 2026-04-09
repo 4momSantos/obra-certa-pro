@@ -29,7 +29,7 @@ export function usePPUDetail(itemPpu: string | null, itemGitec: string | null) {
     queryKey: ["ppu-detail-rel", itemPpu],
     enabled,
     staleTime: 5 * 60_000,
-    queryFn: () => fetchFiltered<any>("rel_eventos", "item_ppu", itemPpu!),
+    queryFn: () => fetchFiltered<any>("gitec_events", "ippu", itemPpu!),
   });
   const sigemQ = useQuery({
     queryKey: ["ppu-detail-sigem", itemPpu],

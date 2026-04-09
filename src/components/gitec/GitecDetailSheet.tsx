@@ -38,8 +38,8 @@ export const GitecDetailSheet: React.FC<Props> = ({ eventId, open, onClose }) =>
                 <Field label="Etapa" value={detail.etapa || "-"} />
                 <Field label="Fiscal" value={detail.fiscal_responsavel || "-"} />
                 <Field label="Executado por" value={detail.executado_por || "-"} />
-                <Field label="Peso Físico" value={String(Number(detail.peso_fisico) || 0)} />
-                <Field label="Peso Financeiro" value={String(Number(detail.peso_financeiro) || 0)} />
+                <Field label="Peso Físico" value={String(Number((detail as any).peso_fisico) || 0)} />
+                <Field label="Peso Financeiro" value={String(Number((detail as any).peso_financeiro) || 0)} />
                 <Field label="Data Execução" value={detail.data_execucao ?? "-"} />
                 <Field label="Data Inf. Exec." value={detail.data_inf_execucao ?? "-"} />
                 <Field label="Data Aprovação" value={detail.data_aprovacao ?? "-"} />
