@@ -519,8 +519,8 @@ function Step1({
                 </TableRow>
               )}
             </TableBody>
-          </Table>
-        </ScrollArea>
+        </Table>
+      </div>
       </div>
     </div>
   );
