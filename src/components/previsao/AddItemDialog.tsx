@@ -521,7 +521,6 @@ function Step1({
             </TableBody>
         </Table>
       </div>
-      </div>
     </div>
   );
 }
