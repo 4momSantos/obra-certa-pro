@@ -192,13 +192,15 @@ export function useMedicaoData() {
       };
     });
 
+    const valorContratual = contratoRow?.valor_contratual ?? totalContrato;
+
     const kpis: MedicaoKPIs = {
-      contrato: totalContrato,
+      contrato: valorContratual,
       previsto: totalPrevisto,
       executadoScon: totalExecScon,
       postadoSigem: totalPostado > 0 ? totalPostado : (sigemTotal as number),
       medidoGitec: totalMedido,
-      saldo: totalContrato - totalMedido,
+      saldo: valorContratual - totalMedido,
     };
 
     return {
