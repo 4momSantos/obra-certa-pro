@@ -64,8 +64,92 @@ export interface ConfigCardDef {
   source: string;
   range: number;
   description: string;
+  fields: FieldDef[];
+  /** Legacy parser — used as fallback when no column mapping is set */
   parse: (raw: unknown[][]) => { rows: Record<string, unknown>[]; warnings: string[] };
+  /** Optional row filter for criterio_medicao (only keep "7 - Etapa" rows) */
+  rowFilter?: (row: Record<string, unknown>) => boolean;
+  /** Required field key for skipping empty rows */
+  requiredKey?: string;
 }
+
+// ── Dynamic parser using column mapping ──
+
+export function parseWithMapping(
+  raw: unknown[][],
+  fields: FieldDef[],
+  mapping: Record<string, number>,
+  opts?: { rowFilter?: (row: Record<string, unknown>) => boolean; requiredKey?: string }
+): { rows: Record<string, unknown>[]; warnings: string[] } {
+  const warnings: string[] = [];
+  const rows: Record<string, unknown>[] = [];
+  const reqKey = opts?.requiredKey ?? fields.find(f => f.required)?.key;
+
+  for (let i = 1; i < raw.length; i++) {
+    const r = raw[i];
+    if (!r || r.length === 0) continue;
+    if (isPivotRow(r)) continue;
+
+    const row: Record<string, unknown> = {};
+    for (const field of fields) {
+      const colIdx = mapping[field.key];
+      if (colIdx == null) {
+        row[field.key] = field.type === "num" ? 0 : field.type === "date" ? null : "";
+        continue;
+      }
+      const rawVal = r[colIdx];
+      switch (field.type) {
+        case "num": row[field.key] = num(rawVal); break;
+        case "date": row[field.key] = dateStr(rawVal); break;
+        default: row[field.key] = str(rawVal); break;
+      }
+    }
+
+    // Skip rows missing required field
+    if (reqKey && !row[reqKey]) continue;
+
+    // Apply optional row filter
+    if (opts?.rowFilter && !opts.rowFilter(row)) continue;
+
+    // Lowercase flag for PPU
+    if (typeof row.flag === "string") row.flag = row.flag.toLowerCase();
+
+    rows.push(row);
+  }
+
+  if (rows.length === 0) {
+    const reqField = fields.find(f => f.key === reqKey);
+    warnings.push(`Nenhuma linha com ${reqField?.label ?? "campo obrigatório"} encontrada`);
+  }
+  return { rows, warnings };
+}
+
+// ── Read raw file (headers + data) ──
+
+export function readRawFile(
+  file: File,
+  range: number
+): Promise<{ headers: string[]; rawRows: unknown[][] }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const all: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, range, defval: "" });
+        const headers = (all[0] ?? []).map((v: unknown) => str(v));
+        const rawRows = all.slice(1);
+        resolve({ headers, rawRows });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ── Legacy parsers (kept as fallback) ──
 
 function parsePPU(raw: unknown[][]): { rows: Record<string, unknown>[]; warnings: string[] } {
   const warnings: string[] = [];
@@ -152,26 +236,41 @@ function parseCriterio(raw: unknown[][]): { rows: Record<string, unknown>[]; war
   return { rows, warnings };
 }
 
+// ── Row filter for Critério ──
+const criterioRowFilter = (row: Record<string, unknown>): boolean => {
+  const nivel = str(row.nivel_estrutura);
+  return nivel.includes("7 - Etapa") || nivel.includes("7 -Etapa") || nivel.toLowerCase().includes("etapa");
+};
+
 export const CONFIG_CARDS: ConfigCardDef[] = [
   {
     key: "ppu", label: "PPU-PREV", table: "ppu_items", source: "ppu_prev", range: 4,
     description: "Planilha de Preços Unitários (~900 itens)",
+    fields: PPU_FIELDS,
     parse: parsePPU,
+    requiredKey: "item_ppu",
   },
   {
     key: "classif", label: "Classificação PPU", table: "classificacao_ppu", source: "classificacao_ppu", range: 0,
     description: "Classificação por disciplina (~876 itens)",
+    fields: CLASSIF_FIELDS,
     parse: parseClassificacao,
+    requiredKey: "item_ppu",
   },
   {
     key: "eac", label: "EAC", table: "eac_items", source: "eac", range: 2,
     description: "Curva de Avanço Físico/Financeiro (~874 itens)",
+    fields: EAC_FIELDS,
     parse: parseEAC,
+    requiredKey: "ppu",
   },
   {
     key: "criterio", label: "Critério de Medição", table: "criterio_medicao", source: "criterio_medicao", range: 5,
     description: "Anexo III — Etapas detalhadas (~1007 itens)",
+    fields: CRITERIO_FIELDS,
     parse: parseCriterio,
+    requiredKey: "nivel_estrutura",
+    rowFilter: criterioRowFilter,
   },
 ];
 
