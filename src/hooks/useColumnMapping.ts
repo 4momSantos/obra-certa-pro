@@ -12,7 +12,8 @@ export interface ColumnMappingRow {
 }
 
 export function useColumnMapping(source: string) {
-  const { contratoId } = useContrato();
+  const { contratoAtivo } = useContrato();
+  const contratoId = contratoAtivo?.id ?? null;
 
   return useQuery({
     queryKey: ["column-mapping", contratoId, source],
