@@ -64,7 +64,7 @@ export function useAlerts() {
       const { data: recusados } = await supabase
         .from("sigem_documents")
         .select("id, documento, titulo, ppu, status_correto")
-        .eq("status_correto", "Recusado") as any;
+        .eq("status_correto", "Recusado")
         .limit(500);
 
       const r2Items: AlertItem[] = (recusados ?? []).map(d => ({
