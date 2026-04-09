@@ -5,8 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Upload, CheckCircle2, FileSpreadsheet, RefreshCw, AlertCircle } from "lucide-react";
-import { CONFIG_CARDS, ConfigCardDef, parseConfigFile, useConfigCounts, useConfigUpload } from "@/hooks/useConfig";
+import { Upload, CheckCircle2, FileSpreadsheet, RefreshCw, AlertCircle, Settings2 } from "lucide-react";
+import {
+  CONFIG_CARDS, ConfigCardDef, readRawFile, parseWithMapping,
+  useConfigCounts, useConfigUpload,
+} from "@/hooks/useConfig";
+import { useColumnMapping, useSaveColumnMapping } from "@/hooks/useColumnMapping";
+import ColumnMapperDialog from "@/components/config/ColumnMapperDialog";
 
 // ── Upload Card ──
 
@@ -18,10 +23,16 @@ interface CardState {
   progress: number;
   progressMsg: string;
   done: boolean;
+  // Raw data for mapper
+  headers: string[];
+  rawRows: unknown[][];
+  showMapper: boolean;
 }
 
 const initialCardState: CardState = {
-  file: null, rows: [], warnings: [], uploading: false, progress: 0, progressMsg: "", done: false,
+  file: null, rows: [], warnings: [], uploading: false,
+  progress: 0, progressMsg: "", done: false,
+  headers: [], rawRows: [], showMapper: false,
 };
 
 function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
@@ -30,17 +41,47 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: counts } = useConfigCounts();
   const upload = useConfigUpload();
+  const { data: savedMapping } = useColumnMapping(card.source);
+  const saveMapping = useSaveColumnMapping();
 
   const existingCount = counts?.[card.table] ?? 0;
 
+  // Read file and open mapper
   const handleFile = useCallback(async (file: File) => {
     try {
-      const result = await parseConfigFile(file, card);
-      setState({ ...initialCardState, file, rows: result.rows, warnings: result.warnings });
+      const { headers, rawRows } = await readRawFile(file, card.range);
+      setState({
+        ...initialCardState,
+        file,
+        headers,
+        rawRows,
+        showMapper: true,
+      });
     } catch {
       setState({ ...initialCardState, warnings: ["Erro ao ler arquivo"] });
     }
   }, [card]);
+
+  // When mapper confirms mapping
+  const handleMappingConfirmed = useCallback((mapping: Record<string, number>) => {
+    // Save mapping to DB
+    saveMapping.mutate({ source: card.source, mappings: mapping, headerRow: 0 });
+
+    // Parse using the mapping
+    const result = parseWithMapping(
+      [state.headers, ...state.rawRows],  // re-add headers as row 0
+      card.fields,
+      mapping,
+      { rowFilter: card.rowFilter, requiredKey: card.requiredKey }
+    );
+
+    setState(s => ({
+      ...s,
+      showMapper: false,
+      rows: result.rows,
+      warnings: result.warnings,
+    }));
+  }, [card, state.headers, state.rawRows, saveMapping]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -79,6 +120,11 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
       startUpload(false);
     }
   }, [existingCount, startUpload]);
+
+  // Re-open mapper to adjust mapping
+  const handleRemap = useCallback(() => {
+    setState(s => ({ ...s, showMapper: true }));
+  }, []);
 
   const previewCols = state.rows.length > 0 ? Object.keys(state.rows[0]).slice(0, 6) : [];
   const previewRows = state.rows.slice(0, 10);
@@ -122,8 +168,8 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
             </div>
           )}
 
-          {/* Preview */}
-          {state.file && !state.uploading && !state.done && (
+          {/* Preview (after mapping confirmed) */}
+          {state.file && state.rows.length > 0 && !state.uploading && !state.done && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <FileSpreadsheet className="h-4 w-4 text-primary" />
@@ -169,6 +215,35 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
                 <Button size="sm" onClick={handleUploadClick} disabled={state.rows.length === 0}>
                   Carregar {state.rows.length.toLocaleString("pt-BR")} registros
                 </Button>
+                <Button size="sm" variant="outline" onClick={handleRemap} className="gap-1">
+                  <Settings2 className="h-3.5 w-3.5" />
+                  Ajustar Colunas
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setState(initialCardState)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* File loaded but no rows yet (mapper still open or 0 rows) */}
+          {state.file && state.rows.length === 0 && !state.uploading && !state.done && !state.showMapper && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <FileSpreadsheet className="h-4 w-4 text-primary" />
+                <span className="truncate font-medium">{state.file.name}</span>
+              </div>
+              {state.warnings.length > 0 && (
+                <div className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-2 text-xs text-yellow-700 dark:text-yellow-400">
+                  <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <div>{state.warnings.join("; ")}</div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={handleRemap} className="gap-1">
+                  <Settings2 className="h-3.5 w-3.5" />
+                  Mapear Colunas
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => setState(initialCardState)}>
                   Cancelar
                 </Button>
@@ -201,6 +276,17 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Column Mapper Dialog */}
+      <ColumnMapperDialog
+        open={state.showMapper}
+        onOpenChange={(open) => setState(s => ({ ...s, showMapper: open }))}
+        fields={card.fields}
+        headers={state.headers}
+        rawRows={state.rawRows}
+        savedMapping={savedMapping?.mappings ?? null}
+        onConfirm={handleMappingConfirmed}
+      />
 
       {/* Replace dialog */}
       <Dialog open={showReplace} onOpenChange={setShowReplace}>
