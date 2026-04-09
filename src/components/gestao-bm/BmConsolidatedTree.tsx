@@ -1,246 +1,203 @@
 import { useState, useMemo, useCallback } from "react";
-import { useCronogramaTree, CronoTreeNode } from "@/hooks/useCronogramaData";
-import { AgrupamentoDetail } from "./AgrupamentoDetail";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { BmPpuDetailSheet } from "./BmPpuDetailSheet";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, ChevronDown, Search, X } from "lucide-react";
 import { formatCompact } from "@/lib/format";
 import { ConsolidatedKPIs } from "./consolidated/ConsolidatedKPIs";
 import { ConsolidatedCharts } from "./consolidated/ConsolidatedCharts";
-import { ConsolidatedFilters } from "./consolidated/ConsolidatedFilters";
-import { FaseInlineSummary } from "./consolidated/FaseInlineSummary";
+import { cn } from "@/lib/utils";
 
-function normalizePpu(v: string) {
-  return (v || "").replace(/_/g, "-").trim();
+interface PpuItem {
+  item_ppu: string;
+  descricao: string;
+  fase: string;
+  subfase: string;
+  disc: string;
+  valor_total: number;
 }
 
-/* ── Tree node with aggregated values ── */
-interface AggTreeNode {
-  id: string;
-  nivel: string;
-  ippu: string;
+interface TreeLeaf extends PpuItem {
+  gitec_aprovado: number;
+  avanco: number;
+}
+
+interface TreeGroup {
+  key: string;
   nome: string;
-  valor: number;
-  acumulado: number;
-  saldo: number;
-  total_previsto_bm: number;
-  total_projetado_bm: number;
-  total_realizado_bm: number;
-  scon_avg_avanco?: number;
-  scon_total?: number;
-  semaforo?: "medido" | "executado" | "previsto" | "futuro";
-  children: AggTreeNode[];
-  sort_order: number;
-}
-
-/* ── Build hierarchy from flat nodes and aggregate bottom-up ── */
-function buildAndAggregate(flatNodes: CronoTreeNode[]): AggTreeNode[] {
-  const fases: AggTreeNode[] = [];
-  let currentFase: AggTreeNode | null = null;
-  let currentSubfase: AggTreeNode | null = null;
-
-  const sorted = [...flatNodes].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-
-  for (const n of sorted) {
-    const node: AggTreeNode = {
-      id: n.id,
-      nivel: n.nivel,
-      ippu: normalizePpu(n.ippu),
-      nome: n.nome || "",
-      valor: n.valor,
-      acumulado: n.acumulado,
-      saldo: n.saldo,
-      total_previsto_bm: n.total_previsto_bm,
-      total_projetado_bm: n.total_projetado_bm,
-      total_realizado_bm: n.total_realizado_bm,
-      scon_avg_avanco: n.scon_avg_avanco,
-      scon_total: n.scon_total,
-      semaforo: n.semaforo,
-      children: [],
-      sort_order: n.sort_order,
-    };
-
-    if (n.nivel === "3 - Fase") {
-      currentFase = node;
-      currentSubfase = null;
-      fases.push(node);
-    } else if (n.nivel === "4 - Subfase" && currentFase) {
-      currentSubfase = node;
-      currentFase.children.push(node);
-    } else if (n.nivel === "5 - Agrupamento" && currentSubfase) {
-      currentSubfase.children.push(node);
-    }
-  }
-
-  for (const fase of fases) {
-    for (const subfase of fase.children) {
-      subfase.total_previsto_bm = subfase.children.reduce((s, a) => s + a.total_previsto_bm, 0);
-      subfase.total_projetado_bm = subfase.children.reduce((s, a) => s + a.total_projetado_bm, 0);
-      subfase.total_realizado_bm = subfase.children.reduce((s, a) => s + a.total_realizado_bm, 0);
-    }
-    fase.total_previsto_bm = fase.children.reduce((s, sf) => s + sf.total_previsto_bm, 0);
-    fase.total_projetado_bm = fase.children.reduce((s, sf) => s + sf.total_projetado_bm, 0);
-    fase.total_realizado_bm = fase.children.reduce((s, sf) => s + sf.total_realizado_bm, 0);
-  }
-
-  return fases;
-}
-
-/* ── Semáforo dot ── */
-function SemaforoDot({ s }: { s?: string }) {
-  const colors: Record<string, string> = {
-    medido: "bg-green-500",
-    executado: "bg-amber-500",
-    previsto: "bg-blue-500",
-    futuro: "bg-muted-foreground/30",
-  };
-  return <div className={`h-3 w-3 rounded-full ${colors[s || "futuro"]}`} />;
+  valor_total: number;
+  gitec_aprovado: number;
+  avanco: number;
+  children: TreeLeaf[];
 }
 
 /* ── Main Component ── */
 export function BmConsolidatedTree() {
-  const { data: treeData, isLoading } = useCronogramaTree();
   const [search, setSearch] = useState("");
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedFases, setExpandedFases] = useState<Set<string>>(new Set());
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
-  const [faseFilter, setFaseFilter] = useState("__all__");
-  const [semaforoFilter, setSemaforoFilter] = useState<string[]>([]);
-  const [saldoOnly, setSaldoOnly] = useState(false);
 
-  const tree = useMemo(() => buildAndAggregate(treeData || []), [treeData]);
+  // 1. PPU items
+  const { data: ppuItems, isLoading: ppuLoading } = useQuery({
+    queryKey: ["ppu-items-consolidated"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ppu_items")
+        .select("item_ppu, descricao, fase, subfase, disc, valor_total")
+        .order("item_ppu");
+      return (data ?? []).map((p) => ({
+        item_ppu: p.item_ppu,
+        descricao: p.descricao ?? "",
+        fase: (p.fase ?? "").trim() || "Sem fase",
+        subfase: (p.subfase ?? "").trim(),
+        disc: p.disc ?? "",
+        valor_total: Number(p.valor_total) || 0,
+      })) as PpuItem[];
+    },
+    staleTime: 300_000,
+  });
 
-  const faseNames = useMemo(() => tree.map((f) => f.nome), [tree]);
+  // 2. GITEC aprovados (all time, accumulated)
+  const { data: gitecData } = useQuery({
+    queryKey: ["gitec-all-approved"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("gitec_events")
+        .select("ippu, valor")
+        .eq("status", "Aprovado");
+      const map: Record<string, number> = {};
+      for (const e of data ?? []) {
+        if (e.ippu) map[e.ippu] = (map[e.ippu] ?? 0) + (Number(e.valor) || 0);
+      }
+      return map;
+    },
+    staleTime: 30_000,
+  });
 
-  // Apply filters
+  // 3. Contract value
+  const { data: contrato } = useQuery({
+    queryKey: ["contrato-valor"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("contratos")
+        .select("valor_contratual")
+        .limit(1)
+        .single();
+      return data;
+    },
+    staleTime: 300_000,
+  });
+
+  // 4. Curva S totals
+  const { data: curvaS } = useQuery({
+    queryKey: ["curva-s-all"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("curva_s")
+        .select("previsto_acum, projetado_acum, realizado_acum")
+        .order("col_index", { ascending: false })
+        .limit(1)
+        .single();
+      return data;
+    },
+    staleTime: 300_000,
+  });
+
+  // Build tree: fase → items
+  const tree = useMemo(() => {
+    if (!ppuItems) return [];
+    const gitec = gitecData ?? {};
+    const faseMap = new Map<string, TreeGroup>();
+
+    for (const p of ppuItems) {
+      if (!faseMap.has(p.fase)) {
+        faseMap.set(p.fase, {
+          key: p.fase,
+          nome: p.fase,
+          valor_total: 0,
+          gitec_aprovado: 0,
+          avanco: 0,
+          children: [],
+        });
+      }
+      const fase = faseMap.get(p.fase)!;
+      const gitecVal = gitec[p.item_ppu] ?? 0;
+      fase.valor_total += p.valor_total;
+      fase.gitec_aprovado += gitecVal;
+      fase.children.push({
+        ...p,
+        gitec_aprovado: gitecVal,
+        avanco: p.valor_total > 0 ? (gitecVal / p.valor_total) * 100 : 0,
+      });
+    }
+
+    const groups = Array.from(faseMap.values());
+    for (const g of groups) {
+      g.avanco = g.valor_total > 0 ? (g.gitec_aprovado / g.valor_total) * 100 : 0;
+      g.children.sort((a, b) => a.item_ppu.localeCompare(b.item_ppu));
+    }
+    groups.sort((a, b) => b.valor_total - a.valor_total);
+    return groups;
+  }, [ppuItems, gitecData]);
+
+  // Filter
   const filteredTree = useMemo(() => {
-    let result = tree;
-
-    // Fase filter
-    if (faseFilter !== "__all__") {
-      result = result.filter((f) => f.nome === faseFilter);
-    }
-
-    // Semáforo filter — filter agrupamentos within subfases
-    if (semaforoFilter.length > 0) {
-      result = result
-        .map((fase) => ({
-          ...fase,
-          children: fase.children
-            .map((sf) => ({
-              ...sf,
-              children: sf.children.filter((a) => semaforoFilter.includes(a.semaforo || "futuro")),
-            }))
-            .filter((sf) => sf.children.length > 0),
-        }))
-        .filter((f) => f.children.length > 0);
-    }
-
-    // Saldo filter
-    if (saldoOnly) {
-      result = result
-        .map((fase) => ({
-          ...fase,
-          children: fase.children
-            .map((sf) => ({
-              ...sf,
-              children: sf.children.filter((a) => a.saldo > 0),
-            }))
-            .filter((sf) => sf.children.length > 0),
-        }))
-        .filter((f) => f.children.length > 0);
-    }
-
-    // Text search
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result
-        .map((fase) => {
-          const faseMatch = fase.nome.toLowerCase().includes(q) || fase.ippu.toLowerCase().includes(q);
-          const matchedSf = fase.children
-            .map((sf) => {
-              const sfMatch = sf.nome.toLowerCase().includes(q) || sf.ippu.toLowerCase().includes(q);
-              const matchedAgrups = sf.children.filter(
-                (a) => a.nome.toLowerCase().includes(q) || a.ippu.toLowerCase().includes(q)
-              );
-              if (sfMatch || matchedAgrups.length > 0) {
-                return { ...sf, children: matchedAgrups.length > 0 ? matchedAgrups : sf.children };
-              }
-              return null;
-            })
-            .filter(Boolean) as AggTreeNode[];
-
-          if (faseMatch) return fase;
-          if (matchedSf.length > 0) return { ...fase, children: matchedSf };
-          return null;
-        })
-        .filter(Boolean) as AggTreeNode[];
-    }
-
-    return result;
-  }, [tree, faseFilter, semaforoFilter, saldoOnly, search]);
+    if (!search.trim()) return tree;
+    const q = search.toLowerCase();
+    return tree
+      .map((fase) => {
+        const faseMatch = fase.nome.toLowerCase().includes(q);
+        const matchedChildren = fase.children.filter(
+          (c) => c.item_ppu.toLowerCase().includes(q) || c.descricao.toLowerCase().includes(q)
+        );
+        if (faseMatch) return fase;
+        if (matchedChildren.length > 0) return { ...fase, children: matchedChildren };
+        return null;
+      })
+      .filter(Boolean) as TreeGroup[];
+  }, [tree, search]);
 
   // Auto-expand on search
-  const autoExpandIds = useMemo(() => {
-    if (!search.trim()) return new Set<string>();
-    const ids = new Set<string>();
-    filteredTree.forEach((f) => {
-      ids.add(f.id);
-      f.children.forEach((sf) => ids.add(sf.id));
-    });
-    return ids;
-  }, [filteredTree, search]);
-
   const effectiveExpanded = useMemo(() => {
-    if (search.trim()) return new Set([...expandedIds, ...autoExpandIds]);
-    return expandedIds;
-  }, [expandedIds, autoExpandIds, search]);
+    if (search.trim()) {
+      return new Set(filteredTree.map((f) => f.key));
+    }
+    return expandedFases;
+  }, [expandedFases, filteredTree, search]);
 
-  const toggle = useCallback((id: string) => {
-    setExpandedIds((prev) => {
+  const toggle = useCallback((key: string) => {
+    setExpandedFases((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }, []);
 
-  // Totals from filtered data
-  const totals = useMemo(() => ({
-    valor: filteredTree.reduce((s, f) => s + f.valor, 0),
-    previsto: filteredTree.reduce((s, f) => s + f.total_previsto_bm, 0),
-    projetado: filteredTree.reduce((s, f) => s + f.total_projetado_bm, 0),
-    realizado: filteredTree.reduce((s, f) => s + f.total_realizado_bm, 0),
-  }), [filteredTree]);
+  // KPI totals
+  const valorContrato = contrato?.valor_contratual ?? 0;
+  const totalPrevisto = Number(curvaS?.previsto_acum) || 0;
+  const totalProjetado = Number(curvaS?.projetado_acum) || 0;
+  const totalRealizado = Number(curvaS?.realizado_acum) || 0;
+  const totalGitec = tree.reduce((s, f) => s + f.gitec_aprovado, 0);
 
-  // Chart data from full tree (unfiltered fases)
+  // Chart data
   const chartFases = useMemo(() =>
     tree.map((f) => ({
       nome: f.nome,
-      valor: f.valor,
-      previsto: f.total_previsto_bm,
-      projetado: f.total_projetado_bm,
-      realizado: f.total_realizado_bm,
+      valor: f.valor_total,
+      previsto: 0,
+      projetado: 0,
+      realizado: f.gitec_aprovado,
     })),
   [tree]);
 
-  const hasFilters = faseFilter !== "__all__" || semaforoFilter.length > 0 || saldoOnly || search.trim() !== "";
-
-  const clearFilters = useCallback(() => {
-    setSearch("");
-    setFaseFilter("__all__");
-    setSemaforoFilter([]);
-    setSaldoOnly(false);
-  }, []);
-
-  const toggleSemaforo = useCallback((s: string) => {
-    setSemaforoFilter((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
-    );
-  }, []);
-
-  if (isLoading) {
+  if (ppuLoading) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -254,67 +211,75 @@ export function BmConsolidatedTree() {
     <div className="space-y-4">
       {/* KPI Cards */}
       <ConsolidatedKPIs
-        valor={totals.valor}
-        previsto={totals.previsto}
-        projetado={totals.projetado}
-        realizado={totals.realizado}
+        valor={valorContrato}
+        previsto={totalPrevisto}
+        projetado={totalProjetado}
+        realizado={totalRealizado}
+        gitec={totalGitec}
       />
 
       {/* Charts */}
       <ConsolidatedCharts fases={chartFases} />
 
-      {/* Filters */}
-      <ConsolidatedFilters
-        search={search}
-        onSearchChange={setSearch}
-        fases={faseNames}
-        faseFilter={faseFilter}
-        onFaseChange={setFaseFilter}
-        semaforoFilter={semaforoFilter}
-        onSemaforoToggle={toggleSemaforo}
-        saldoOnly={saldoOnly}
-        onSaldoToggle={() => setSaldoOnly((p) => !p)}
-        onClear={clearFilters}
-        hasFilters={hasFilters}
-      />
+      {/* Search */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar PPU ou descrição..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs"
+          />
+        </div>
+        {search && (
+          <Button variant="ghost" size="sm" onClick={() => setSearch("")} className="h-8 text-xs gap-1">
+            <X className="h-3 w-3" /> Limpar
+          </Button>
+        )}
+        <span className="text-[10px] text-muted-foreground">
+          {ppuItems?.length ?? 0} itens em {tree.length} fases
+        </span>
+      </div>
 
       {/* Tree table */}
       <div className="rounded-md border overflow-auto max-h-[65vh]">
-        <table className="w-full text-sm table-fixed">
+        <table className="w-full text-sm">
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr className="border-b">
-              <th className="text-left px-2 md:px-3 py-2 text-xs font-medium text-muted-foreground">Nome</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Valor</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Prev.</th>
-              <th className="hidden md:table-cell text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[90px]">Proj.</th>
-              <th className="text-right px-1 md:px-2 py-2 text-xs font-medium text-muted-foreground w-[60px] md:w-[90px]">Real.</th>
-              <th className="text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[55px] md:w-[80px]">SCON</th>
-              <th className="hidden md:table-cell text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[50px]">Comp</th>
-              <th className="hidden md:table-cell text-center px-1 py-2 text-xs font-medium text-muted-foreground w-[40px]">Sem</th>
+              <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Nome</th>
+              <th className="text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">Valor Contratual</th>
+              <th className="text-right px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">GITEC Aprovado</th>
+              <th className="text-center px-2 py-2 text-xs font-medium text-muted-foreground w-[100px]">% Avanço</th>
             </tr>
           </thead>
           <tbody>
             {filteredTree.map((fase) => (
-              <TreeRows
-                key={fase.id}
-                node={fase}
-                depth={0}
-                effectiveExpanded={effectiveExpanded}
-                toggle={toggle}
-                onComponentClick={setDetailPpu}
+              <FaseRows
+                key={fase.key}
+                fase={fase}
+                isExpanded={effectiveExpanded.has(fase.key)}
+                toggle={() => toggle(fase.key)}
+                onItemClick={setDetailPpu}
               />
             ))}
           </tbody>
           <tfoot className="sticky bottom-0 bg-primary/10 border-t-2 border-primary/30">
             <tr>
-              <td className="px-2 md:px-3 py-2 text-xs font-bold text-foreground">TOTAL</td>
-              <td className="text-right px-1 md:px-2 py-2 text-xs font-bold">{formatCompact(totals.valor)}</td>
-              <td className="text-right px-1 md:px-2 py-2 text-xs font-bold">{formatCompact(totals.previsto)}</td>
-              <td className="hidden md:table-cell text-right px-2 py-2 text-xs font-bold">{formatCompact(totals.projetado)}</td>
-              <td className="text-right px-1 md:px-2 py-2 text-xs font-bold text-green-700">{formatCompact(totals.realizado)}</td>
-              <td />
-              <td className="hidden md:table-cell" />
-              <td className="hidden md:table-cell" />
+              <td className="px-3 py-2 text-xs font-bold text-foreground">
+                TOTAL ({ppuItems?.length ?? 0} itens)
+              </td>
+              <td className="text-right px-2 py-2 text-xs font-bold">
+                {formatCompact(tree.reduce((s, f) => s + f.valor_total, 0))}
+              </td>
+              <td className="text-right px-2 py-2 text-xs font-bold text-emerald-600">
+                {formatCompact(totalGitec)}
+              </td>
+              <td className="text-center px-2 py-2 text-xs font-bold">
+                {tree.reduce((s, f) => s + f.valor_total, 0) > 0
+                  ? (totalGitec / tree.reduce((s, f) => s + f.valor_total, 0) * 100).toFixed(1) + "%"
+                  : "—"}
+              </td>
             </tr>
           </tfoot>
         </table>
@@ -330,127 +295,93 @@ export function BmConsolidatedTree() {
   );
 }
 
-/* ── Recursive tree row renderer ── */
-function TreeRows({
-  node,
-  depth,
-  effectiveExpanded,
+/* ── Fase row with expandable items ── */
+function FaseRows({
+  fase,
+  isExpanded,
   toggle,
-  onComponentClick,
+  onItemClick,
 }: {
-  node: AggTreeNode;
-  depth: number;
-  effectiveExpanded: Set<string>;
-  toggle: (id: string) => void;
-  onComponentClick: (ppu: string) => void;
+  fase: TreeGroup;
+  isExpanded: boolean;
+  toggle: () => void;
+  onItemClick: (ppu: string) => void;
 }) {
-  const isExpanded = effectiveExpanded.has(node.id);
-  const isAgrupamento = node.nivel === "5 - Agrupamento";
-  const isFase = node.nivel === "3 - Fase";
-  const isSubfase = node.nivel === "4 - Subfase";
-
-  const borderClass = isFase
-    ? "bg-primary/5 border-l-[3px] border-l-primary"
-    : isSubfase
-    ? "border-l-2 border-l-teal-500"
-    : "border-l border-l-muted-foreground/20";
-
-  const indent = depth * 20;
-  const sconPct = isAgrupamento && node.scon_avg_avanco != null
-    ? Math.min(node.scon_avg_avanco * 100, 100)
-    : null;
-
   return (
     <>
+      {/* Fase header row */}
       <tr
-        className={`border-b cursor-pointer hover:bg-accent/30 ${borderClass}`}
-        onClick={() => toggle(node.id)}
+        className="border-b cursor-pointer hover:bg-accent/30 bg-primary/5 border-l-[3px] border-l-primary"
+        onClick={toggle}
       >
-        <td className="px-2 md:px-3 py-1.5 md:py-2">
-          <div className="flex items-start gap-1 md:gap-1.5 min-w-0" style={{ paddingLeft: indent }}>
-            {(node.children.length > 0 || isAgrupamento) && (
-              isExpanded
-                ? <ChevronDown className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                : <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-            )}
-            {isAgrupamento && node.ippu && (
-              <Badge variant="secondary" className="text-[8px] md:text-[9px] font-mono shrink-0 px-1 py-0">
-                {node.ippu}
-              </Badge>
-            )}
-            <span className={`break-words hyphens-auto ${isFase ? "font-bold text-xs md:text-[13px]" : isSubfase ? "font-semibold text-[11px] md:text-xs" : "text-[10px] md:text-[11px]"}`}>
-              {node.nome}
-            </span>
+        <td className="px-3 py-2">
+          <div className="flex items-center gap-1.5">
+            {isExpanded
+              ? <ChevronDown className="h-4 w-4 shrink-0 text-primary" />
+              : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            }
+            <span className="font-bold text-[13px]">{fase.nome}</span>
+            <Badge variant="secondary" className="text-[9px] ml-1">{fase.children.length} itens</Badge>
           </div>
         </td>
-        <td className="text-right px-1 md:px-2 py-1.5 md:py-2 text-[10px] md:text-xs">{formatCompact(node.valor)}</td>
-        <td className="text-right px-1 md:px-2 py-1.5 md:py-2 text-[10px] md:text-xs">{formatCompact(node.total_previsto_bm)}</td>
-        <td className="hidden md:table-cell text-right px-2 py-2 text-xs">{formatCompact(node.total_projetado_bm)}</td>
-        <td className="text-right px-1 md:px-2 py-1.5 md:py-2 text-[10px] md:text-xs text-green-700">{formatCompact(node.total_realizado_bm)}</td>
-        <td className="px-1 md:px-2 py-1.5 md:py-2">
-          {sconPct != null ? (
-            <div className="flex items-center gap-1 justify-center">
-              <Progress
-                value={sconPct}
-                className={`h-2 w-8 md:w-12 ${sconPct >= 100 ? "[&>div]:bg-green-500" : sconPct > 0 ? "[&>div]:bg-amber-500" : ""}`}
-              />
-              <span className="text-[9px] md:text-[10px] w-6 md:w-7 text-right">{sconPct.toFixed(0)}%</span>
+        <td className="text-right px-2 py-2 text-xs font-semibold">{formatCompact(fase.valor_total)}</td>
+        <td className="text-right px-2 py-2 text-xs font-semibold text-emerald-600">
+          {fase.gitec_aprovado > 0 ? formatCompact(fase.gitec_aprovado) : "—"}
+        </td>
+        <td className="px-2 py-2">
+          {fase.avanco > 0 ? (
+            <div className="flex items-center gap-1.5 justify-center">
+              <Progress value={Math.min(fase.avanco, 100)} className="h-2 w-16" />
+              <span className="text-[10px] font-mono text-muted-foreground w-10 text-right">
+                {fase.avanco.toFixed(1)}%
+              </span>
             </div>
           ) : (
-            !isFase && !isSubfase && <span className="text-[10px] text-muted-foreground text-center block">—</span>
+            <span className="text-[10px] text-muted-foreground text-center block">—</span>
           )}
-        </td>
-        <td className="hidden md:table-cell text-center px-2 py-2">
-          {isAgrupamento && node.scon_total ? (
-            <span className="text-[10px] font-mono">{node.scon_total}</span>
-          ) : (
-            !isFase && !isSubfase && <span className="text-[10px] text-muted-foreground">—</span>
-          )}
-        </td>
-        <td className="hidden md:table-cell text-center px-2 py-2">
-          {isAgrupamento && <SemaforoDot s={node.semaforo} />}
         </td>
       </tr>
 
-      {/* Fase/Subfase inline summary */}
-      {isExpanded && (isFase || isSubfase) && node.children.length > 0 && (
-        <tr>
-          <td colSpan={8} className="p-0">
-            <FaseInlineSummary
-              previsto={node.total_previsto_bm}
-              projetado={node.total_projetado_bm}
-              realizado={node.total_realizado_bm}
-              subfases={node.children.map((c) => ({
-                nome: c.nome,
-                previsto: c.total_previsto_bm,
-                projetado: c.total_projetado_bm,
-                realizado: c.total_realizado_bm,
-              }))}
-            />
+      {/* Item rows */}
+      {isExpanded && fase.children.map((item) => (
+        <tr
+          key={item.item_ppu}
+          className="border-b cursor-pointer hover:bg-accent/30 border-l border-l-muted-foreground/20"
+          onClick={() => onItemClick(item.item_ppu)}
+        >
+          <td className="px-3 py-1.5">
+            <div className="flex items-start gap-1.5" style={{ paddingLeft: 24 }}>
+              <Badge variant="secondary" className="text-[8px] font-mono shrink-0 px-1 py-0">
+                {item.item_ppu}
+              </Badge>
+              <span className="text-[11px] break-words">{item.descricao || "—"}</span>
+              {item.disc && (
+                <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 ml-auto">
+                  {item.disc}
+                </Badge>
+              )}
+            </div>
+          </td>
+          <td className="text-right px-2 py-1.5 text-[11px] font-mono">
+            {item.valor_total > 0 ? formatCompact(item.valor_total) : "—"}
+          </td>
+          <td className="text-right px-2 py-1.5 text-[11px] font-mono text-emerald-600">
+            {item.gitec_aprovado > 0 ? formatCompact(item.gitec_aprovado) : "—"}
+          </td>
+          <td className="px-2 py-1.5">
+            {item.avanco > 0 ? (
+              <div className="flex items-center gap-1 justify-center">
+                <Progress value={Math.min(item.avanco, 100)} className="h-1.5 w-12" />
+                <span className="text-[9px] font-mono text-muted-foreground w-10 text-right">
+                  {item.avanco.toFixed(1)}%
+                </span>
+              </div>
+            ) : (
+              <span className="text-[9px] text-muted-foreground text-center block">—</span>
+            )}
           </td>
         </tr>
-      )}
-
-      {/* Children */}
-      {isExpanded && node.children.map((child) => (
-        <TreeRows
-          key={child.id}
-          node={child}
-          depth={depth + 1}
-          effectiveExpanded={effectiveExpanded}
-          toggle={toggle}
-          onComponentClick={onComponentClick}
-        />
       ))}
-
-      {/* Agrupamento detail panel (inline) */}
-      {isExpanded && isAgrupamento && (
-        <tr>
-          <td colSpan={8} className="p-0">
-            <AgrupamentoDetail ippu={node.ippu} onComponentClick={onComponentClick} />
-          </td>
-        </tr>
-      )}
     </>
   );
 }

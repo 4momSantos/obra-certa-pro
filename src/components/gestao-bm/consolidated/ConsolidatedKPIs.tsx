@@ -7,9 +7,10 @@ interface ConsolidatedKPIsProps {
   previsto: number;
   projetado: number;
   realizado: number;
+  gitec?: number;
 }
 
-export function ConsolidatedKPIs({ valor, previsto, projetado, realizado }: ConsolidatedKPIsProps) {
+export function ConsolidatedKPIs({ valor, previsto, projetado, realizado, gitec }: ConsolidatedKPIsProps) {
   const saldo = valor - realizado;
   const avanco = valor > 0 ? (realizado / valor) * 100 : 0;
   const aderencia = previsto > 0 ? (realizado / previsto) * 100 : 0;
@@ -17,46 +18,48 @@ export function ConsolidatedKPIs({ valor, previsto, projetado, realizado }: Cons
   const cards = [
     {
       label: "Valor Contrato",
-      value: formatCompact(valor),
+      value: valor > 0 ? formatCompact(valor) : "—",
       icon: DollarSign,
       color: "text-foreground",
       bg: "bg-muted/50",
     },
     {
       label: "Total Previsto",
-      value: formatCompact(previsto),
+      value: previsto > 0 ? formatCompact(previsto) : "—",
+      subtitle: previsto === 0 ? "Sem dados de cronograma" : undefined,
       icon: Target,
       color: "text-blue-600",
       bg: "bg-blue-500/10",
     },
     {
-      label: "Total Projetado",
-      value: formatCompact(projetado),
-      icon: BarChart3,
-      color: "text-amber-600",
-      bg: "bg-amber-500/10",
-    },
-    {
       label: "Total Realizado",
-      value: formatCompact(realizado),
+      value: realizado > 0 ? formatCompact(realizado) : "—",
+      subtitle: realizado === 0 ? "Sem dados de cronograma" : undefined,
       icon: CheckCircle2,
       color: "text-green-600",
       bg: "bg-green-500/10",
     },
     {
+      label: "GITEC Aprovado",
+      value: (gitec ?? 0) > 0 ? formatCompact(gitec!) : "—",
+      icon: BarChart3,
+      color: "text-emerald-600",
+      bg: "bg-emerald-500/10",
+    },
+    {
       label: "Saldo",
-      value: formatCompact(saldo),
+      value: valor > 0 ? formatCompact(saldo) : "—",
       icon: saldo > 0 ? Wallet : AlertTriangle,
       color: saldo > 0 ? "text-foreground" : "text-destructive",
       bg: saldo > 0 ? "bg-muted/50" : "bg-destructive/10",
     },
     {
       label: "% Avanço",
-      value: `${avanco.toFixed(1)}%`,
+      value: valor > 0 && realizado > 0 ? `${avanco.toFixed(1)}%` : "—",
       icon: avanco >= 50 ? TrendingUp : TrendingDown,
       color: avanco >= 80 ? "text-green-600" : avanco >= 50 ? "text-amber-600" : "text-destructive",
       bg: avanco >= 80 ? "bg-green-500/10" : avanco >= 50 ? "bg-amber-500/10" : "bg-destructive/10",
-      subtitle: `Aderência: ${aderencia.toFixed(1)}%`,
+      subtitle: aderencia > 0 ? `Aderência: ${aderencia.toFixed(1)}%` : undefined,
     },
   ];
 
