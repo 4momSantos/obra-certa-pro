@@ -10,7 +10,6 @@ import { BmFiscalAnalysis } from "@/components/gestao-bm/BmFiscalAnalysis";
 import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
 import { TarefasTab } from "@/components/gestao-bm/TarefasTab";
-import { allBMs } from "@/lib/bm-utils";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
 import { LiveBadge } from "@/components/shared/LiveBadge";
 
@@ -20,12 +19,11 @@ const RT_CONFIGS = [
 ];
 
 export default function GestaoBM() {
-  const bms = allBMs();
   const [selectedBm, setSelectedBm] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [detailPpu, setDetailPpu] = useState<string | null>(null);
 
-  const effectiveBm = selectedBm ?? bms[0]?.name ?? "BM-01";
+  const effectiveBm = selectedBm ?? "BM-10";
   const { connected } = useRealtimeInvalidation(RT_CONFIGS);
 
   const handleSelectBm = (bm: string) => {
