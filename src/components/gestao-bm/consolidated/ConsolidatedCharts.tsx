@@ -33,20 +33,21 @@ const COLORS = [
 export function ConsolidatedCharts({ fases }: ConsolidatedChartsProps) {
   const [open, setOpen] = useState(false);
 
+  // Donut: GITEC aprovado por fase (realizado field holds gitec in this context)
   const donutData = fases
     .filter((f) => f.realizado > 0)
     .sort((a, b) => b.realizado - a.realizado)
     .slice(0, 8)
     .map((f) => ({ name: f.nome, value: f.realizado }));
 
+  // Bar: Valor Contratual vs GITEC Aprovado
   const barData = fases
-    .sort((a, b) => b.previsto - a.previsto)
+    .sort((a, b) => b.valor - a.valor)
     .slice(0, 10)
     .map((f) => ({
       name: f.nome.length > 20 ? f.nome.slice(0, 18) + "…" : f.nome,
-      Previsto: f.previsto,
-      Projetado: f.projetado,
-      Realizado: f.realizado,
+      "Valor Contratual": f.valor,
+      "GITEC Aprovado": f.realizado,
     }));
 
   if (fases.length === 0) return null;
@@ -67,47 +68,49 @@ export function ConsolidatedCharts({ fases }: ConsolidatedChartsProps) {
       {open && (
         <div className="grid md:grid-cols-2 gap-4 mt-2">
           {/* Donut */}
-          <Card>
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Realizado por Fase</CardTitle>
-            </CardHeader>
-            <CardContent className="px-2 pb-4">
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={donutData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={85}
-                    dataKey="value"
-                    paddingAngle={2}
-                  >
-                    {donutData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v: number) => formatCompact(v)}
-                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 px-2">
-                {donutData.map((d, i) => (
-                  <div key={d.name} className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-                    <span className="text-[9px] text-muted-foreground">{d.name}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {donutData.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">GITEC Aprovado por Fase</CardTitle>
+              </CardHeader>
+              <CardContent className="px-2 pb-4">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      dataKey="value"
+                      paddingAngle={2}
+                    >
+                      {donutData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v: number) => formatCompact(v)}
+                      contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 px-2">
+                  {donutData.map((d, i) => (
+                    <div key={d.name} className="flex items-center gap-1">
+                      <div className="h-2 w-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                      <span className="text-[9px] text-muted-foreground">{d.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Bar chart */}
           <Card>
             <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Previsto × Projetado × Realizado</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">Valor Contratual × GITEC Aprovado</CardTitle>
             </CardHeader>
             <CardContent className="px-2 pb-4">
               <ResponsiveContainer width="100%" height={250}>
@@ -117,9 +120,8 @@ export function ConsolidatedCharts({ fases }: ConsolidatedChartsProps) {
                   <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 9 }} />
                   <Tooltip formatter={(v: number) => formatCompact(v)} contentStyle={{ fontSize: 11 }} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="Previsto" fill="hsl(var(--chart-1))" radius={[0, 2, 2, 0]} barSize={8} />
-                  <Bar dataKey="Projetado" fill="hsl(var(--chart-2))" radius={[0, 2, 2, 0]} barSize={8} />
-                  <Bar dataKey="Realizado" fill="hsl(var(--chart-3))" radius={[0, 2, 2, 0]} barSize={8} />
+                  <Bar dataKey="Valor Contratual" fill="hsl(217, 91%, 60%)" radius={[0, 2, 2, 0]} barSize={10} />
+                  <Bar dataKey="GITEC Aprovado" fill="hsl(142, 71%, 45%)" radius={[0, 2, 2, 0]} barSize={10} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
