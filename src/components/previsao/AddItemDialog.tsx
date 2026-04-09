@@ -61,6 +61,10 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [discFilter, setDiscFilter] = useState("all");
+  const [faseFilter, setFaseFilter] = useState("all");
+  const [subfaseFilter, setSubfaseFilter] = useState("all");
+  const [agrupFilter, setAgrupFilter] = useState("all");
+  const [valorMinFilter, setValorMinFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [itemData, setItemData] = useState<Map<string, SelectedItemData>>(new Map());
 
