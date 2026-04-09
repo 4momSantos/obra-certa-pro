@@ -38,7 +38,8 @@ export function useColumnMapping(source: string) {
 
 export function useSaveColumnMapping() {
   const qc = useQueryClient();
-  const { contratoId } = useContrato();
+  const { contratoAtivo } = useContrato();
+  const contratoId = contratoAtivo?.id ?? null;
 
   return useMutation({
     mutationFn: async (input: {
