@@ -256,6 +256,19 @@ export function useConfigUpload() {
 
       if (replaceExisting) {
         onProgress("Removendo dados anteriores...", 5);
+
+        // CRITICAL: Delete ALL rows from the target table, not just same-source batches.
+        // This prevents orphan rows from other sources (e.g. GITEC-seeded ppu_items)
+        // from persisting when the real PPU is imported.
+        const { error: delErr } = await supabase
+          .from(card.table)
+          .delete()
+          .neq("id", "00000000-0000-0000-0000-000000000000");
+        if (delErr) {
+          console.warn(`[Config] Could not clear ${card.table}:`, delErr.message);
+        }
+
+        // Also clean up old import_batches for this source
         const { data: oldBatches } = await supabase
           .from("import_batches")
           .select("id")

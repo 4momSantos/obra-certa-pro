@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import { buildGitecToPpuLookup, aggregateGitecByPpu } from "@/lib/ppu-match";
 
 const fmtBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
@@ -68,12 +69,18 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("ppu_items")
-        .select("item_ppu, descricao, fase, disc, valor_total")
+        .select("item_ppu, item_gitec, descricao, fase, disc, valor_total")
         .order("item_ppu");
       return data ?? [];
     },
     staleTime: 300_000,
   });
+
+  // Build dual-match lookup
+  const ppuLookup = useMemo(
+    () => (ppuItems ? buildGitecToPpuLookup(ppuItems) : null),
+    [ppuItems]
+  );
 
   // 3. GITEC in BM period
   const { data: gitecBmData } = useQuery({
@@ -127,16 +134,30 @@ export function BmPpuTable({ bmName, statusFilter, onRowClick }: Props) {
 
   // Aggregate GITEC by iPPU
   const gitecByIppu = useMemo(() => {
-    const bmMap: Record<string, number> = {};
-    for (const e of gitecBmData ?? []) {
-      if (e.ippu) bmMap[e.ippu] = (bmMap[e.ippu] ?? 0) + (e.valor ?? 0);
+    if (!ppuLookup) {
+      // Fallback: direct match only
+      const bmMap: Record<string, number> = {};
+      for (const e of gitecBmData ?? []) {
+        if (e.ippu) bmMap[e.ippu] = (bmMap[e.ippu] ?? 0) + (e.valor ?? 0);
+      }
+      const acumMap: Record<string, number> = {};
+      for (const e of gitecAcumData ?? []) {
+        if (e.ippu) acumMap[e.ippu] = (acumMap[e.ippu] ?? 0) + (e.valor ?? 0);
+      }
+      return { bmMap, acumMap };
     }
-    const acumMap: Record<string, number> = {};
-    for (const e of gitecAcumData ?? []) {
-      if (e.ippu) acumMap[e.ippu] = (acumMap[e.ippu] ?? 0) + (e.valor ?? 0);
-    }
-    return { bmMap, acumMap };
-  }, [gitecBmData, gitecAcumData]);
+
+    // Use dual match
+    const bmAgg = aggregateGitecByPpu(
+      (gitecBmData ?? []).map((e) => ({ ippu: e.ippu, valor: e.valor })),
+      ppuLookup
+    );
+    const acumAgg = aggregateGitecByPpu(
+      (gitecAcumData ?? []).map((e) => ({ ippu: e.ippu, valor: e.valor })),
+      ppuLookup
+    );
+    return { bmMap: bmAgg.byPpu, acumMap: acumAgg.byPpu };
+  }, [gitecBmData, gitecAcumData, ppuLookup]);
 
   const rows: PpuRow[] = useMemo(() => {
     return (ppuItems ?? []).map((p) => {
