@@ -10,7 +10,7 @@ import { BmFiscalAnalysis } from "@/components/gestao-bm/BmFiscalAnalysis";
 import { BmConsolidatedTree } from "@/components/gestao-bm/BmConsolidatedTree";
 import { BMStatusBanner } from "@/components/gestao-bm/BMStatusBanner";
 import { TarefasTab } from "@/components/gestao-bm/TarefasTab";
-import { allBMs } from "@/lib/bm-utils";
+import { bmRange } from "@/lib/bm-utils";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
 import { LiveBadge } from "@/components/shared/LiveBadge";
 
