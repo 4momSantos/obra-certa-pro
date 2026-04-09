@@ -274,7 +274,18 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
             onSearch={setSearch}
             discFilter={discFilter}
             onDiscFilter={setDiscFilter}
+            faseFilter={faseFilter}
+            onFaseFilter={v => { setFaseFilter(v); setSubfaseFilter("all"); }}
+            subfaseFilter={subfaseFilter}
+            onSubfaseFilter={setSubfaseFilter}
+            agrupFilter={agrupFilter}
+            onAgrupFilter={setAgrupFilter}
+            valorMinFilter={valorMinFilter}
+            onValorMinFilter={setValorMinFilter}
             disciplinas={disciplinas}
+            fases={fases}
+            subfases={subfases}
+            agrupamentos={agrupamentos}
             sconMap={sconMap}
             classifMap={classifMap}
           />
