@@ -1,51 +1,18 @@
 
 
-# Fix: Prevent PPU duplication on re-import
+# Fix: Scrollbar visibility in ColumnMapperDialog
 
-## Current state
-- `ppu_items` has 883 rows (correct, orphans already cleaned)
-- But re-importing will duplicate again because:
-  1. The "Write via batch" RLS policy blocks DELETE of rows from other batches
-  2. The code does `console.warn` instead of `throw` when DELETE fails
+## Problem
+The mapping table uses Radix `ScrollArea` which doesn't reliably show scrollbars, making it impossible to scroll through all PPU fields.
 
-## Changes needed
+## Solution
+Replace `ScrollArea` with a native `div` using `overflow-y-auto` and make table headers sticky — matching the project's established scroll pattern.
 
-### 1. Database migration — Add DELETE policies
-Add permissive DELETE policies on all 4 config tables so any authenticated user can clear them during re-import:
+### File: `src/components/config/ColumnMapperDialog.tsx`
 
-```sql
-CREATE POLICY "delete_config_auth" ON ppu_items
-  FOR DELETE TO authenticated USING (true);
-CREATE POLICY "delete_config_auth" ON classificacao_ppu
-  FOR DELETE TO authenticated USING (true);
-CREATE POLICY "delete_config_auth" ON eac_items
-  FOR DELETE TO authenticated USING (true);
-CREATE POLICY "delete_config_auth" ON criterio_medicao
-  FOR DELETE TO authenticated USING (true);
-```
+1. **Mapping table (line 128)**: Replace `<ScrollArea className="max-h-[300px] ...">` with `<div className="max-h-[300px] overflow-y-auto border rounded-md">`. Add `sticky top-0 z-10 bg-background` to the `TableHeader`.
 
-### 2. `src/hooks/useConfig.ts` — Throw on delete failure
-Line 267-269: Change `console.warn` to `throw` so insertion is blocked if cleanup fails:
+2. **Preview table (line ~185)**: Same treatment — replace `ScrollArea` with native `div overflow-y-auto` and sticky header.
 
-```typescript
-// Before (silent failure → duplicates)
-if (delErr) {
-  console.warn(`[Config] Could not clear ${card.table}:`, delErr.message);
-}
-
-// After (hard fail → no duplicates)
-if (delErr) {
-  throw new Error(`Falha ao limpar ${card.table}: ${delErr.message}`);
-}
-```
-
-## Files
-| File | Change |
-|---|---|
-| Migration SQL | Add DELETE policy on 4 config tables |
-| `src/hooks/useConfig.ts` | `console.warn` → `throw` on line 268 |
-
-## Result
-- Re-importing PPU with "Substituir existentes" will correctly delete all 883 rows before inserting new ones
-- If delete fails for any reason, the user sees an error and no data is inserted (no duplication)
+3. Remove unused `ScrollArea` import.
 
