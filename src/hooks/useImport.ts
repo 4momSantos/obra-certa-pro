@@ -62,6 +62,15 @@ function dateVal(v: unknown): string | null {
   return s.slice(0, 10);
 }
 
+/** Normalize ItemWBS: add "B-" prefix if missing (RNEST convention) */
+function normalizeItemWBS(wbs: string): string {
+  if (!wbs) return "";
+  const s = wbs.trim();
+  if (/^[A-Z]-/.test(s)) return s;
+  if (/^\d/.test(s)) return "B-" + s;
+  return s;
+}
+
 /** Find column index by fuzzy-matching header names */
 function normalizeHeader(value: string): string {
   return str(value)
@@ -683,7 +692,7 @@ export function parseSconFile(file: File): Promise<{ rows: ParsedSconRow[]; warn
             classe: str(cell(r, cClasse)),
             disciplina: str(cell(r, cDisc)),
             tipo: str(cell(r, cTipo)),
-            item_wbs,
+            item_wbs: normalizeItemWBS(item_wbs),
             tag,
             tag_desc: str(cell(r, cTagDesc)),
             qtde_etapa: num(cell(r, cQtdEtapa)),
@@ -906,6 +915,11 @@ export function parseSconProgramacaoFile(file: File): Promise<{ rows: ParsedScon
           const row: Record<string, string | number | null> = {};
           for (const { colIdx, def } of colMap) {
             row[def.field] = parseSconProgCellValue(cell(r, colIdx), def.type);
+          }
+
+          // Normalize item_wbs field
+          if (row.item_wbs && typeof row.item_wbs === "string") {
+            row.item_wbs = normalizeItemWBS(row.item_wbs);
           }
 
           rows.push(row as unknown as ParsedSconProgRow);
