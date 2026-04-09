@@ -3081,19 +3081,13 @@ export type Database = {
           avg_aging_dias: number | null
           contrato_id: string | null
           fiscal_responsavel: string | null
-          total_eventos: number | null
+          pendentes: number | null
+          total: number | null
           valor_aprovado: number | null
+          valor_pendente: number | null
           valor_total: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "rel_eventos_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: false
-            referencedRelation: "contratos"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vw_gitec_por_ppu: {
         Row: {
