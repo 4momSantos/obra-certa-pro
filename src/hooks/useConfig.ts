@@ -265,7 +265,7 @@ export function useConfigUpload() {
           .delete()
           .neq("id", "00000000-0000-0000-0000-000000000000");
         if (delErr) {
-          console.warn(`[Config] Could not clear ${card.table}:`, delErr.message);
+          throw new Error(`Falha ao limpar ${card.table}: ${delErr.message}`);
         }
 
         // Also clean up old import_batches for this source
