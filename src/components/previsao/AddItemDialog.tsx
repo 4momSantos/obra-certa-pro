@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, ArrowRight, ArrowLeft, CheckCircle, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, CheckCircle, AlertTriangle, X } from "lucide-react";
 import { formatCompact } from "@/lib/format";
 import { useSaldoPPU } from "@/hooks/useAcompanhamento";
 
@@ -23,6 +23,7 @@ interface PPUItem {
   descricao: string;
   fase: string;
   subfase: string;
+  agrupamento: string;
   disc: string;
   valor_total: number;
   preco_unit: number;
@@ -61,6 +62,10 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [discFilter, setDiscFilter] = useState("all");
+  const [faseFilter, setFaseFilter] = useState("all");
+  const [subfaseFilter, setSubfaseFilter] = useState("all");
+  const [agrupFilter, setAgrupFilter] = useState("all");
+  const [valorMinFilter, setValorMinFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [itemData, setItemData] = useState<Map<string, SelectedItemData>>(new Map());
 
@@ -79,12 +84,25 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
         return (cl?.disciplina || p.disc || "") === discFilter;
       });
     }
+    if (faseFilter !== "all") {
+      items = items.filter(p => (p.fase || "") === faseFilter);
+    }
+    if (subfaseFilter !== "all") {
+      items = items.filter(p => (p.subfase || "") === subfaseFilter);
+    }
+    if (agrupFilter !== "all") {
+      items = items.filter(p => (p.agrupamento || "") === agrupFilter);
+    }
+    if (valorMinFilter) {
+      const min = Number(valorMinFilter) || 0;
+      items = items.filter(p => (Number(p.valor_total) || 0) >= min);
+    }
     items.sort((a, b) => (Number(b.valor_total) || 0) - (Number(a.valor_total) || 0));
     return {
       available: items.slice(0, 200),
       totalFiltered: items.length
     };
-  }, [ppuItems, search, discFilter, classifMap, existingIppus]);
+  }, [ppuItems, search, discFilter, faseFilter, subfaseFilter, agrupFilter, valorMinFilter, classifMap, existingIppus]);
 
   const disciplinas = useMemo(() => {
     const set = new Set<string>();
@@ -94,6 +112,13 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
     });
     return [...set].sort();
   }, [ppuItems, classifMap]);
+
+  const fases = useMemo(() => [...new Set(ppuItems.map(p => p.fase).filter(Boolean))].sort(), [ppuItems]);
+  const subfases = useMemo(() => {
+    const items = faseFilter !== "all" ? ppuItems.filter(p => p.fase === faseFilter) : ppuItems;
+    return [...new Set(items.map(p => p.subfase).filter(Boolean))].sort();
+  }, [ppuItems, faseFilter]);
+  const agrupamentos = useMemo(() => [...new Set(ppuItems.map(p => p.agrupamento).filter(Boolean))].sort(), [ppuItems]);
 
   const toggleItem = useCallback((ippu: string) => {
     setSelected(prev => {
@@ -215,6 +240,10 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
     setStep(1);
     setSearch("");
     setDiscFilter("all");
+    setFaseFilter("all");
+    setSubfaseFilter("all");
+    setAgrupFilter("all");
+    setValorMinFilter("");
     setSelected(new Set());
     setItemData(new Map());
     onClose();
@@ -245,7 +274,18 @@ export function AddItemDialog({ open, onClose, bmName, ppuItems, existingIppus, 
             onSearch={setSearch}
             discFilter={discFilter}
             onDiscFilter={setDiscFilter}
+            faseFilter={faseFilter}
+            onFaseFilter={v => { setFaseFilter(v); setSubfaseFilter("all"); }}
+            subfaseFilter={subfaseFilter}
+            onSubfaseFilter={setSubfaseFilter}
+            agrupFilter={agrupFilter}
+            onAgrupFilter={setAgrupFilter}
+            valorMinFilter={valorMinFilter}
+            onValorMinFilter={setValorMinFilter}
             disciplinas={disciplinas}
+            fases={fases}
+            subfases={subfases}
+            agrupamentos={agrupamentos}
             sconMap={sconMap}
             classifMap={classifMap}
           />
@@ -310,7 +350,9 @@ function StepIndicator({ n, active, done, label }: { n: number; active: boolean;
 // ── Step 1: Select items ───────────────────────────────────────
 function Step1({
   available, totalFiltered, existingIppus, selected, onToggle, search, onSearch,
-  discFilter, onDiscFilter, disciplinas, sconMap, classifMap,
+  discFilter, onDiscFilter, faseFilter, onFaseFilter, subfaseFilter, onSubfaseFilter,
+  agrupFilter, onAgrupFilter, valorMinFilter, onValorMinFilter,
+  disciplinas, fases, subfases, agrupamentos, sconMap, classifMap,
 }: {
   available: PPUItem[];
   totalFiltered: number;
@@ -321,11 +363,24 @@ function Step1({
   onSearch: (v: string) => void;
   discFilter: string;
   onDiscFilter: (v: string) => void;
+  faseFilter: string;
+  onFaseFilter: (v: string) => void;
+  subfaseFilter: string;
+  onSubfaseFilter: (v: string) => void;
+  agrupFilter: string;
+  onAgrupFilter: (v: string) => void;
+  valorMinFilter: string;
+  onValorMinFilter: (v: string) => void;
   disciplinas: string[];
+  fases: string[];
+  subfases: string[];
+  agrupamentos: string[];
   sconMap?: Map<string, number>;
   classifMap?: Map<string, { disciplina: string }>;
 }) {
-  if (available.length === 0 && !search && discFilter === "all") {
+  const hasFilters = search || discFilter !== "all" || faseFilter !== "all" || subfaseFilter !== "all" || agrupFilter !== "all" || valorMinFilter;
+
+  if (available.length === 0 && !hasFilters) {
     return (
       <div className="flex-1 flex items-center justify-center py-12 text-center">
         <div>
@@ -336,9 +391,13 @@ function Step1({
     );
   }
 
+  const clearAll = () => {
+    onSearch(""); onDiscFilter("all"); onFaseFilter("all"); onSubfaseFilter("all"); onAgrupFilter("all"); onValorMinFilter("");
+  };
+
   return (
-    <div className="flex-1 flex flex-col gap-3 min-h-0">
-      {/* Filters */}
+    <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden">
+      {/* Row 1: Search + value min */}
       <div className="flex gap-2">
         <Input
           placeholder="Buscar iPPU ou descrição..."
@@ -346,88 +405,124 @@ function Step1({
           onChange={e => onSearch(e.target.value)}
           className="h-8 text-xs flex-1"
         />
+        <Input
+          placeholder="Valor mín. (R$)"
+          type="number"
+          value={valorMinFilter}
+          onChange={e => onValorMinFilter(e.target.value)}
+          className="h-8 text-xs w-32"
+        />
+      </div>
+      {/* Row 2: Dropdown filters */}
+      <div className="flex gap-2 flex-wrap">
         <Select value={discFilter} onValueChange={onDiscFilter}>
-          <SelectTrigger className="w-40 h-8 text-xs">
-            <SelectValue placeholder="Disciplina" />
-          </SelectTrigger>
+          <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="Disciplina" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas Disciplinas</SelectItem>
+            <SelectItem value="all">Todas Disc.</SelectItem>
             {disciplinas.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={faseFilter} onValueChange={onFaseFilter}>
+          <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="Fase" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas Fases</SelectItem>
+            {fases.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={subfaseFilter} onValueChange={onSubfaseFilter}>
+          <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="Subfase" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas Subfases</SelectItem>
+            {subfases.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={agrupFilter} onValueChange={onAgrupFilter}>
+          <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="Agrupamento" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos Agrup.</SelectItem>
+            {agrupamentos.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-xs gap-1 px-2">
+            <X className="h-3 w-3" /> Limpar
+          </Button>
+        )}
       </div>
 
       {totalFiltered > 200 && (
-        <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-md border border-amber-200 dark:border-amber-900/40 font-medium">
-          Mostrando os 200 itens de maior valor dos {totalFiltered} encontrados. Refine a busca ou o filtro de disciplina.
+        <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-3 py-1.5 rounded-md border border-amber-200 dark:border-amber-900/40 font-medium">
+          Mostrando os 200 de maior valor ({totalFiltered} encontrados). Refine os filtros.
         </div>
       )}
 
-      {/* Table */}
-      <ScrollArea className="flex-1 border rounded-lg max-h-[400px]">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10" />
-              <TableHead className="text-xs w-28">iPPU</TableHead>
-              <TableHead className="text-xs">Descrição</TableHead>
-              <TableHead className="text-xs w-24">Disciplina</TableHead>
-              <TableHead className="text-xs text-right w-24">Valor Total</TableHead>
-              <TableHead className="text-xs w-20">SCON %</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {available.map(ppu => {
-              const normalizedIppu = String(ppu.item_ppu).replace(/_/g, "-");
-              const isExisting = existingIppus.has(normalizedIppu);
-              const isChecked = selected.has(ppu.item_ppu);
-              const scon = sconMap?.get(normalizedIppu) || 0;
-              const disc = classifMap?.get(ppu.item_ppu)?.disciplina || ppu.disc || "";
+      {/* Table with proper scroll */}
+      <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+        <ScrollArea className="h-full max-h-[340px]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10 sticky top-0 bg-background z-10" />
+                <TableHead className="text-xs w-28 sticky top-0 bg-background z-10">iPPU</TableHead>
+                <TableHead className="text-xs sticky top-0 bg-background z-10">Descrição</TableHead>
+                <TableHead className="text-xs w-24 sticky top-0 bg-background z-10">Disciplina</TableHead>
+                <TableHead className="text-xs text-right w-24 sticky top-0 bg-background z-10">Valor Total</TableHead>
+                <TableHead className="text-xs w-20 sticky top-0 bg-background z-10">SCON %</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {available.map(ppu => {
+                const normalizedIppu = String(ppu.item_ppu).replace(/_/g, "-");
+                const isExisting = existingIppus.has(normalizedIppu);
+                const isChecked = selected.has(ppu.item_ppu);
+                const scon = sconMap?.get(normalizedIppu) || 0;
+                const disc = classifMap?.get(ppu.item_ppu)?.disciplina || ppu.disc || "";
 
-              return (
-                <TableRow
-                  key={ppu.item_ppu}
-                  className={isExisting ? "opacity-50" : isChecked ? "bg-primary/5" : "cursor-pointer hover:bg-muted/50"}
-                  onClick={() => !isExisting && onToggle(ppu.item_ppu)}
-                >
-                  <TableCell className="pr-0">
-                    {isExisting ? (
-                      <Badge variant="outline" className="text-[9px] border-0 bg-muted text-muted-foreground">Já add.</Badge>
-                    ) : (
-                      <Checkbox
-                        checked={isChecked}
-                        onCheckedChange={() => onToggle(ppu.item_ppu)}
-                        onClick={e => e.stopPropagation()}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono text-[11px] text-blue-700 dark:text-blue-300">{ppu.item_ppu}</span>
-                  </TableCell>
-                  <TableCell className="text-xs max-w-[200px] truncate">{ppu.descricao || "—"}</TableCell>
-                  <TableCell>
-                    {disc ? <Badge variant="outline" className="text-[10px]">{disc}</Badge> : "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-right tabular-nums">{formatCompact(Number(ppu.valor_total) || 0)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Progress value={scon} className="h-1.5 w-10" />
-                      <span className="text-[10px] tabular-nums text-muted-foreground">{scon.toFixed(0)}%</span>
-                    </div>
+                return (
+                  <TableRow
+                    key={ppu.item_ppu}
+                    className={isExisting ? "opacity-50" : isChecked ? "bg-primary/5" : "cursor-pointer hover:bg-muted/50"}
+                    onClick={() => !isExisting && onToggle(ppu.item_ppu)}
+                  >
+                    <TableCell className="pr-0">
+                      {isExisting ? (
+                        <Badge variant="outline" className="text-[9px] border-0 bg-muted text-muted-foreground">Já add.</Badge>
+                      ) : (
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={() => onToggle(ppu.item_ppu)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-[11px] text-primary">{ppu.item_ppu}</span>
+                    </TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{ppu.descricao || "—"}</TableCell>
+                    <TableCell>
+                      {disc ? <Badge variant="outline" className="text-[10px]">{disc}</Badge> : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs text-right tabular-nums">{formatCompact(Number(ppu.valor_total) || 0)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Progress value={scon} className="h-1.5 w-10" />
+                        <span className="text-[10px] tabular-nums text-muted-foreground">{scon.toFixed(0)}%</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {available.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                    Nenhum item encontrado com os filtros atuais.
                   </TableCell>
                 </TableRow>
-              );
-            })}
-            {available.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                  Nenhum item encontrado com os filtros atuais.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </div>
     </div>
   );
 }
