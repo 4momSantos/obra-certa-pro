@@ -45,11 +45,18 @@ export function useCobertura() {
     queryKey: ["cobertura_scon"],
     queryFn: async () => {
       // Get cronograma tree items (PPU level)
-      const { data: tree, error: treeErr } = await supabase
-        .from("vw_cronograma_tree_completo")
-        .select("ippu, nome, valor, total_realizado_bm")
-        .not("ippu", "is", null);
+      const { data: rawTree, error: treeErr } = await supabase
+        .from("ppu_items")
+        .select("item_ppu, agrupamento, valor_total, valor_medido")
+        .not("item_ppu", "is", null);
       if (treeErr) throw treeErr;
+
+      const tree = (rawTree ?? []).map((r: any) => ({
+        ippu: r.item_ppu,
+        nome: r.agrupamento ?? r.item_ppu,
+        valor: r.valor_total ?? 0,
+        total_realizado_bm: r.valor_medido ?? 0,
+      }));
 
       // Get SCON coverage per PPU
       const { data: scon, error: sconErr } = await supabase

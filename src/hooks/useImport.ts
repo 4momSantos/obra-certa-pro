@@ -1190,15 +1190,17 @@ export function useExistingCounts() {
     queryKey: ["import-existing-counts", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const [s, r, c] = await Promise.all([
+      const [s, r, c, sp] = await Promise.all([
         supabase.from("sigem_documents").select("id", { count: "exact", head: true }),
         supabase.from("gitec_events").select("id", { count: "exact", head: true }),
         supabase.from("scon_components").select("id", { count: "exact", head: true }),
+        supabase.from("scon_programacao" as any).select("id", { count: "exact", head: true }),
       ]);
       return {
         sigem: s.count ?? 0,
         relEvento: r.count ?? 0,
         scon: c.count ?? 0,
+        sconProg: sp.count ?? 0,
       };
     },
   });
