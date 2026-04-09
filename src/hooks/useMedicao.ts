@@ -73,7 +73,7 @@ export function useMedicaoData() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const [ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal, gitecCount] = await Promise.all([
+      const [ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal, gitecCount, contratoRow] = await Promise.all([
         fetchAll<any>("ppu_items", "item_ppu,descricao,valor_total,valor_medido"),
         fetchAll<any>("classificacao_ppu", "item_ppu,item_gitec,fase,subfase,agrupamento,disciplina"),
         fetchAll<any>("eac_items", "ppu,previsto,realizado,valor_financeiro"),
@@ -82,15 +82,16 @@ export function useMedicaoData() {
         fetchAll<any>("vw_gitec_por_ppu"),
         supabase.from("sigem_documents" as any).select("*", { count: "exact", head: true }).then(r => r.count || 0),
         supabase.from("gitec_events").select("*", { count: "exact", head: true }).then(r => r.count || 0),
+        supabase.from("contratos").select("valor_contratual").limit(1).single().then(r => r.data),
       ]);
-      return { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal, gitecCount };
+      return { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal, gitecCount, contratoRow };
     },
   });
 
   const result = useMemo(() => {
     if (!query.data) return { items: [] as MedicaoPPU[], kpis: null as MedicaoKPIs | null, filters: { fases: [] as string[], subfases: [] as string[], disciplinas: [] as string[] } };
 
-    const { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal } = query.data;
+    const { ppuRaw, classifRaw, eacRaw, sconView, sigemView, gitecView, sigemTotal, contratoRow } = query.data;
 
     // Build lookup maps
     const classifMap = new Map<string, any>();
@@ -191,13 +192,15 @@ export function useMedicaoData() {
       };
     });
 
+    const valorContratual = contratoRow?.valor_contratual ?? totalContrato;
+
     const kpis: MedicaoKPIs = {
-      contrato: totalContrato,
+      contrato: valorContratual,
       previsto: totalPrevisto,
       executadoScon: totalExecScon,
       postadoSigem: totalPostado > 0 ? totalPostado : (sigemTotal as number),
       medidoGitec: totalMedido,
-      saldo: totalContrato - totalMedido,
+      saldo: valorContratual - totalMedido,
     };
 
     return {
