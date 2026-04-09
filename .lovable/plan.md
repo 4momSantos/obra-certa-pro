@@ -1,27 +1,26 @@
 
 
-# Fix: Scrollbar na tabela do AddItemDialog
+# Fix: BmSelector não reconhece BMs fechados
 
-## Problema
-O `ScrollArea` na tabela de seleção de itens PPU tem `max-h-[340px]`, mas o Radix ScrollArea precisa que o **Viewport** tenha altura restrita para ativar o scroll. O `h-full` no Viewport herda do Root, mas o Root com `max-h` nem sempre propaga corretamente a altura fixa necessária.
+## Diagnóstico
+
+A tabela `bm_periodos` está **correta** — BM-01 a BM-09 com status `fechado`, BM-10 `aberto`, BM-11+ `futuro`. Os valores financeiros também estão preenchidos (exceto BM-09 `valor_medido = 0`).
+
+O problema é que o `BmSelector` usa a view `vw_ultimo_bm_realizado` que retorna `null`, fazendo com que:
+- `ultimoBm = 0` → `currentBm = 1` → auto-seleciona BM-01
+- `isDone = bm.number <= 0` → nenhum BM aparece como fechado (todos cinza)
+
+O `GestaoBM.tsx` também tem fallback para `bms[0]` (BM-01).
 
 ## Solução
-Substituir o `ScrollArea` do Radix por um `div` com `overflow-y-auto` nativo, que funciona de forma mais confiável com tabelas. Aumentar também a altura máxima para aproveitar melhor o espaço do dialog.
 
-### Arquivo: `src/components/previsao/AddItemDialog.tsx`
-- **Linha 460-524**: Trocar o wrapper `ScrollArea` por um `div` com `overflow-y-auto` e `max-h-[50vh]`
-- Manter os headers sticky como estão
+### 1. `BmSelector.tsx` — Usar `bm_periodos` em vez da view quebrada
 
-```tsx
-// Antes (linha 460-461):
-<div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
-  <ScrollArea className="h-full max-h-[340px]">
+Substituir a query à `vw_ultimo_bm_realizado` por uma query direta:
 
-// Depois:
-<div className="flex-1 min-h-0 border rounded-lg overflow-y-auto max-h-[50vh]">
+```sql
+SELECT bm_name, bm_number, status FROM bm_periodos ORDER BY bm_number
 ```
 
-E remover o `</ScrollArea>` correspondente na linha 524.
-
-Isso garante scroll nativo visível com a barra do browser, mais confiável que o Radix ScrollArea para tabelas.
-
+Usar os dados reais de status para colorir os botões:
+- `fechado` → verde com
