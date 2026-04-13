@@ -91,9 +91,31 @@ export const FIELDS_BY_SOURCE: Record<string, FieldDef[]> = {
   criterio_medicao: CRITERIO_FIELDS,
 };
 
+/** Normalize string: lowercase, strip accents, trim */
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+/** Score how well a field label matches a header (0 = no match) */
+function similarityScore(fieldLabel: string, header: string): number {
+  const nLabel = normalize(fieldLabel);
+  const nHeader = normalize(header);
+  if (!nLabel || !nHeader) return 0;
+  // Exact
+  if (nLabel === nHeader) return 100;
+  // Contains
+  if (nHeader.includes(nLabel) || nLabel.includes(nHeader)) return 80;
+  // Word overlap
+  const labelWords = nLabel.split(/\s+/);
+  const headerWords = nHeader.split(/\s+/);
+  const shared = labelWords.filter(w => headerWords.some(hw => hw === w || hw.includes(w) || w.includes(hw)));
+  if (shared.length > 0) return 10 + (shared.length / Math.max(labelWords.length, 1)) * 50;
+  return 0;
+}
+
 /**
  * Auto-detect column mapping from spreadsheet headers.
- * Returns { fieldKey: columnIndex } for each matched field.
+ * Pass 1: regex hints. Pass 2: fuzzy label similarity.
  */
 export function autoDetectMapping(
   headers: string[],
@@ -102,6 +124,7 @@ export function autoDetectMapping(
   const mapping: Record<string, number> = {};
   const usedCols = new Set<number>();
 
+  // Pass 1: regex hints
   for (const field of fields) {
     if (!field.hint) continue;
     const regex = new RegExp(field.hint, "i");
@@ -112,6 +135,25 @@ export function autoDetectMapping(
         usedCols.add(i);
         break;
       }
+    }
+  }
+
+  // Pass 2: fuzzy label matching for unmatched fields
+  for (const field of fields) {
+    if (mapping[field.key] !== undefined) continue;
+    let bestScore = 0;
+    let bestCol = -1;
+    for (let i = 0; i < headers.length; i++) {
+      if (usedCols.has(i)) continue;
+      const score = similarityScore(field.label, headers[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        bestCol = i;
+      }
+    }
+    if (bestCol >= 0 && bestScore >= 10) {
+      mapping[field.key] = bestCol;
+      usedCols.add(bestCol);
     }
   }
 
