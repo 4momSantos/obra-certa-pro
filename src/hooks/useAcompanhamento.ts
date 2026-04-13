@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGitecPorPpu, usePpuItemsAll } from "@/hooks/useSharedData";
+import { ACOMPANHAMENTO_QUERY_KEYS } from "@/lib/query-keys";
 
 export interface AcompanhamentoRow {
   ippu: string;
@@ -29,44 +32,23 @@ export interface AcompanhamentoRow {
 }
 
 /**
- * Saldo por iPPU: qtd contratada (PPU) - qtd já medida (GITEC aprovado de todos os BMs)
+ * Saldo por iPPU: qtd contratada (PPU) - qtd já medida (GITEC aprovado de todos os BMs).
+ * Derivado de usePpuItemsAll() + useGitecPorPpu() — sem fetch próprio das tabelas.
  */
 export function useSaldoPPU() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["saldo-ppu-global", user?.id],
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      // Fetch total contratado per PPU
-      const ppuRows: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data, error } = await supabase
-          .from("ppu_items")
-          .select("item_ppu, qtd, valor_total")
-          .gt("valor_total", 0)
-          .range(from, from + 999);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        ppuRows.push(...data);
-        if (data.length < 1000) break;
-        from += 1000;
-      }
+  const { data: ppuRows = [], isLoading: ppuLoading, error: ppuError } = usePpuItemsAll();
+  const { data: gitecRows = [], isLoading: gitecLoading, error: gitecError } = useGitecPorPpu();
 
-      // Fetch total medido (aprovado) per PPU from gitec
-      const { data: gitecAgg, error: gErr } = await supabase
-        .from("vw_gitec_por_ppu")
-        .select("item_ppu, valor_aprovado");
-      if (gErr) throw gErr;
+  const data = useMemo(() => {
+    const medidoMap = new Map<string, number>();
+    gitecRows.forEach(r => {
+      if (r.item_ppu) medidoMap.set(String(r.item_ppu).replace(/_/g, "-"), Number(r.valor_aprovado) || 0);
+    });
 
-      const medidoMap = new Map<string, number>();
-      (gitecAgg || []).forEach((r: any) => {
-        if (r.item_ppu) medidoMap.set(String(r.item_ppu), Number(r.valor_aprovado) || 0);
-      });
-
-      const saldoMap = new Map<string, { qtd_contratada: number; valor_contratado: number; valor_medido: number; saldo: number }>();
-      ppuRows.forEach((p: any) => {
+    const saldoMap = new Map<string, { qtd_contratada: number; valor_contratado: number; valor_medido: number; saldo: number }>();
+    ppuRows
+      .filter(p => (Number(p.valor_total) || 0) > 0)
+      .forEach(p => {
         const key = String(p.item_ppu).replace(/_/g, "-");
         const contratado = Number(p.valor_total) || 0;
         const medido = medidoMap.get(key) || 0;
@@ -78,9 +60,10 @@ export function useSaldoPPU() {
         });
       });
 
-      return saldoMap;
-    },
-  });
+    return saldoMap;
+  }, [ppuRows, gitecRows]);
+
+  return { data, isLoading: ppuLoading || gitecLoading, error: ppuError || gitecError };
 }
 
 /**

@@ -3,6 +3,8 @@ import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { dateToBM, parseDateBR } from "@/lib/bm-utils";
+import { useGitecEventsAll, useSigemDocumentsAll } from "@/hooks/useSharedData";
+import { BM_QUERY_KEYS } from "@/lib/query-keys";
 
 export interface BMValueRow {
   ippu: string;
@@ -34,52 +36,31 @@ export function useAllBMValues() {
   });
 }
 
+/**
+ * Todos os eventos GITEC com campos legados mapeados.
+ * Wrapper de useGitecEventsAll() — sem fetch próprio de gitec_events.
+ */
 export function useAllRelEventos() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["all-rel-eventos", user?.id],
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const rows: any[] = [];
-      let from = 0;
-      const PAGE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("gitec_events")
-          .select("*")
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        // Map gitec_events fields to expected interface
-        rows.push(...data.map(r => ({
-          ...r,
-          agrupamento_ippu: r.ippu || "",
-          fiscal_responsavel: r.fiscal || "",
-          numero_evidencias: r.evidencias || "",
-        })));
-        if (data.length < PAGE) break;
-        from += PAGE;
-      }
-      return rows;
-    },
-  });
+  const result = useGitecEventsAll();
+  const data = useMemo(
+    () =>
+      (result.data || []).map(r => ({
+        ...r,
+        agrupamento_ippu: r.ippu || "",
+        fiscal_responsavel: r.fiscal || "",
+        numero_evidencias: r.evidencias || "",
+      })),
+    [result.data]
+  );
+  return { ...result, data };
 }
 
+/**
+ * Todos os documentos SIGEM.
+ * Wrapper de useSigemDocumentsAll() — sem fetch próprio de sigem_documents.
+ */
 export function useAllSigemDocs() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["all-sigem-docs", user?.id],
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sigem_documents")
-        .select("*");
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  return useSigemDocumentsAll();
 }
 
 export function useBMSummary(bmValues: BMValueRow[] | undefined) {

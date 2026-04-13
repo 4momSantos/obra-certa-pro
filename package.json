@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "audit:queries": "node scripts/audit-queries.mjs",
+    "audit:queries:ci": "node scripts/audit-queries.mjs --fail-on-violations"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

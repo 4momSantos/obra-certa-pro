@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGitecEventsAll, useGitecPorPpu } from "@/hooks/useSharedData";
+import { GITEC_QUERY_KEYS } from "@/lib/query-keys";
 
-const GITEC_KEY = "gitec";
+const GITEC_KEY = GITEC_QUERY_KEYS.BASE;
 
 export interface GitecFilters {
   status: string;
@@ -61,68 +64,55 @@ function normalizeStatus(s: string): string {
   return s || "Outros";
 }
 
+/**
+ * Estatísticas agregadas de GITEC.
+ * Derivado de useGitecEventsAll() — não faz fetch próprio de gitec_events.
+ */
 export function useGitecStats() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [GITEC_KEY, "stats", user?.id],
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-    queryFn: async (): Promise<GitecStats> => {
-      const rows: any[] = [];
-      let from = 0;
-      const PAGE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("gitec_events")
-          .select("etapa, status, valor, data_inf_execucao")
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        rows.push(...data);
-        if (data.length < PAGE) break;
-        from += PAGE;
+  const { data: rows = [], isLoading, error } = useGitecEventsAll();
+
+  const data = useMemo((): GitecStats => {
+    if (rows.length === 0)
+      return { total: 0, concluidos: 0, valConcluidos: 0, pendentes: 0, valPendentes: 0, aprovados: 0, valAprovado: 0, pendVerif: 0, valPendVerif: 0, pendAprov: 0, valPendAprov: 0, outros: 0, valOutros: 0, agingMedio: 0, agingMaximo: 0 };
+
+    let concluidos = 0, valConcluidos = 0, pendentes = 0, valPendentes = 0;
+    let aprovados = 0, valAprovado = 0, pendVerif = 0, valPendVerif = 0, pendAprov = 0, valPendAprov = 0;
+    let outros = 0, valOutros = 0;
+    const agings: number[] = [];
+
+    for (const r of rows) {
+      const v = Number(r.valor) || 0;
+      const etapaLow = ((r.etapa || "") as string).toLowerCase();
+      if (etapaLow.includes("conclu")) { concluidos++; valConcluidos += v; }
+      else { pendentes++; valPendentes += v; }
+
+      const ns = normalizeStatus(r.status ?? "");
+      if (ns === "Aprovado") { aprovados++; valAprovado += v; }
+      else if (ns === "Pendente de Verificação") {
+        pendVerif++; valPendVerif += v;
+        if (r.data_inf_execucao) agings.push(calcAging(r.data_inf_execucao));
+      } else if (ns === "Pendente de Aprovação") {
+        pendAprov++; valPendAprov += v;
+        if (r.data_inf_execucao) agings.push(calcAging(r.data_inf_execucao));
+      } else {
+        outros++; valOutros += v;
       }
+    }
 
-      if (rows.length === 0)
-        return { total: 0, concluidos: 0, valConcluidos: 0, pendentes: 0, valPendentes: 0, aprovados: 0, valAprovado: 0, pendVerif: 0, valPendVerif: 0, pendAprov: 0, valPendAprov: 0, outros: 0, valOutros: 0, agingMedio: 0, agingMaximo: 0 };
+    return {
+      total: rows.length,
+      concluidos, valConcluidos,
+      pendentes, valPendentes,
+      aprovados, valAprovado,
+      pendVerif, valPendVerif,
+      pendAprov, valPendAprov,
+      outros, valOutros,
+      agingMedio: agings.length ? Math.round(agings.reduce((a, b) => a + b, 0) / agings.length) : 0,
+      agingMaximo: agings.length ? Math.max(...agings) : 0,
+    };
+  }, [rows]);
 
-      let concluidos = 0, valConcluidos = 0, pendentes = 0, valPendentes = 0;
-      let aprovados = 0, valAprovado = 0, pendVerif = 0, valPendVerif = 0, pendAprov = 0, valPendAprov = 0;
-      let outros = 0, valOutros = 0;
-      const agings: number[] = [];
-
-      for (const r of rows) {
-        const v = Number(r.valor) || 0;
-        const etapaLow = ((r.etapa || "") as string).toLowerCase();
-        if (etapaLow.includes("conclu")) { concluidos++; valConcluidos += v; }
-        else { pendentes++; valPendentes += v; }
-
-        const ns = normalizeStatus(r.status);
-        if (ns === "Aprovado") { aprovados++; valAprovado += v; }
-        else if (ns === "Pendente de Verificação") {
-          pendVerif++; valPendVerif += v;
-          if (r.data_inf_execucao) agings.push(calcAging(r.data_inf_execucao));
-        } else if (ns === "Pendente de Aprovação") {
-          pendAprov++; valPendAprov += v;
-          if (r.data_inf_execucao) agings.push(calcAging(r.data_inf_execucao));
-        } else {
-          outros++; valOutros += v;
-        }
-      }
-
-      return {
-        total: rows.length,
-        concluidos, valConcluidos,
-        pendentes, valPendentes,
-        aprovados, valAprovado,
-        pendVerif, valPendVerif,
-        pendAprov, valPendAprov,
-        outros, valOutros,
-        agingMedio: agings.length ? Math.round(agings.reduce((a, b) => a + b, 0) / agings.length) : 0,
-        agingMaximo: agings.length ? Math.max(...agings) : 0,
-      };
-    },
-  });
+  return { data, isLoading, error };
 }
 
 export function useGitecFiscais() {
@@ -239,28 +229,29 @@ export interface GitecIPPURow {
   valor_pendente: number;
 }
 
+/**
+ * Agrupamento de GITEC por iPPU.
+ * Derivado de useGitecPorPpu() — não faz fetch próprio de vw_gitec_por_ppu.
+ */
 export function useGitecByIPPU() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [GITEC_KEY, "by-ippu", user?.id],
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-    queryFn: async (): Promise<GitecIPPURow[]> => {
-      const { data, error } = await supabase.from("vw_gitec_por_ppu").select("*");
-      if (error) throw error;
-      return ((data ?? []) as any[])
-        .map(r => ({
-          item_ppu: r.item_ppu ?? "",
-          total_eventos: Number(r.total_eventos) || 0,
-          eventos_concluidos: Number(r.eventos_concluidos) || 0,
-          eventos_pendentes: Number(r.eventos_pendentes) || 0,
-          valor_total: Number(r.valor_total) || 0,
-          valor_aprovado: Number(r.valor_aprovado) || 0,
-          valor_pendente: Number(r.valor_pendente) || 0,
-        }))
-        .sort((a, b) => b.valor_pendente - a.valor_pendente);
-    },
-  });
+  const { data: rows = [], isLoading, error } = useGitecPorPpu();
+
+  const data = useMemo((): GitecIPPURow[] =>
+    rows
+      .map(r => ({
+        item_ppu: r.item_ppu ?? "",
+        total_eventos: Number(r.total_eventos) || 0,
+        eventos_concluidos: Number(r.eventos_concluidos) || 0,
+        eventos_pendentes: Number(r.eventos_pendentes) || 0,
+        valor_total: Number(r.valor_total) || 0,
+        valor_aprovado: Number(r.valor_aprovado) || 0,
+        valor_pendente: Number(r.valor_pendente) || 0,
+      }))
+      .sort((a, b) => b.valor_pendente - a.valor_pendente),
+    [rows]
+  );
+
+  return { data, isLoading, error };
 }
 
 export function useGitecEventDetail(eventId: string | null) {
