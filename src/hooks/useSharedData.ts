@@ -109,7 +109,7 @@ export function useGitecPorPpu() {
     queryFn: async (): Promise<GitecPorPpuRaw[]> => {
       const { data, error } = await supabase.from("vw_gitec_por_ppu" as any).select("*");
       if (error) throw error;
-      return (data || []) as GitecPorPpuRaw[];
+      return (data || []) as unknown as GitecPorPpuRaw[];
     },
   });
 }
@@ -150,7 +150,7 @@ export function useSconPorPpu() {
     queryFn: async (): Promise<SconPorPpuRaw[]> => {
       const { data, error } = await supabase.from("vw_scon_por_ppu" as any).select("*");
       if (error) throw error;
-      return (data || []) as SconPorPpuRaw[];
+      return (data || []) as unknown as SconPorPpuRaw[];
     },
   });
 }
@@ -258,7 +258,7 @@ export function useSigemDocumentsAll() {
     queryFn: async (): Promise<SigemDocumentRaw[]> => {
       const { data, error } = await supabase.from("sigem_documents" as any).select("*");
       if (error) throw error;
-      return (data || []) as SigemDocumentRaw[];
+      return (data || []) as unknown as SigemDocumentRaw[];
     },
   });
 }
