@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, AlertCircle } from "lucide-react";
-import { FieldDef, colToLetter, autoDetectMapping } from "@/lib/config-fields";
+import { CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
+import { FieldDef, colToLetter, autoDetectMapping, getMatchConfidences, MatchConfidence } from "@/lib/config-fields";
 
 // ── Helpers ──
 
