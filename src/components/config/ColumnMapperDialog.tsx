@@ -116,8 +116,18 @@ export default function ColumnMapperDialog({
     onConfirm(mapping);
   }, [mapping, onConfirm]);
 
+  const handleRedetect = useCallback(() => {
+    setMapping(autoDetectMapping(headers, fields));
+  }, [headers, fields]);
+
   // Preview columns — only mapped fields
   const previewFields = fields.filter(f => mapping[f.key] != null);
+
+  const confidenceDot = (c: MatchConfidence) => {
+    if (c === "hint") return <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" title="Match por regex (alta confiança)" />;
+    if (c === "fuzzy") return <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" title="Match por similaridade (média confiança)" />;
+    return <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground/30" title="Não mapeado" />;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
