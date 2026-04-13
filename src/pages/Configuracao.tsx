@@ -75,11 +75,34 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
       { rowFilter: card.rowFilter, requiredKey: card.requiredKey }
     );
 
+    // Smart validation warnings
+    const smartWarnings = [...result.warnings];
+
+    // Check item_ppu quality if present
+    if (mapping["item_ppu"] != null && result.rows.length > 0) {
+      const shortItems = result.rows.filter(r => {
+        const v = String(r["item_ppu"] ?? "");
+        return v.length > 0 && v.length < 3;
+      });
+      if (shortItems.length > 0) {
+        smartWarnings.push(`${shortItems.length} itens com item_ppu muito curto (< 3 caracteres) serão ignorados`);
+      }
+    }
+
+    // Check valor_total quality if present
+    if (mapping["valor_total"] != null && result.rows.length > 0) {
+      const zeroValues = result.rows.filter(r => Number(r["valor_total"] ?? 0) === 0);
+      const pctZero = zeroValues.length / result.rows.length;
+      if (pctZero > 0.5) {
+        smartWarnings.push(`${Math.round(pctZero * 100)}% dos itens com valor_total = 0 — verifique se a coluna está correta`);
+      }
+    }
+
     setState(s => ({
       ...s,
       showMapper: false,
       rows: result.rows,
-      warnings: result.warnings,
+      warnings: smartWarnings,
     }));
   }, [card, state.headers, state.rawRows, saveMapping]);
 
