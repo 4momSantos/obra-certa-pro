@@ -77,6 +77,12 @@ export default function ColumnMapperDialog({
   );
 
   // Check required fields
+  // Match confidence per field
+  const confidences = useMemo(() =>
+    getMatchConfidences(headers, fields, mapping),
+    [headers, fields, mapping]
+  );
+
   const requiredMissing = useMemo(() =>
     fields.filter(f => f.required && mapping[f.key] == null),
     [fields, mapping]
