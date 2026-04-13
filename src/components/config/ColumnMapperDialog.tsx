@@ -155,6 +155,7 @@ export default function ColumnMapperDialog({
                   <TableRow key={field.key}>
                     <TableCell className="text-sm py-1.5">
                       <div className="flex items-center gap-2">
+                        {confidenceDot(confidences[field.key])}
                         <span>{field.label}</span>
                         {field.required && (
                           <Badge variant="destructive" className="text-[9px] px-1 py-0">
@@ -246,6 +247,10 @@ export default function ColumnMapperDialog({
         </div>
 
         <DialogFooter className="gap-2">
+          <Button variant="ghost" size="sm" onClick={handleRedetect} className="mr-auto gap-1">
+            <RotateCcw className="h-3.5 w-3.5" />
+            Auto-detectar
+          </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button
             onClick={handleConfirm}
