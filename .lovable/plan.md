@@ -1,18 +1,32 @@
 
 
-# Fix: Scrollbar visibility in ColumnMapperDialog
+# Fix: Auto-detect column mapping using field labels + fuzzy matching
 
 ## Problem
-The mapping table uses Radix `ScrollArea` which doesn't reliably show scrollbars, making it impossible to scroll through all PPU fields.
+The auto-detection only uses rigid regex `hint` patterns. When a spreadsheet header says something like "Descrição" or "Valor Total (R$)", the system fails to match fields that have similar labels but no matching regex hint.
 
 ## Solution
-Replace `ScrollArea` with a native `div` using `overflow-y-auto` and make table headers sticky — matching the project's established scroll pattern.
+Enhance `autoDetectMapping` in `src/lib/config-fields.ts` with a two-pass approach:
 
-### File: `src/components/config/ColumnMapperDialog.tsx`
+### Pass 1 — Regex hints (existing, unchanged)
+Use the `hint` regex patterns as before for precise matches.
 
-1. **Mapping table (line 128)**: Replace `<ScrollArea className="max-h-[300px] ...">` with `<div className="max-h-[300px] overflow-y-auto border rounded-md">`. Add `sticky top-0 z-10 bg-background` to the `TableHeader`.
+### Pass 2 — Label similarity (new)
+For any field NOT matched by hints, compare the field `label` against remaining unmatched headers using normalized string similarity:
+- Normalize both strings: lowercase, remove accents (NFD), trim
+- **Exact match**: normalized label === normalized header → match
+- **Contains match**: header contains the label or vice-versa → match
+- **Word overlap score**: split both into words, count shared words — pick the header with the highest overlap (minimum 1 shared word)
 
-2. **Preview table (line ~185)**: Same treatment — replace `ScrollArea` with native `div overflow-y-auto` and sticky header.
+### File: `src/lib/config-fields.ts`
 
-3. Remove unused `ScrollArea` import.
+1. Add a `normalize(s)` helper that lowercases + strips accents
+2. Modify `autoDetectMapping` to run the existing hint pass first, then a second pass that compares `field.label` against unmatched headers using the similarity logic above
+3. Sort second-pass candidates by match quality (exact > contains > word overlap)
+
+### No other files change
+The `ColumnMapperDialog` and `useConfig` already call `autoDetectMapping` — they'll automatically benefit from better detection.
+
+## Result
+When uploading a spreadsheet with headers like "Descrição", "Qtd", "Preço Unitário", the mapper will pre-select the correct columns automatically, and the user only needs to confirm or adjust.
 
