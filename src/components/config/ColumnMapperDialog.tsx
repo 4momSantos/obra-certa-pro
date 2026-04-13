@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, AlertCircle } from "lucide-react";
-import { FieldDef, colToLetter, autoDetectMapping } from "@/lib/config-fields";
+import { CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
+import { FieldDef, colToLetter, autoDetectMapping, getMatchConfidences, MatchConfidence } from "@/lib/config-fields";
 
 // ── Helpers ──
 
@@ -77,6 +77,12 @@ export default function ColumnMapperDialog({
   );
 
   // Check required fields
+  // Match confidence per field
+  const confidences = useMemo(() =>
+    getMatchConfidences(headers, fields, mapping),
+    [headers, fields, mapping]
+  );
+
   const requiredMissing = useMemo(() =>
     fields.filter(f => f.required && mapping[f.key] == null),
     [fields, mapping]
@@ -110,8 +116,18 @@ export default function ColumnMapperDialog({
     onConfirm(mapping);
   }, [mapping, onConfirm]);
 
+  const handleRedetect = useCallback(() => {
+    setMapping(autoDetectMapping(headers, fields));
+  }, [headers, fields]);
+
   // Preview columns — only mapped fields
   const previewFields = fields.filter(f => mapping[f.key] != null);
+
+  const confidenceDot = (c: MatchConfidence) => {
+    if (c === "hint") return <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" title="Match por regex (alta confiança)" />;
+    if (c === "fuzzy") return <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" title="Match por similaridade (média confiança)" />;
+    return <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground/30" title="Não mapeado" />;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,6 +155,7 @@ export default function ColumnMapperDialog({
                   <TableRow key={field.key}>
                     <TableCell className="text-sm py-1.5">
                       <div className="flex items-center gap-2">
+                        {confidenceDot(confidences[field.key])}
                         <span>{field.label}</span>
                         {field.required && (
                           <Badge variant="destructive" className="text-[9px] px-1 py-0">
@@ -230,6 +247,10 @@ export default function ColumnMapperDialog({
         </div>
 
         <DialogFooter className="gap-2">
+          <Button variant="ghost" size="sm" onClick={handleRedetect} className="mr-auto gap-1">
+            <RotateCcw className="h-3.5 w-3.5" />
+            Auto-detectar
+          </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button
             onClick={handleConfirm}

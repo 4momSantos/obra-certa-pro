@@ -14,22 +14,22 @@ export interface FieldDef {
 
 // ── PPU-PREV (ppu_items) ──
 export const PPU_FIELDS: FieldDef[] = [
-  { key: "flag", label: "Flag", type: "str", hint: "flag" },
+  { key: "flag", label: "Flag", type: "str", hint: "flag|sinaliz" },
   { key: "item_eap", label: "Item EAP", type: "str", hint: "eap" },
   { key: "item_gitec", label: "Item GITEC", type: "str", hint: "gitec" },
-  { key: "item_ppu", label: "Item PPU", type: "str", required: true, hint: "item.*ppu|i\\.?ppu" },
+  { key: "item_ppu", label: "Item PPU", type: "str", required: true, hint: "item.*ppu|i\\.?ppu|^ppu$|cod.*ppu" },
   { key: "fase", label: "Fase", type: "str", hint: "^fase$" },
   { key: "subfase", label: "Subfase", type: "str", hint: "subfase|sub.?fase" },
   { key: "agrupamento", label: "Agrupamento", type: "str", hint: "agrupamento|agrup" },
-  { key: "descricao", label: "Descrição", type: "str", hint: "descri" },
+  { key: "descricao", label: "Descrição", type: "str", hint: "descri[çc]|descricao|servi[çc]o" },
   { key: "criterio_medicao_ref", label: "Critério Medição Ref", type: "str", hint: "crit.rio|crit.*medi" },
   { key: "item_lc", label: "Item LC", type: "str", hint: "item.*lc|lc" },
   { key: "reajuste", label: "Reajuste", type: "str", hint: "reajuste" },
-  { key: "unid_medida", label: "Unidade Medida", type: "str", hint: "unid|u\\.?m\\.?" },
+  { key: "unid_medida", label: "Unidade Medida", type: "str", hint: "unid.*med|u\\.?m\\.?|^un$|^und$" },
   { key: "qtd", label: "Quantidade", type: "num", hint: "qtd|quant" },
-  { key: "preco_unit", label: "Preço Unitário", type: "num", hint: "pre.o.*unit|p\\.?u\\.?" },
-  { key: "valor_total", label: "Valor Total", type: "num", hint: "valor.*total|v\\.?total" },
-  { key: "valor_medido", label: "Valor Medido", type: "num", hint: "valor.*medido|v\\.?medido" },
+  { key: "preco_unit", label: "Preço Unitário", type: "num", hint: "pre[çc]o.*unit|p\\.?u\\.?|custo.*unit" },
+  { key: "valor_total", label: "Valor Total", type: "num", hint: "valor.*total|v\\.?total|total.*r\\$|vlr.*total" },
+  { key: "valor_medido", label: "Valor Medido", type: "num", hint: "valor.*medido|v\\.?medido|acumulado|med.*acum" },
   { key: "carac", label: "Característica", type: "str", hint: "carac" },
   { key: "disc", label: "Disciplina", type: "str", hint: "disc|disciplina" },
   { key: "fam", label: "Família", type: "str", hint: "fam" },
@@ -101,11 +101,8 @@ function similarityScore(fieldLabel: string, header: string): number {
   const nLabel = normalize(fieldLabel);
   const nHeader = normalize(header);
   if (!nLabel || !nHeader) return 0;
-  // Exact
   if (nLabel === nHeader) return 100;
-  // Contains
   if (nHeader.includes(nLabel) || nLabel.includes(nHeader)) return 80;
-  // Word overlap
   const labelWords = nLabel.split(/\s+/);
   const headerWords = nHeader.split(/\s+/);
   const shared = labelWords.filter(w => headerWords.some(hw => hw === w || hw.includes(w) || w.includes(hw)));
@@ -113,9 +110,12 @@ function similarityScore(fieldLabel: string, header: string): number {
   return 0;
 }
 
+export type MatchConfidence = "hint" | "fuzzy" | "none";
+
 /**
  * Auto-detect column mapping from spreadsheet headers.
  * Pass 1: regex hints. Pass 2: fuzzy label similarity.
+ * Returns mapping + confidence info per field.
  */
 export function autoDetectMapping(
   headers: string[],
@@ -158,6 +158,33 @@ export function autoDetectMapping(
   }
 
   return mapping;
+}
+
+/**
+ * Get match confidence for each mapped field.
+ */
+export function getMatchConfidences(
+  headers: string[],
+  fields: FieldDef[],
+  mapping: Record<string, number>
+): Record<string, MatchConfidence> {
+  const result: Record<string, MatchConfidence> = {};
+  for (const field of fields) {
+    const colIdx = mapping[field.key];
+    if (colIdx == null) {
+      result[field.key] = "none";
+      continue;
+    }
+    if (field.hint) {
+      const regex = new RegExp(field.hint, "i");
+      if (regex.test(headers[colIdx])) {
+        result[field.key] = "hint";
+        continue;
+      }
+    }
+    result[field.key] = "fuzzy";
+  }
+  return result;
 }
 
 /** Convert column index to Excel letter (0→A, 25→Z, 26→AA) */
