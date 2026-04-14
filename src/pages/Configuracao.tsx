@@ -98,6 +98,19 @@ function ConfigUploadCard({ card }: { card: ConfigCardDef }) {
       }
     }
 
+    // Check fase quality if present (detect corrupted single-char values)
+    if (mapping["fase"] != null && result.rows.length > 0) {
+      const faseValues = result.rows.map(r => String(r["fase"] ?? "").trim());
+      const shortFases = faseValues.filter(v => v.length > 0 && v.length <= 2);
+      if (shortFases.length > faseValues.length * 0.3) {
+        smartWarnings.push(`⚠️ ${shortFases.length} itens com "Fase" de apenas 1-2 caracteres (ex: "${shortFases[0]}") — a coluna pode estar mapeada incorretamente. A Visão Consolidada ficará comprometida.`);
+      }
+      const uniqueFases = new Set(faseValues.filter(v => v.length > 0));
+      if (uniqueFases.size <= 3 && result.rows.length > 50) {
+        smartWarnings.push(`Apenas ${uniqueFases.size} valores distintos de "Fase" para ${result.rows.length} itens — verifique o mapeamento`);
+      }
+    }
+
     setState(s => ({
       ...s,
       showMapper: false,
