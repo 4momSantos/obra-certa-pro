@@ -90,33 +90,49 @@ const DocumentsPage: React.FC = () => {
       )}
 
       {/* Funil documental */}
-      {stats && stats.byStatus.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Funil Documental</p>
-          <div className="flex h-8 rounded-lg overflow-hidden">
-            {stats.byStatus.map(s => (
-              <div
-                key={s.status}
-                className={`flex items-center justify-center text-[10px] font-medium text-primary-foreground ${
-                  s.status === "Recusado" ? "bg-destructive" :
-                  s.status === "Certificado" ? "bg-primary" :
-                  s.status === "Sem Comentários" ? "bg-primary/70" :
-                  s.status === "Para Construção" ? "bg-secondary text-secondary-foreground" :
-                  "bg-accent text-accent-foreground"
-                }`}
-                style={{ width: `${s.pct}%`, minWidth: s.pct > 3 ? undefined : "0" }}
-              >
-                {s.pct > 6 && `${s.status} (${s.pct}%)`}
-              </div>
-            ))}
+      {stats && stats.byStatus.length > 0 && (() => {
+        const FUNNEL_COLORS = [
+          "bg-primary", "bg-destructive", "bg-accent", "bg-secondary", "bg-primary/60",
+        ];
+        const TEXT_COLORS = [
+          "text-primary-foreground", "text-destructive-foreground", "text-accent-foreground", "text-secondary-foreground", "text-primary-foreground",
+        ];
+        const DOT_COLORS = [
+          "bg-primary", "bg-destructive", "bg-accent", "bg-secondary", "bg-primary/60", "bg-muted-foreground",
+        ];
+        const top5 = stats.byStatus.slice(0, 5);
+        const rest = stats.byStatus.slice(5);
+        const othersCount = rest.reduce((a, b) => a + b.count, 0);
+        const othersPct = rest.reduce((a, b) => a + b.pct, 0);
+        const segments = [...top5.map((s, i) => ({ ...s, bg: FUNNEL_COLORS[i], text: TEXT_COLORS[i], dot: DOT_COLORS[i] }))];
+        if (othersCount > 0) segments.push({ status: `Outros (${rest.length})`, count: othersCount, pct: othersPct, bg: "bg-muted", text: "text-muted-foreground", dot: DOT_COLORS[5] });
+
+        return (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Funil Documental</p>
+            <div className="flex h-8 rounded-lg overflow-hidden">
+              {segments.map(s => (
+                <div
+                  key={s.status}
+                  className={`flex items-center justify-center text-[10px] font-medium ${s.bg} ${s.text}`}
+                  style={{ width: `${s.pct}%`, minWidth: s.pct > 2 ? undefined : "0" }}
+                >
+                  {s.pct > 8 && `${s.status} (${s.pct}%)`}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              {segments.map(s => (
+                <div key={s.status} className="flex items-center gap-1.5 min-w-0">
+                  <span className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${s.dot}`} />
+                  <span className="truncate">{s.status}</span>
+                  <span className="ml-auto tabular-nums shrink-0">{s.count.toLocaleString("pt-BR")}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            {stats.byStatus.map(s => (
-              <span key={s.status}>{s.status}: {s.count}</span>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Recusas */}
       {!loadingRecusados && recusados && recusados.length > 0 && (
