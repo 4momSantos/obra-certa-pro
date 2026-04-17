@@ -34,13 +34,51 @@ export function diasRestantes(bmName: string): number {
 
 export function parseDateBR(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null;
-  // Try DD/MM/YYYY HH:MM:SS
   const brMatch = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (brMatch) {
     const d = new Date(Number(brMatch[3]), Number(brMatch[2]) - 1, Number(brMatch[1]));
     return isNaN(d.getTime()) ? null : d;
   }
-  // Try ISO / YYYY-MM-DD
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Returns current BM cycle progress details.
+ * Mirrors getBmCycle() from SPLAN Explorer.
+ *
+ * BM-01 = 26/Jun/2025 – 25/Jul/2025
+ * BM-22 = 26/Mar/2027 – 25/Apr/2027
+ */
+export function getBmCycle(today: Date = new Date()): {
+  bmName: string | null;
+  start: Date;
+  end: Date;
+  diasTotal: number;
+  diasDecorridos: number;
+  diasRestantes: number;
+  pct: number;
+  label: string;
+  periodo: string;
+} {
+  const bmName = dateToBM(today);
+  if (!bmName) {
+    return {
+      bmName: null, start: today, end: today,
+      diasTotal: 0, diasDecorridos: 0, diasRestantes: 0,
+      pct: 0, label: '', periodo: '',
+    };
+  }
+  const { start, end } = bmRange(bmName);
+  const diasTotal = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+  const diasDecorridos = Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000));
+  const diasRestantesVal = Math.max(0, Math.ceil((end.getTime() - today.getTime()) / 86400000));
+  const pct = diasTotal > 0 ? Math.min(100, Math.round((diasDecorridos / diasTotal) * 100)) : 0;
+  const MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const periodo = `${String(start.getDate()).padStart(2,'0')}/${MONTHS[start.getMonth()]} – ${String(end.getDate()).padStart(2,'0')}/${MONTHS[end.getMonth()]}/${end.getFullYear()}`;
+  return {
+    bmName, start, end,
+    diasTotal, diasDecorridos, diasRestantes: diasRestantesVal,
+    pct, label: bmName, periodo,
+  };
 }
